@@ -73,7 +73,13 @@ def test_normal():
     
 def test_transpose():    
     A = np.float32(np.random.rand(10,10))
-    C = gpu.array(A)
+    C = gpu.array(A).T.tocpu()
+    t.assert_array_equal(A.T, C, "Transpose not identical to numpy")
+    
+    A = np.float32(np.random.rand(17,17,17))
+    C = gpu.array(A).T.tocpu()
+    t.assert_array_equal(A.T, C, "Transpose not identical to numpy")
+    
 
    
    

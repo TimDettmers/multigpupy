@@ -28,8 +28,11 @@ lib.fones.restype = ct.POINTER(Tensor)
 lib.ftocpu.restype = ct.POINTER(Tensor)
 lib.ftogpu.restype = ct.c_void_p
 lib.fadd.restype = ct.POINTER(Tensor)
-lib.finplaceAdd.restype = ct.c_void_p
+lib.inp_add.restype = ct.c_void_p
 lib.ffree.restype = ct.c_void_p
+#lib.fT.restype = ct.c_void_p
+lib.fT.restype = ct.POINTER(Tensor)
+lib.inp_T.restype = ct.c_void_p
 
 def __init__(): pass
 
@@ -55,9 +58,6 @@ class array(object):
         self.npArray = npArray      
         pass
     
-    def __del__(self):
-        print 'destruct'
-        lib.ffree(self.pt)
     
     def tocpu(self):
         data = np.empty(self.shape, dtype=np.float32)
@@ -70,7 +70,9 @@ class array(object):
         
         return data
 
-
+    @property
+    def T(self): return array(None, lib.fT(self.pt))         
+    def __del__(self): lib.ffree(self.pt)
 
 def zeros(shape):
     shape = u.handle_shape(shape)
@@ -90,7 +92,7 @@ def empty(shape):
 
 def add(A,B,out=None):
     if out:
-        lib.finplaceAdd(A.pt,B.pt,out.pt);
+        lib.inp_add(A.pt,B.pt,out.pt);
         pass
     else:
         return array(None, lib.fadd(A.pt,B.pt))

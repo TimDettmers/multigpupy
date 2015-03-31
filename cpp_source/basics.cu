@@ -52,7 +52,17 @@ Tensor *fill_with_number(Tensor *A, float fill_value)
 }
 
 
-Tensor *T(Tensor *A){ Tensor *out = empty(A->batches,A->maps,A->rows,A->cols); T(A,out, A->rows,A->cols); return out;  }
+
+Tensor *T(Tensor *A)
+{
+	Tensor *out = empty(A->batches,A->maps,A->cols,A->rows);
+	T(A,out, A->rows,A->cols);
+	out->rows = A->cols;
+	out->cols = A->rows;
+	return out;
+}
+
+
 void T(Tensor *A, Tensor *out,  int rows, int cols)
 {
 
@@ -70,7 +80,6 @@ void T(Tensor *A, Tensor *out,  int rows, int cols)
 	  dim3 threads(COPY_BLOCK_SIZE, COPY_BLOCK_SIZE, 1);
 	  kTransposeTensor<<< grid, threads >>>(A->data, out->data, A->batches, rows, cols);
 }
-
 
 Tensor *to_col_major(Tensor *A)
 {
