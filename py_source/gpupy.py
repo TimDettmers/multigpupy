@@ -67,6 +67,9 @@ class array(object):
         if data.shape[0] == 1 and data.shape[1] == 1: data = data.reshape(data.shape[2], data.shape[3])
         if data.shape[0] == 1 and data.shape[1] > 1: data = data.reshape(data.shape[1], data.shape[2], data.shape[3])
         
+        print data.shape[0], data.shape[1]
+        print data.shape
+        
         self.npArray = data
         
         return data
@@ -74,6 +77,11 @@ class array(object):
     @property
     def T(self): return array(None, lib.fT(self.pt))         
     def __del__(self): lib.ffree(self.pt)
+    def __add__(self, other): return add(self,other)
+    
+    def __iadd__(self, other): 
+        add(self,other,self)
+        return self
 
 def zeros(shape):
     shape = u.handle_shape(shape)

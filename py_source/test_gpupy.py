@@ -102,6 +102,10 @@ def test_togpu():
     C = gpu.array(A).tocpu()
     t.assert_array_equal(A, C, "To GPU does not work!")
     
+    A = np.float32(np.random.rand(2,17,1,17))    
+    C = gpu.array(A).tocpu()
+    t.assert_array_equal(A, C, "To GPU does not work!")
+    
     
     
 def test_add():
@@ -109,9 +113,24 @@ def test_add():
     B = np.random.rand(10,7,83,4)
     C1 = gpu.array(A)
     C2 = gpu.array(B)
+    C = gpu.add(C1,C2)  
+    out = gpu.empty(C.shape)      
+    gpu.add(C1, C2, out)
+    t.assert_array_almost_equal(C.tocpu(), A+B, 7, "Add not equal to numpy add!")
+    t.assert_array_almost_equal(out.tocpu(), A+B, 7, "Add not equal to numpy add!")
+    t.assert_array_almost_equal((C1+C2).tocpu(), A+B, 7, "Add not equal to numpy add!")
+    C1+=C2
+    t.assert_array_almost_equal(C1.tocpu(), A+B, 7, "Add not equal to numpy add!")
+    
+    A = np.random.rand(7,1,4)
+    B = np.random.rand(7,1,4)
+    C1 = gpu.array(A)
+    C2 = gpu.array(B)
     C = gpu.add(C1,C2)        
     
     t.assert_array_almost_equal(C.tocpu(), A+B, 7, "Add not equal to numpy add!")
+    
+    
     
     
     
