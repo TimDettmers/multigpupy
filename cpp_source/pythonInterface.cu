@@ -26,4 +26,5 @@ extern "C"
 
 	Tensor *fadd(Tensor *A, Tensor *B){ return add(A,B); }
 	void finplaceAdd(Tensor *A, Tensor *B, Tensor *out){ return add(A,B,out); }
+	void ffree(Tensor *A){ A->freeTensor(); }
 }

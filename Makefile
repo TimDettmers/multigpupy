@@ -13,4 +13,3 @@ all:
 
 clean:
 	rm *.o *.out $(ROOT_DIR)/py_source/gpupylib.so
-

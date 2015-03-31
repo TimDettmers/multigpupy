@@ -54,7 +54,9 @@ public:
 	  size_t bytes;
 	  int size;
 	  float *data;
+	  int onGPU;
 	  std::vector<float*> data_gpus;
+	  void freeTensor();
 };
 
 

@@ -31,7 +31,6 @@ def test_rand_seed():
     
     C1 = A.rand(5090,83)
     C2 = B.rand(5090,83)
-    print C1.tocpu()
     t.assert_array_almost_equal(C1.tocpu(),C2.tocpu(),6,"Rand seed does not give unique results!")
     t.assert_(C1.tocpu().sum() > 1.0,"Array has too many zero values!")
     
@@ -83,11 +82,10 @@ def test_togpu():
     C = gpu.array(A).tocpu()    
     t.assert_array_equal(A, C, "To GPU does not work!")
     
-    print 'a'
     A = np.float32(np.random.rand(177,17,17))    
     C = gpu.array(A).tocpu()
     t.assert_array_equal(A, C, "To GPU does not work!")
-    
+
     A = np.float32(np.random.rand(2,17,17,17))    
     C = gpu.array(A).tocpu()
     t.assert_array_equal(A, C, "To GPU does not work!")
@@ -97,17 +95,15 @@ def test_togpu():
 def test_add():
     A = np.random.rand(10,7,83,4)
     B = np.random.rand(10,7,83,4)
-    print A.sum()
     C1 = gpu.array(A)
     C2 = gpu.array(B)
-    C = gpu.add(C1,C2)
+    C = gpu.add(C1,C2)        
     
-    print(C.tocpu().sum())
-    #t.assert_array_almost_equal(C.tocpu(), A+B, 3, "Add not equal to numpy add!")
-    
+    t.assert_array_almost_equal(C.tocpu(), A+B, 7, "Add not equal to numpy add!")
     
     
     
     
-if __name__ == '__main__':
+    
+if __name__ == '__main__':    
     nose.run()

@@ -29,16 +29,19 @@ lib.ftocpu.restype = ct.POINTER(Tensor)
 lib.ftogpu.restype = ct.c_void_p
 lib.fadd.restype = ct.POINTER(Tensor)
 lib.finplaceAdd.restype = ct.c_void_p
+lib.ffree.restype = ct.c_void_p
 
 def __init__(): pass
 
 class array(object):
     def __init__(self, npArray = None, mat_pointer = None):
         self.shape = None
+        self.dummy = False
                      
-        if npArray != None:
+        if type(npArray) == type(np.array(1)):
             npArray = np.float32(npArray)
-            mat_pointer = empty(npArray.shape).pt
+            shape = u.handle_shape(npArray.shape)
+            mat_pointer = lib.fempty(shape[0],shape[1],shape[2],shape[3])
             lib.ftogpu(mat_pointer, npArray.ctypes.data_as(ct.POINTER(ct.c_float)))
             self.shape = npArray.shape 
             
@@ -51,6 +54,10 @@ class array(object):
         self.pt = mat_pointer
         self.npArray = npArray      
         pass
+    
+    def __del__(self):
+        print 'destruct'
+        lib.ffree(self.pt)
     
     def tocpu(self):
         data = np.empty(self.shape, dtype=np.float32)

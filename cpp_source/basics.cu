@@ -13,6 +13,7 @@ Tensor *empty(int batches, int maps, int rows, int cols)
 	out->cols = cols;
 	out->bytes = bytes;
 	out->size = size;
+	out->onGPU = 1;
 
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
@@ -107,6 +108,7 @@ Tensor *tocpu(Tensor *A, float *cpu_buffer)
 	out->bytes = temp->bytes;
 	out->size = temp->size;
 	out->data = cpu_buffer;
+	out->onGPU = 0;
 
 	CUDA_CHECK_RETURN(cudaFree(temp->data));
 	delete temp;
