@@ -6,7 +6,7 @@ Created on Mar 21, 2015
 '''
 import nose
 import gpupy as gpu
-import random as rdm
+import random_gpupy as rdm
 import numpy as np
 import numpy.testing as t
 
@@ -71,6 +71,42 @@ def test_normal():
     C4 = np.sum((C2 >-16.0)+(C2 <-18.0))/float(C1.size)
     t.assert_allclose(C3, 0.32, rtol=0.2, atol=0.05, err_msg="68% of values should be within one standard deviation.")
     t.assert_allclose(C4, 0.32, rtol=0.2, atol=0.05, err_msg="68% of values should be within one standard deviation.")
+    
+def test_transpose():    
+    A = np.float32(np.random.rand(10,10))
+    C = gpu.array(A)
+
+   
+   
+def test_togpu():
+    A = np.float32(np.random.rand(1333,177))
+    C = gpu.array(A).tocpu()    
+    t.assert_array_equal(A, C, "To GPU does not work!")
+    
+    print 'a'
+    A = np.float32(np.random.rand(177,17,17))    
+    C = gpu.array(A).tocpu()
+    t.assert_array_equal(A, C, "To GPU does not work!")
+    
+    A = np.float32(np.random.rand(2,17,17,17))    
+    C = gpu.array(A).tocpu()
+    t.assert_array_equal(A, C, "To GPU does not work!")
+    
+    
+    
+def test_add():
+    A = np.random.rand(10,7,83,4)
+    B = np.random.rand(10,7,83,4)
+    print A.sum()
+    C1 = gpu.array(A)
+    C2 = gpu.array(B)
+    C = gpu.add(C1,C2)
+    
+    print(C.tocpu().sum())
+    #t.assert_array_almost_equal(C.tocpu(), A+B, 3, "Add not equal to numpy add!")
+    
+    
+    
     
     
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 #include <gpupy.cuh>
 #include <basics.cuh>
+#include <cudaKernels.cuh>
 
 GPUpy::GPUpy(){}
 
@@ -53,3 +54,7 @@ void GPUpy::normal(float mean, float std, Tensor *out)
 
 Tensor *GPUpy::randn(int batchsize, int mapsize, int rows, int cols){ return normal(batchsize,mapsize, rows, cols, 0.0f,1.0f); }
 void GPUpy::randn(Tensor *out){ normal(0.0f,1.0f,out); }
+
+
+
+

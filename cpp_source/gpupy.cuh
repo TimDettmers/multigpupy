@@ -12,6 +12,7 @@
 
 
 
+
 #define CURAND_CHECK_RETURN(value) {											\
 	curandStatus_t _m_cudaStat = value;										\
 	if (_m_cudaStat != CURAND_STATUS_SUCCESS) {										\

@@ -9,6 +9,7 @@
 #define BASICS_CUH_
 #include <Tensor.cuh>
 
+#define THREADS_PER_BLOCKS (512)
 
 Tensor *empty(int batches, int maps, int rows, int cols);
 Tensor *zeros(int batches, int maps, int rows, int cols);
@@ -24,6 +25,10 @@ void T(Tensor *A, Tensor *out, int rows, int cols);
 Tensor *to_col_major(Tensor *A);
 void to_col_major(Tensor *A, Tensor *out);
 Tensor *to_row_major(Tensor *A);
+
+Tensor *add(Tensor *A, Tensor *B);
+void add(Tensor *A, Tensor *B, Tensor *out);
+
 
 
 

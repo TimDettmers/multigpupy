@@ -64,9 +64,10 @@ void T(Tensor *A, Tensor *out,  int rows, int cols)
 	  if (cols % COPY_BLOCK_SIZE)
 	    grid_y++;
 
-	  dim3 grid(grid_x, grid_y, 1);
+
+	  dim3 grid(grid_x, grid_y, A->maps);
 	  dim3 threads(COPY_BLOCK_SIZE, COPY_BLOCK_SIZE, 1);
-	  kTranspose<<< grid, threads >>>(A->data, out->data, rows, cols);
+	  kTransposeTensor<<< grid, threads >>>(A->data, out->data, A->batches, rows, cols);
 }
 
 
@@ -95,35 +96,57 @@ Tensor *to_row_major(Tensor *A)
 
 Tensor *tocpu(Tensor *A, float *cpu_buffer)
 {
-  Tensor *temp = to_row_major(A);
-  Tensor *out = new Tensor();
+	Tensor *temp = to_row_major(A);
+	Tensor *out = new Tensor();
 
-  CUDA_CHECK_RETURN(cudaMemcpy(cpu_buffer,temp->data,temp->bytes,cudaMemcpyDefault));
-  out->batches = temp->batches;
-  out->maps = temp->maps;
-  out->rows = temp->rows;
-  out->cols = temp->cols;
-  out->bytes = temp->bytes;
-  out->size = temp->size;
-  out->data = cpu_buffer;
+	CUDA_CHECK_RETURN(cudaMemcpy(cpu_buffer,temp->data,temp->bytes,cudaMemcpyDefault));
+	out->batches = temp->batches;
+	out->maps = temp->maps;
+	out->rows = temp->rows;
+	out->cols = temp->cols;
+	out->bytes = temp->bytes;
+	out->size = temp->size;
+	out->data = cpu_buffer;
 
-  CUDA_CHECK_RETURN(cudaFree(temp->data));
-  delete temp;
+	CUDA_CHECK_RETURN(cudaFree(temp->data));
+	delete temp;
 
 
-  return out;
+	return out;
 }
 
 void togpu(Tensor *out, float *cpu_buffer)
 {
-  Tensor *temp = empty(out->batches,out->maps,out->rows,out->cols);
-  CUDA_CHECK_RETURN(cudaMemcpy(out->data,cpu_buffer,out->bytes,cudaMemcpyDefault));
-  to_col_major(out,temp);
-  CUDA_CHECK_RETURN(cudaMemcpy(out->data,temp->data,out->bytes,cudaMemcpyDefault));
-  CUDA_CHECK_RETURN(cudaFree(temp->data));
-  free(temp);
+	Tensor *temp = empty(out->batches,out->maps,out->rows,out->cols);
+	CUDA_CHECK_RETURN(cudaMemcpy(out->data,cpu_buffer,out->bytes,cudaMemcpyDefault));
+	to_col_major(out,temp);
+	CUDA_CHECK_RETURN(cudaMemcpy(out->data,temp->data,out->bytes,cudaMemcpyDefault));
+	CUDA_CHECK_RETURN(cudaFree(temp->data));
+	free(temp);
 }
 
 
+void add(Tensor *A, Tensor *B, Tensor *out)
+{
+	//checkMatrixOperation(A, B, out, CUBLAS_OP_N, CUBLAS_OP_N, 0);
+	int block_size = (A->size/THREADS_PER_BLOCKS) + 1;
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kAdd<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size);
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
+
+Tensor *add(Tensor *A, Tensor *B)
+{
+	Tensor *out = empty(A->batches,A->maps,A->rows,A->cols);
+	add(A, B, out);
+
+	return out;
+}
 
 

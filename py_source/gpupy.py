@@ -27,6 +27,8 @@ lib.fzeros.restype = ct.POINTER(Tensor)
 lib.fones.restype = ct.POINTER(Tensor)
 lib.ftocpu.restype = ct.POINTER(Tensor)
 lib.ftogpu.restype = ct.c_void_p
+lib.fadd.restype = ct.POINTER(Tensor)
+lib.finplaceAdd.restype = ct.c_void_p
 
 def __init__(): pass
 
@@ -36,7 +38,7 @@ class array(object):
                      
         if npArray != None:
             npArray = np.float32(npArray)
-            mat_pointer = empty(npArray.shape).mat
+            mat_pointer = empty(npArray.shape).pt
             lib.ftogpu(mat_pointer, npArray.ctypes.data_as(ct.POINTER(ct.c_float)))
             self.shape = npArray.shape 
             
@@ -46,14 +48,13 @@ class array(object):
             if not self.shape: self.shape = self.shape_tensor
             
                
-        self.mat = mat_pointer
-        self.npArray = npArray   
-       
+        self.pt = mat_pointer
+        self.npArray = npArray      
         pass
     
     def tocpu(self):
         data = np.empty(self.shape, dtype=np.float32)
-        lib.ftocpu(self.mat, data.ctypes.data_as(ct.POINTER(ct.c_float)))        
+        lib.ftocpu(self.pt, data.ctypes.data_as(ct.POINTER(ct.c_float)))        
         self.npArray = data    
         
         if data.shape[0] == 1 and data.shape[1] == 1: data = data.reshape(data.shape[2], data.shape[3])
@@ -79,3 +80,10 @@ def empty(shape):
     shape = u.handle_shape(shape)
     out = array(None, lib.fempty(shape[0],shape[1],shape[2],shape[3]))
     return out
+
+def add(A,B,out=None):
+    if out:
+        lib.finplaceAdd(A.pt,B.pt,out.pt);
+        pass
+    else:
+        return array(None, lib.fadd(A.pt,B.pt))

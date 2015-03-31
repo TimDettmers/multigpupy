@@ -464,6 +464,41 @@ __global__ void kTranspose(float *A, float *out, int width, int height)
     }
 }
 
+__global__ void kTransposeTensor(float *A, float *out, int batches, int width, int height)
+{
+    __shared__ float block[COPY_BLOCK_SIZE][COPY_BLOCK_SIZE+1];
+
+    // read the Matrix *tile into shared memory
+    unsigned int xIndex = blockIdx.x * COPY_BLOCK_SIZE + threadIdx.x;
+    unsigned int yIndex = blockIdx.y * COPY_BLOCK_SIZE + threadIdx.y;
+    unsigned int mapOffset = width*height*blockIdx.z;
+    unsigned int batchOffset = width*height*gridDim.z;
+
+	for(int batch = 0; batch < batches; batch++ )
+	{
+	    xIndex = blockIdx.x * COPY_BLOCK_SIZE + threadIdx.x;
+	    yIndex = blockIdx.y * COPY_BLOCK_SIZE + threadIdx.y;
+		if((xIndex < width) && (yIndex < height))
+		{
+			unsigned int index_in = (yIndex * width) + xIndex + mapOffset + (batch*batchOffset);
+			block[threadIdx.y][threadIdx.x] = A[index_in];
+		}
+
+		__syncthreads();
+
+		// write the transposed Matrix *tile to global memory
+		xIndex = blockIdx.y * COPY_BLOCK_SIZE + threadIdx.x;
+		yIndex = blockIdx.x * COPY_BLOCK_SIZE + threadIdx.y;
+
+		if((xIndex < height) && (yIndex < width))
+		{
+			unsigned int index_out = yIndex * height + xIndex + mapOffset + (batch*batchOffset);
+			out[index_out] = block[threadIdx.x][threadIdx.y];
+		}
+	}
+
+}
+
 //for column major data
 __global__ void slice_rows(float *A, float *out, int size_out, int rows_A, int start, int end)
 {

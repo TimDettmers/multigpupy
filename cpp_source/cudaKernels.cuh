@@ -24,6 +24,7 @@ __global__ void kAbs(float *A, float *out, int size);
 __global__ void kScalarMul(float *A, float scalar, float *out, int size);
 __global__ void kScalarAdd(float *A, float scalar, float *out, int size);
 __global__ void kTranspose(float *A, float *out, int width, int height); 
+__global__ void kTransposeTensor(float *A, float *out, int batches, int width, int height);
 //__global__ void setup_kernel(curandState *state, int seed);
 //__global__ void generate_uniform_kernel(curandState *state, int size, float *out);
 //__global__ void generate_normal_kernel(curandState *state, int size, float *out);
