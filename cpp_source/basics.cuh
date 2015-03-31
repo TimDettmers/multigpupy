@@ -28,6 +28,12 @@ Tensor *to_row_major(Tensor *A);
 
 Tensor *add(Tensor *A, Tensor *B);
 void add(Tensor *A, Tensor *B, Tensor *out);
+Tensor *sub(Tensor *A, Tensor *B);
+void sub(Tensor *A, Tensor *B, Tensor *out);
+Tensor *mul(Tensor *A, Tensor *B);
+void mul(Tensor *A, Tensor *B, Tensor *out);
+Tensor *div(Tensor *A, Tensor *B);
+void div(Tensor *A, Tensor *B, Tensor *out);
 
 
 

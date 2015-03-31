@@ -26,5 +26,11 @@ extern "C"
 
 	Tensor *fadd(Tensor *A, Tensor *B){ return add(A,B); }
 	void inp_add(Tensor *A, Tensor *B, Tensor *out){ return add(A,B,out); }
+	Tensor *fsub(Tensor *A, Tensor *B){ return sub(A,B); }
+	void inp_sub(Tensor *A, Tensor *B, Tensor *out){ return sub(A,B,out); }
+	Tensor *fmul(Tensor *A, Tensor *B){ return mul(A,B); }
+	void inp_mul(Tensor *A, Tensor *B, Tensor *out){ return mul(A,B,out); }
+	Tensor *fdiv(Tensor *A, Tensor *B){ return div(A,B); }
+	void inp_div(Tensor *A, Tensor *B, Tensor *out){ return div(A,B,out); }
 	void ffree(Tensor *A){ A->freeTensor(); }
 }

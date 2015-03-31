@@ -122,15 +122,52 @@ def test_add():
     C1+=C2
     t.assert_array_almost_equal(C1.tocpu(), A+B, 7, "Add not equal to numpy add!")
     
-    A = np.random.rand(7,1,4)
-    B = np.random.rand(7,1,4)
+def test_sub():
+    A = np.random.rand(10,7,83,4)
+    B = np.random.rand(10,7,83,4)
     C1 = gpu.array(A)
     C2 = gpu.array(B)
-    C = gpu.add(C1,C2)        
+    C = gpu.sub(C1,C2)  
+    out = gpu.empty(C.shape)      
+    gpu.sub(C1, C2, out)
+    t.assert_array_almost_equal(C.tocpu(), A-B, 7, "Add not equal to numpy sub!")
+    t.assert_array_almost_equal(out.tocpu(), A-B, 7, "Add not equal to numpy sub!")
+    t.assert_array_almost_equal((C1-C2).tocpu(), A-B, 7, "Add not equal to numpy sub!")
+    C1-=C2
+    t.assert_array_almost_equal(C1.tocpu(), A-B, 7, "Add not equal to numpy sub!")
     
-    t.assert_array_almost_equal(C.tocpu(), A+B, 7, "Add not equal to numpy add!")
+def test_mul():
+    A = np.random.rand(10,7,83,4)
+    B = np.random.rand(10,7,83,4)
+    C1 = gpu.array(A)
+    C2 = gpu.array(B)
+    C = gpu.mul(C1,C2)  
+    out = gpu.empty(C.shape)      
+    gpu.mul(C1, C2, out)
+    t.assert_array_almost_equal(C.tocpu(), A*B, 7, "Add not equal to numpy mul!")
+    t.assert_array_almost_equal(out.tocpu(), A*B, 7, "Add not equal to numpy mul!")
+    t.assert_array_almost_equal((C1*C2).tocpu(), A*B, 7, "Add not equal to numpy mul!")
+    C1*=C2
+    t.assert_array_almost_equal(C1.tocpu(), A*B, 7, "Add not equal to numpy mul!")
+    
+def test_div():
+    A = np.random.rand(10,7,83,4)
+    B = np.random.rand(10,7,83,4)
+    C1 = gpu.array(A)
+    C2 = gpu.array(B)
+    C = gpu.div(C1,C2)  
+    out = gpu.empty(C.shape)      
+    gpu.div(C1, C2, out)
+    t.assert_array_almost_equal(C.tocpu(), A/B, 2, "Add not equal to numpy div!")
+    t.assert_array_almost_equal(out.tocpu(), A/B, 2, "Add not equal to numpy div!")
+    t.assert_array_almost_equal((C1/C2).tocpu(), A/B, 2, "Add not equal to numpy div!")
     
     
+    t.assert_almost_equal(C.tocpu().sum(), (A/B).sum(), 1, "Add not equal to numpy div!")
+    t.assert_almost_equal(out.tocpu().sum(), (A/B).sum(), 1, "Add not equal to numpy div!")
+    t.assert_almost_equal((C1/C2).tocpu().sum(), (A/B).sum(), 1, "Add not equal to numpy div!")
+    C1/=C2
+    t.assert_array_almost_equal(C1.tocpu().sum(), (A/B).sum(), 1, "Add not equal to numpy div!")
     
     
     

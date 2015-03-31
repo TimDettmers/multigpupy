@@ -27,12 +27,18 @@ lib.fzeros.restype = ct.POINTER(Tensor)
 lib.fones.restype = ct.POINTER(Tensor)
 lib.ftocpu.restype = ct.POINTER(Tensor)
 lib.ftogpu.restype = ct.c_void_p
-lib.fadd.restype = ct.POINTER(Tensor)
-lib.inp_add.restype = ct.c_void_p
 lib.ffree.restype = ct.c_void_p
-#lib.fT.restype = ct.c_void_p
 lib.fT.restype = ct.POINTER(Tensor)
 lib.inp_T.restype = ct.c_void_p
+
+lib.fadd.restype = ct.POINTER(Tensor)
+lib.inp_add.restype = ct.c_void_p
+lib.fsub.restype = ct.POINTER(Tensor)
+lib.inp_sub.restype = ct.c_void_p
+lib.fmul.restype = ct.POINTER(Tensor)
+lib.inp_mul.restype = ct.c_void_p
+lib.fdiv.restype = ct.POINTER(Tensor)
+lib.inp_div.restype = ct.c_void_p
 
 def __init__(): pass
 
@@ -78,9 +84,25 @@ class array(object):
     def T(self): return array(None, lib.fT(self.pt))         
     def __del__(self): lib.ffree(self.pt)
     def __add__(self, other): return add(self,other)
+    def __sub__(self, other): return sub(self,other)
+    def __mul__(self, other): return mul(self,other)
+    def __div__(self, other): return div(self,other)
+    
     
     def __iadd__(self, other): 
         add(self,other,self)
+        return self
+    
+    def __isub__(self, other): 
+        sub(self,other,self)
+        return self
+    
+    def __imul__(self, other): 
+        mul(self,other,self)
+        return self
+    
+    def __idiv__(self, other): 
+        div(self,other,self)
         return self
 
 def zeros(shape):
@@ -100,8 +122,17 @@ def empty(shape):
     return out
 
 def add(A,B,out=None):
-    if out:
-        lib.inp_add(A.pt,B.pt,out.pt);
-        pass
-    else:
-        return array(None, lib.fadd(A.pt,B.pt))
+    if out: lib.inp_add(A.pt,B.pt,out.pt);
+    else: return array(None, lib.fadd(A.pt,B.pt))
+    
+def sub(A,B,out=None):
+    if out: lib.inp_sub(A.pt,B.pt,out.pt);
+    else: return array(None, lib.fsub(A.pt,B.pt))
+    
+def mul(A,B,out=None):
+    if out: lib.inp_mul(A.pt,B.pt,out.pt);
+    else: return array(None, lib.fmul(A.pt,B.pt))
+    
+def div(A,B,out=None):
+    if out: lib.inp_div(A.pt,B.pt,out.pt);
+    else: return array(None, lib.fdiv(A.pt,B.pt))
