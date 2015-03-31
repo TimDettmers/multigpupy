@@ -65,6 +65,7 @@ class array(object):
         self.npArray = data    
         
         if data.shape[0] == 1 and data.shape[1] == 1: data = data.reshape(data.shape[2], data.shape[3])
+        if data.shape[0] == 1 and data.shape[1] > 1: data = data.reshape(data.shape[1], data.shape[2], data.shape[3])
         
         self.npArray = data
         
