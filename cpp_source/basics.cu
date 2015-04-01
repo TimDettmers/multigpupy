@@ -229,4 +229,48 @@ Tensor *div(Tensor *A, Tensor *B)
 	return out;
 }
 
+Tensor *scalarMul(Tensor *A, float a)
+{
+	Tensor *out = empty(A->batches,A->maps,A->rows,A->cols);
+	scalarMul(A, a, out);
+
+	return out;
+}
+
+void scalarMul(Tensor *A, float a, Tensor *out)
+{
+	int block_size = (A->size/THREADS_PER_BLOCKS) + 1;
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kScalarMul<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], a, out->data_gpus[i], A->size);
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+
+}
+
+Tensor *scalarAdd(Tensor *A, float a)
+{
+	Tensor *out = empty(A->batches,A->maps,A->rows,A->cols);
+	scalarAdd(A, a, out);
+
+	return out;
+}
+
+void scalarAdd(Tensor *A, float a, Tensor *out)
+{
+	int block_size = (A->size/THREADS_PER_BLOCKS) + 1;
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kScalarAdd<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], a, out->data_gpus[i], A->size);
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+
+}
+
 

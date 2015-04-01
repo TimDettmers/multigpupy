@@ -39,6 +39,10 @@ lib.fmul.restype = ct.POINTER(Tensor)
 lib.inp_mul.restype = ct.c_void_p
 lib.fdiv.restype = ct.POINTER(Tensor)
 lib.inp_div.restype = ct.c_void_p
+lib.fscalarAdd.restype = ct.POINTER(Tensor)
+lib.inp_scalarAdd.restype = ct.c_void_p
+lib.fscalarMul.restype = ct.POINTER(Tensor)
+lib.inp_scalarMul.restype = ct.c_void_p
 
 def __init__(): pass
 
@@ -79,14 +83,18 @@ class array(object):
         self.npArray = data
         
         return data
+    
+
+        
+        
 
     @property
     def T(self): return array(None, lib.fT(self.pt))         
     def __del__(self): lib.ffree(self.pt)
-    def __add__(self, other): return add(self,other)
-    def __sub__(self, other): return sub(self,other)
-    def __mul__(self, other): return mul(self,other)
-    def __div__(self, other): return div(self,other)
+    def __add__(self, other): return exec_scalar_or_matrix_op(self,other, add, addScalar)
+    def __sub__(self, other): return exec_scalar_or_matrix_op(self,other, sub, subScalar)
+    def __mul__(self, other): return exec_scalar_or_matrix_op(self,other, mul, mulScalar)
+    def __div__(self, other): return exec_scalar_or_matrix_op(self,other, div, divScalar)
     
     
     def __iadd__(self, other): 
@@ -104,6 +112,11 @@ class array(object):
     def __idiv__(self, other): 
         div(self,other,self)
         return self
+    
+def exec_scalar_or_matrix_op(A, B, func_matrix, func_scalar): 
+    is_scalar =  isinstance(B, int) or isinstance(B, float)
+    if is_scalar: return func_scalar(A,B)
+    else: return func_matrix(A,B)
 
 def zeros(shape):
     shape = u.handle_shape(shape)
@@ -135,4 +148,21 @@ def mul(A,B,out=None):
     
 def div(A,B,out=None):
     if out: lib.inp_div(A.pt,B.pt,out.pt);
-    else: return array(None, lib.fdiv(A.pt,B.pt))
+    else: return array(None, lib.fdiv(A.pt,B.pt))        
+
+def addScalar(A,flt,out=None):
+    if out: lib.inp_scalarAdd(A.pt, ct.c_float(float(flt)), out.pt)
+    else: return array(None, lib.fscalarAdd(A.pt, ct.c_float(float(flt))))
+    
+def subScalar(A,flt,out=None):
+    if out: lib.inp_scalarAdd(A.pt, ct.c_float(-flt), out.pt)
+    else: return array(None, lib.fscalarAdd(A.pt, ct.c_float(-flt)))
+    
+def mulScalar(A,flt,out=None):
+    if out: lib.inp_scalarMul(A.pt, ct.c_float(flt), out.pt)
+    else: return array(None, lib.fscalarMul(A.pt, ct.c_float(flt)))
+    
+def divScalar(A,flt,out=None):
+    if out: lib.inp_scalarMul(A.pt, ct.c_float(1.0/flt), out.pt)
+    else: return array(None, lib.fscalarMul(A.pt, ct.c_float(1.0/flt)))
+    

@@ -35,6 +35,11 @@ void mul(Tensor *A, Tensor *B, Tensor *out);
 Tensor *div(Tensor *A, Tensor *B);
 void div(Tensor *A, Tensor *B, Tensor *out);
 
+Tensor *scalarMul(Tensor *A, float a);
+void scalarMul(Tensor *A, float a, Tensor *out);
+Tensor *scalarAdd(Tensor *A, float a);
+void scalarAdd(Tensor *A, float a, Tensor *out);
+
 
 
 

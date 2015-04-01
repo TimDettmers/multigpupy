@@ -33,4 +33,9 @@ extern "C"
 	Tensor *fdiv(Tensor *A, Tensor *B){ return div(A,B); }
 	void inp_div(Tensor *A, Tensor *B, Tensor *out){ return div(A,B,out); }
 	void ffree(Tensor *A){ A->freeTensor(); }
+
+	Tensor *fscalarAdd(Tensor *A, float a){ return scalarAdd(A,a); }
+	void inp_scalarAdd(Tensor *A, float a, Tensor *out){ scalarAdd(A,a, out); }
+	Tensor *fscalarMul(Tensor *A, float a){ return scalarMul(A,a); }
+	void inp_scalarMul(Tensor *A, float a, Tensor *out){ scalarMul(A,a, out); }
 }
