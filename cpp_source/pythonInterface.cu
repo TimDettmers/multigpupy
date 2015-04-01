@@ -52,6 +52,8 @@ extern "C"
 	void inp_logisticGrad(Tensor *A, Tensor *out){ logisticGrad(A,out); }
 	Tensor *ffabs(Tensor *A){ return abs(A); }
 	void inp_abs(Tensor *A, Tensor *out){ abs(A,out); }
-	Tensor *fsquare(Tensor *A){ return square(A); }
-	void inp_square(Tensor *A, Tensor *out){ square(A,out); }
+	Tensor *fsquare(Tensor *A){ return pow(A,2.0f); }
+	void inp_square(Tensor *A, Tensor *out){ pow(A,2.0f,out); }
+	Tensor *ffpow(Tensor *A, float power){ return pow(A,power); }
+	void inp_pow(Tensor *A, float power, Tensor *out){ pow(A,power,out); }
 }

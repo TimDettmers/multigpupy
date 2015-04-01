@@ -19,7 +19,7 @@ __global__ void kDiv(float *A,float *B, float *out, int size);
 __global__ void kExp(float *A, float *out, int size);
 __global__ void kLog(float *A, float *out, int size);
 __global__ void kSqrt(float *A, float *out, int size);
-__global__ void kSquare(float *A, float *out, int size);
+__global__ void kPow(float *A, float power, float *out, int size);
 __global__ void kAbs(float *A, float *out, int size);
 __global__ void kScalarMul(float *A, float scalar, float *out, int size);
 __global__ void kScalarAdd(float *A, float scalar, float *out, int size);

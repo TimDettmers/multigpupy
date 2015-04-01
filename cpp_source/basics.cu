@@ -389,15 +389,15 @@ void gpuSqrt(Tensor *A, Tensor *out)
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
 
-Tensor *square(Tensor *A)
+Tensor *pow(Tensor *A, float power)
 {
 	Tensor *out = empty(A->batches,A->maps,A->rows,A->cols);
-	square(A, out);
+	pow(A, power, out);
 
   	return out;
 }
 
-void square(Tensor *A, Tensor *out)
+void pow(Tensor *A, float power, Tensor *out)
 {
 	int block_size = (A->size/THREADS_PER_BLOCKS) + 1;
 	int gpus = 0;
@@ -405,7 +405,7 @@ void square(Tensor *A, Tensor *out)
 	for(int i = 0; i < gpus; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kSquare<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size);
+		kPow<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], power, out->data_gpus[i], A->size);
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }

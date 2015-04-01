@@ -58,6 +58,8 @@ lib.ffabs.restype = ct.POINTER(Tensor)
 lib.inp_abs.restype = ct.c_void_p
 lib.fsquare.restype = ct.POINTER(Tensor)
 lib.inp_square.restype = ct.c_void_p
+lib.ffpow.restype = ct.POINTER(Tensor)
+lib.inp_pow.restype = ct.c_void_p
 
 def __init__(): pass
 
@@ -210,4 +212,8 @@ def abs(x1,out=None):
 def square(x1,out=None):
     if out: lib.inp_square(x1.pt,out.pt);
     else: return array(None, lib.fsquare(x1.pt))
+    
+def power(x1,power, out=None):
+    if out: lib.inp_pow(x1.pt,ct.c_float(power),out.pt);
+    else: return array(None, lib.ffpow(x1.pt, ct.c_float(power)))
     

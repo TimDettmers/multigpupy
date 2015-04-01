@@ -400,13 +400,13 @@ __global__ void kLog(float *A, float *out, int size)
        out[i] = logf(A[i]);
 }
 
-__global__ void kSquare(float *A, float *out, int size)
+__global__ void kPow(float *A, float power, float *out, int size)
 {
   const unsigned int numThreads = blockDim.x * gridDim.x;
   const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
   for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = powf(A[i], 2.0f);
+       out[i] = powf(A[i], power);
 }
 
 __global__ void kAbs(float *A, float *out, int size)

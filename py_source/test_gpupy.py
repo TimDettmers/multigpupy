@@ -259,5 +259,13 @@ def test_square():
     C = gpu.square(B).tocpu()  
     t.assert_array_almost_equal(C, np.square(A), 5, "LogisticGrad not like numpy equivalent") 
     
+def test_pow():
+    A = np.float32(np.random.rand(10,7,83,4))
+    B = gpu.array(A)
+    C = gpu.power(B,5).tocpu()  
+    t.assert_array_almost_equal(C, np.power(A,5), 5, "LogisticGrad not like numpy equivalent") 
+    C = gpu.power(B,17.83).tocpu()  
+    t.assert_array_almost_equal(C, np.power(A,17.83), 5, "LogisticGrad not like numpy equivalent") 
+    
 if __name__ == '__main__':    
     nose.run()
