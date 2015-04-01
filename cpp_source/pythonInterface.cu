@@ -24,46 +24,46 @@ extern "C"
 	Tensor *frandn(GPUpy *gpupy, int batches, int maps, int rows, int cols){ return gpupy->randn(batches, maps, rows, cols);  }
 	Tensor *fnormal(GPUpy *gpupy, int batches, int maps, int rows, int cols, float mean, float std){ return gpupy->normal(batches, maps, rows, cols, mean, std);  }
 
-	Tensor *fadd(Tensor *A, Tensor *B){ return add(A,B); }
-	void inp_add(Tensor *A, Tensor *B, Tensor *out){ add(A,B,out); }
-	Tensor *fsub(Tensor *A, Tensor *B){ return sub(A,B); }
-	void inp_sub(Tensor *A, Tensor *B, Tensor *out){ sub(A,B,out); }
-	Tensor *fmul(Tensor *A, Tensor *B){ return mul(A,B); }
-	void inp_mul(Tensor *A, Tensor *B, Tensor *out){ mul(A,B,out); }
-	Tensor *fdiv(Tensor *A, Tensor *B){ return div(A,B); }
-	void inp_div(Tensor *A, Tensor *B, Tensor *out){ div(A,B,out); }
+	Tensor *fadd(Tensor *A, Tensor *B){ return applyFunc(A,B,opAdd); }
+	void inp_add(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,opAdd); }
+	Tensor *fsub(Tensor *A, Tensor *B){ return applyFunc(A,B,opSub); }
+	void inp_sub(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,opSub); }
+	Tensor *fmul(Tensor *A, Tensor *B){ return applyFunc(A,B,opMul); }
+	void inp_mul(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,opMul); }
+	Tensor *fdiv(Tensor *A, Tensor *B){ return applyFunc(A,B,opDiv); }
+	void inp_div(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,opDiv); }
 	void ffree(Tensor *A){ A->freeTensor(); }
 
-	Tensor *fscalarAdd(Tensor *A, float a){ return scalarAdd(A,a); }
-	void inp_scalarAdd(Tensor *A, float a, Tensor *out){ scalarAdd(A,a, out); }
-	Tensor *fscalarMul(Tensor *A, float a){ return scalarMul(A,a); }
-	void inp_scalarMul(Tensor *A, float a, Tensor *out){ scalarMul(A,a, out); }
+	Tensor *fscalarAdd(Tensor *A, float a){ return applyFunc(A,NULL,a,add_scalar); }
+	void inp_scalarAdd(Tensor *A, float a, Tensor *out){ applyFunc(A,NULL,out,a,add_scalar); }
+	Tensor *fscalarMul(Tensor *A, float a){ return applyFunc(A,NULL,a,mul_scalar); }
+	void inp_scalarMul(Tensor *A, float a, Tensor *out){ applyFunc(A,NULL,out,a,mul_scalar); }
 
 
-	Tensor *fexp(Tensor *A){ return gpuExp(A); }
-	void inp_exp(Tensor *A, Tensor *out){ gpuExp(A,out); }
-	Tensor *fsqrt(Tensor *A){ return gpuSqrt(A); }
-	void inp_sqrt(Tensor *A, Tensor *out){ gpuSqrt(A,out); }
-	Tensor *flog(Tensor *A){ return gpuLog(A); }
-	void inp_log(Tensor *A, Tensor *out){ gpuLog(A,out); }
-	Tensor *flogistic(Tensor *A){ return logistic(A); }
-	void inp_logistic(Tensor *A, Tensor *out){ logistic(A,out); }
-	Tensor *flogisticGrad(Tensor *A){ return logisticGrad(A); }
-	void inp_logisticGrad(Tensor *A, Tensor *out){ logisticGrad(A,out); }
-	Tensor *ffabs(Tensor *A){ return abs(A); }
-	void inp_abs(Tensor *A, Tensor *out){ abs(A,out); }
-	Tensor *fsquare(Tensor *A){ return pow(A,2.0f); }
-	void inp_square(Tensor *A, Tensor *out){ pow(A,2.0f,out); }
-	Tensor *ffpow(Tensor *A, float power){ return pow(A,power); }
-	void inp_pow(Tensor *A, float power, Tensor *out){ pow(A,power,out); }
+	Tensor *fexp(Tensor *A){ return applyFunc(A,NULL,exp_tensor); }
+	void inp_exp(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,exp_tensor);}
+	Tensor *fsqrt(Tensor *A){ return applyFunc(A,NULL,sqrt_tensor); }
+	void inp_sqrt(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,sqrt_tensor); }
+	Tensor *flog(Tensor *A){ return applyFunc(A,NULL,log_tensor);}
+	void inp_log(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,log_tensor);}
+	Tensor *flogistic(Tensor *A){ return applyFunc(A,NULL,logistic);}
+	void inp_logistic(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, logistic);}
+	Tensor *flogisticGrad(Tensor *A){ return applyFunc(A, NULL, logistic_grad); }
+	void inp_logisticGrad(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, logistic_grad); }
+	Tensor *ffabs(Tensor *A){ return applyFunc(A, NULL, abs_tensor); }
+	void inp_abs(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,abs_tensor); }
+	Tensor *fsquare(Tensor *A){ return applyFunc(A,NULL,2.0f,pow_tensor); }
+	void inp_square(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,2.0f,pow_tensor); }
+	Tensor *ffpow(Tensor *A, float power){ return applyFunc(A,NULL,power,pow_tensor); }
+	void inp_pow(Tensor *A, float power, Tensor *out){ applyFunc(A,NULL,out,power,pow_tensor); }
 
-	Tensor *faddVectorToTensor(Tensor *A, Tensor *v){ return addVectorToTensor(A,v); }
-	void inp_addVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ addVectorToTensor(A,v,out); }
-	Tensor *fsubVectorToTensor(Tensor *A, Tensor *v){ return subVectorToTensor(A,v); }
-	void inp_subVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ subVectorToTensor(A,v,out); }
-	Tensor *fmulVectorToTensor(Tensor *A, Tensor *v){ return mulVectorToTensor(A,v); }
-	void inp_mulVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ mulVectorToTensor(A,v,out); }
-	Tensor *fdivVectorToTensor(Tensor *A, Tensor *v){ return divVectorToTensor(A,v); }
-	void inp_divVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ divVectorToTensor(A,v,out); }
+	Tensor *faddVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,addvec); }
+	void inp_addVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,addvec); }
+	Tensor *fsubVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,subvec); }
+	void inp_subVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,subvec); }
+	Tensor *fmulVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,mulvec); }
+	void inp_mulVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,mulvec); }
+	Tensor *fdivVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,divvec); }
+	void inp_divVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,divvec); }
 
 }

@@ -8,7 +8,6 @@
 #ifndef TENSOR_CUH_
 #define TENSOR_CUH_
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <cuda.h>

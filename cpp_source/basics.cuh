@@ -8,8 +8,28 @@
 #ifndef BASICS_CUH_
 #define BASICS_CUH_
 #include <Tensor.cuh>
-
 #define THREADS_PER_BLOCKS (512)
+
+enum Operation_t
+{
+	add_scalar,
+	mul_scalar,
+	opAdd,
+	opSub,
+	opMul,
+	opDiv,
+	addvec,
+	subvec,
+	mulvec,
+	divvec,
+	abs_tensor,
+	exp_tensor,
+	log_tensor,
+	sqrt_tensor,
+	pow_tensor,
+	logistic,
+	logistic_grad
+};
 
 Tensor *empty(int batches, int maps, int rows, int cols);
 Tensor *zeros(int batches, int maps, int rows, int cols);
@@ -26,45 +46,10 @@ Tensor *to_col_major(Tensor *A);
 void to_col_major(Tensor *A, Tensor *out);
 Tensor *to_row_major(Tensor *A);
 
-Tensor *add(Tensor *A, Tensor *B);
-void add(Tensor *A, Tensor *B, Tensor *out);
-Tensor *sub(Tensor *A, Tensor *B);
-void sub(Tensor *A, Tensor *B, Tensor *out);
-Tensor *mul(Tensor *A, Tensor *B);
-void mul(Tensor *A, Tensor *B, Tensor *out);
-Tensor *div(Tensor *A, Tensor *B);
-void div(Tensor *A, Tensor *B, Tensor *out);
-
-Tensor *scalarMul(Tensor *A, float a);
-void scalarMul(Tensor *A, float a, Tensor *out);
-Tensor *scalarAdd(Tensor *A, float a);
-void scalarAdd(Tensor *A, float a, Tensor *out);
-
-Tensor *gpuExp(Tensor *A);
-void gpuExp(Tensor *A, Tensor *out);
-Tensor *gpuLog(Tensor *A);
-void gpuLog(Tensor *A, Tensor *out);
-Tensor *gpuSqrt(Tensor *A);
-void gpuSqrt(Tensor *A, Tensor *out);
-Tensor *pow(Tensor *A, float power);
-void pow(Tensor *A, float power, Tensor *out);
-Tensor *abs(Tensor *A);
-void abs(Tensor *A, Tensor *out);
-
-Tensor *logistic(Tensor *A);
-void logistic(Tensor *A, Tensor *out);
-Tensor *logisticGrad(Tensor *A);
-void logisticGrad(Tensor *A, Tensor *out);
-
-Tensor *addVectorToTensor(Tensor *A, Tensor *v);
-void addVectorToTensor(Tensor *A, Tensor *v, Tensor *out);
-Tensor *subVectorToTensor(Tensor *A, Tensor *v);
-void subVectorToTensor(Tensor *A, Tensor *v, Tensor *out);
-Tensor *mulVectorToTensor(Tensor *A, Tensor *v);
-void mulVectorToTensor(Tensor *A, Tensor *v, Tensor *out);
-Tensor *divVectorToTensor(Tensor *A, Tensor *v);
-void divVectorToTensor(Tensor *A, Tensor *v, Tensor *out);
-
+Tensor *applyFunc(Tensor *A, Tensor *B, Operation_t ops);
+Tensor *applyFunc(Tensor *A, Tensor *B, float flt, Operation_t ops);
+void applyFunc(Tensor *A, Tensor *B, Tensor *out, Operation_t ops);
+void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops);
 
 
 
