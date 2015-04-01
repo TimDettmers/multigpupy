@@ -217,5 +217,35 @@ def test_scalarDiv():
     C = B.tocpu()
     t.assert_array_almost_equal(A/flt, C, 5, "Scalar div not like numpy scalar div") 
     
+def test_exp():
+    A = np.float32(np.random.rand(10,7,83,4))
+    B = gpu.array(A)
+    C = gpu.exp(B).tocpu()  
+    t.assert_array_almost_equal(np.exp(A), C, 5, "Exp not like numpy scalar exp") 
+    
+def test_log():
+    A = np.float32(np.random.rand(10,7,83,4))
+    B = gpu.array(A)
+    C = gpu.log(B).tocpu()  
+    t.assert_array_almost_equal(np.log(A), C, 5, "Log not like numpy scalar log") 
+    
+def test_sqrt():
+    A = np.float32(np.random.rand(10,7,83,4))
+    B = gpu.array(A)
+    C = gpu.sqrt(B).tocpu()  
+    t.assert_array_almost_equal(np.sqrt(A), C, 5, "Log not like numpy scalar sqrt") 
+    
+def test_logistic():
+    A = np.float32(np.random.rand(10,7,83,4))
+    B = gpu.array(A)
+    C = gpu.logistic(B).tocpu()  
+    t.assert_array_almost_equal(1.0/(1.0+np.exp(-A)), C, 5, "Logistic not like numpy equivalent") 
+    
+def test_logisticGrad():
+    A = np.float32(np.random.rand(10,7,83,4))
+    B = gpu.array(A)
+    C = gpu.logisticGrad(B).tocpu()  
+    t.assert_array_almost_equal(C, A*(1.0-A), 5, "LogisticGrad not like numpy equivalent") 
+    
 if __name__ == '__main__':    
     nose.run()

@@ -44,6 +44,17 @@ lib.inp_scalarAdd.restype = ct.c_void_p
 lib.fscalarMul.restype = ct.POINTER(Tensor)
 lib.inp_scalarMul.restype = ct.c_void_p
 
+lib.fexp.restype = ct.POINTER(Tensor)
+lib.inp_exp.restype = ct.c_void_p
+lib.flog.restype = ct.POINTER(Tensor)
+lib.inp_log.restype = ct.c_void_p
+lib.fsqrt.restype = ct.POINTER(Tensor)
+lib.inp_sqrt.restype = ct.c_void_p
+lib.flogistic.restype = ct.POINTER(Tensor)
+lib.inp_logistic.restype = ct.c_void_p
+lib.flogisticGrad.restype = ct.POINTER(Tensor)
+lib.inp_logisticGrad.restype = ct.c_void_p
+
 def __init__(): pass
 
 class array(object):
@@ -77,16 +88,9 @@ class array(object):
         if data.shape[0] == 1 and data.shape[1] == 1: data = data.reshape(data.shape[2], data.shape[3])
         if data.shape[0] == 1 and data.shape[1] > 1: data = data.reshape(data.shape[1], data.shape[2], data.shape[3])
         
-        print data.shape[0], data.shape[1]
-        print data.shape
-        
         self.npArray = data
         
-        return data
-    
-
-        
-        
+        return data        
 
     @property
     def T(self): return array(None, lib.fT(self.pt))         
@@ -169,4 +173,28 @@ def mulScalar(x1,flt,out=None):
 def divScalar(x1,flt,out=None):
     if out: lib.inp_scalarMul(x1.pt, ct.c_float(1.0/flt), out.pt)
     else: return array(None, lib.fscalarMul(x1.pt, ct.c_float(1.0/flt)))
+    
+def exp(x1,out=None):
+    if out: lib.inp_exp(x1.pt,out.pt);
+    else: return array(None, lib.fexp(x1.pt))
+    
+def log(x1,out=None):
+    if out: lib.inp_log(x1.pt,out.pt);
+    else: return array(None, lib.flog(x1.pt))
+    
+def sqrt(x1,out=None):
+    if out: lib.inp_sqrt(x1.pt,out.pt);
+    else: return array(None, lib.fsqrt(x1.pt))
+    
+def logistic(x1,out=None):
+    if out: lib.inp_logistic(x1.pt,out.pt);
+    else: return array(None, lib.flogistic(x1.pt))
+
+def logisticGrad(x1,out=None):    
+    """Computes x1*(1-x1).
+    :x1: Logistic Input.
+    :out: Write output to this Tensor.
+    """
+    if out: lib.inp_logisticGrad(x1.pt,out.pt);
+    else: return array(None, lib.flogisticGrad(x1.pt))
     

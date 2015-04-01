@@ -40,6 +40,20 @@ void scalarMul(Tensor *A, float a, Tensor *out);
 Tensor *scalarAdd(Tensor *A, float a);
 void scalarAdd(Tensor *A, float a, Tensor *out);
 
+Tensor *gpuExp(Tensor *A);
+void gpuExp(Tensor *A, Tensor *out);
+Tensor *gpuLog(Tensor *A);
+void gpuLog(Tensor *A, Tensor *out);
+Tensor *gpuSqrt(Tensor *A);
+void gpuSqrt(Tensor *A, Tensor *out);
+
+Tensor *logistic(Tensor *A);
+void logistic(Tensor *A, Tensor *out);
+Tensor *logisticGrad(Tensor *A);
+void logisticGrad(Tensor *A, Tensor *out);
+
+
+
 
 
 
