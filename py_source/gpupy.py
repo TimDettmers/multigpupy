@@ -98,25 +98,29 @@ class array(object):
     
     
     def __iadd__(self, other): 
-        add(self,other,self)
+        exec_scalar_or_matrix_op(self, other, add, addScalar, inplace=True)
         return self
     
     def __isub__(self, other): 
-        sub(self,other,self)
+        exec_scalar_or_matrix_op(self, other, sub, subScalar, inplace=True)
         return self
     
     def __imul__(self, other): 
-        mul(self,other,self)
+        exec_scalar_or_matrix_op(self, other, mul, mulScalar, inplace=True)
         return self
     
     def __idiv__(self, other): 
-        div(self,other,self)
+        exec_scalar_or_matrix_op(self, other, div, divScalar, inplace=True)
         return self
     
-def exec_scalar_or_matrix_op(A, B, func_matrix, func_scalar): 
+def exec_scalar_or_matrix_op(A, B, func_matrix, func_scalar, inplace=False): 
     is_scalar =  isinstance(B, int) or isinstance(B, float)
-    if is_scalar: return func_scalar(A,B)
-    else: return func_matrix(A,B)
+    if is_scalar: 
+        if inplace: func_scalar(A,B,A)
+        else: return func_scalar(A,B)
+    else: 
+        if inplace:func_matrix(A,B,A) 
+        else: return func_matrix(A,B)
 
 def zeros(shape):
     shape = u.handle_shape(shape)

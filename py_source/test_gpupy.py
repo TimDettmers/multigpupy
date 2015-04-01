@@ -177,6 +177,9 @@ def test_scalarAdd():
     t.assert_array_equal(A+flt, C, "Scalar add not like numpy scalar add")
     t.assert_array_equal(A+flt, (B+flt).tocpu(), "Scalar add not like numpy scalar add")
     t.assert_array_equal(A+5, (B+5).tocpu(), "Scalar add not like numpy scalar add")
+    B+=flt
+    C = B.tocpu()
+    t.assert_array_equal(A+flt, C, "Scalar add not like numpy scalar add")
     
 def test_scalarSub():
     A = np.float32(np.random.rand(10,7,83,4))
@@ -186,6 +189,9 @@ def test_scalarSub():
     t.assert_array_equal(A-flt, C, "Scalar sub not like numpy scalar sub") 
     t.assert_array_equal(A-flt, (B-flt).tocpu(), "Scalar sub not like numpy scalar sub")
     t.assert_array_equal(A-5, (B-5).tocpu(), "Scalar sub not like numpy scalar sub")
+    B-=flt
+    C = B.tocpu()
+    t.assert_array_equal(A-flt, C, "Scalar sub not like numpy scalar sub")  
     
 def test_scalarMul():
     A = np.float32(np.random.rand(10,7,83,4))
@@ -195,6 +201,9 @@ def test_scalarMul():
     t.assert_array_equal(A*flt, C, "Scalar mul not like numpy scalar mul") 
     t.assert_array_equal(A*flt, (B*flt).tocpu(), "Scalar mul not like numpy scalar mul") 
     t.assert_array_equal(A*5, (B*5).tocpu(), "Scalar mul not like numpy scalar mul") 
+    B*=flt
+    C = B.tocpu()
+    t.assert_array_equal(A*flt, C, "Scalar mul not like numpy scalar mul") 
     
 def test_scalarDiv():
     A = np.float32(np.random.rand(10,7,83,4))
@@ -204,6 +213,9 @@ def test_scalarDiv():
     t.assert_array_almost_equal(A/flt, C, 5, "Scalar div not like numpy scalar div") 
     t.assert_array_almost_equal(A/flt, (B/flt).tocpu(), 5, "Scalar div not like numpy scalar div")
     t.assert_array_almost_equal(A/5, (B/5).tocpu(), 5, "Scalar div not like numpy scalar div")
+    B/=flt
+    C = B.tocpu()
+    t.assert_array_almost_equal(A/flt, C, 5, "Scalar div not like numpy scalar div") 
     
 if __name__ == '__main__':    
     nose.run()
