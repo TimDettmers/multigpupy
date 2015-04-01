@@ -54,6 +54,10 @@ lib.flogistic.restype = ct.POINTER(Tensor)
 lib.inp_logistic.restype = ct.c_void_p
 lib.flogisticGrad.restype = ct.POINTER(Tensor)
 lib.inp_logisticGrad.restype = ct.c_void_p
+lib.ffabs.restype = ct.POINTER(Tensor)
+lib.inp_abs.restype = ct.c_void_p
+lib.fsquare.restype = ct.POINTER(Tensor)
+lib.inp_square.restype = ct.c_void_p
 
 def __init__(): pass
 
@@ -99,6 +103,7 @@ class array(object):
     def __sub__(self, other): return exec_scalar_or_matrix_op(self,other, sub, subScalar)
     def __mul__(self, other): return exec_scalar_or_matrix_op(self,other, mul, mulScalar)
     def __div__(self, other): return exec_scalar_or_matrix_op(self,other, div, divScalar)
+    #def abs(self): return absolute(self, out=None)
     
     
     def __iadd__(self, other): 
@@ -197,4 +202,12 @@ def logisticGrad(x1,out=None):
     """
     if out: lib.inp_logisticGrad(x1.pt,out.pt);
     else: return array(None, lib.flogisticGrad(x1.pt))
+
+def abs(x1,out=None):
+    if out: lib.inp_abs(x1.pt,out.pt);
+    else: return array(None, lib.ffabs(x1.pt))
+    
+def square(x1,out=None):
+    if out: lib.inp_square(x1.pt,out.pt);
+    else: return array(None, lib.fsquare(x1.pt))
     

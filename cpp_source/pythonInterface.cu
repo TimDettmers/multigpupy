@@ -50,4 +50,8 @@ extern "C"
 	void inp_logistic(Tensor *A, Tensor *out){ logistic(A,out); }
 	Tensor *flogisticGrad(Tensor *A){ return logisticGrad(A); }
 	void inp_logisticGrad(Tensor *A, Tensor *out){ logisticGrad(A,out); }
+	Tensor *ffabs(Tensor *A){ return abs(A); }
+	void inp_abs(Tensor *A, Tensor *out){ abs(A,out); }
+	Tensor *fsquare(Tensor *A){ return square(A); }
+	void inp_square(Tensor *A, Tensor *out){ square(A,out); }
 }

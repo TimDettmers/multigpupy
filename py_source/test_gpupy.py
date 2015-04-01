@@ -247,5 +247,17 @@ def test_logisticGrad():
     C = gpu.logisticGrad(B).tocpu()  
     t.assert_array_almost_equal(C, A*(1.0-A), 5, "LogisticGrad not like numpy equivalent") 
     
+def test_abs():    
+    A = np.float32(np.random.rand(10,7,83,4))
+    B = gpu.array(A)
+    C = gpu.abs(B).tocpu()
+    t.assert_array_almost_equal(C, np.absolute(A), 5, "LogisticGrad not like numpy equivalent")
+    
+def test_square():
+    A = np.float32(np.random.rand(10,7,83,4))
+    B = gpu.array(A)
+    C = gpu.square(B).tocpu()  
+    t.assert_array_almost_equal(C, np.square(A), 5, "LogisticGrad not like numpy equivalent") 
+    
 if __name__ == '__main__':    
     nose.run()

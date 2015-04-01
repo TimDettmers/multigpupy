@@ -46,6 +46,10 @@ Tensor *gpuLog(Tensor *A);
 void gpuLog(Tensor *A, Tensor *out);
 Tensor *gpuSqrt(Tensor *A);
 void gpuSqrt(Tensor *A, Tensor *out);
+Tensor *square(Tensor *A);
+void square(Tensor *A, Tensor *out);
+Tensor *abs(Tensor *A);
+void abs(Tensor *A, Tensor *out);
 
 Tensor *logistic(Tensor *A);
 void logistic(Tensor *A, Tensor *out);
