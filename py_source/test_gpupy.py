@@ -267,5 +267,54 @@ def test_pow():
     C = gpu.power(B,17.83).tocpu()  
     t.assert_array_almost_equal(C, np.power(A,17.83), 5, "LogisticGrad not like numpy equivalent") 
     
+def test_addVectorToTensor():
+    A1 = np.float32(np.random.rand(10,7,83,4))
+    v1 = np.float32(np.random.rand(4))
+    B1 = gpu.array(A1)
+    b1 = gpu.array(v1)    
+    
+    C = gpu.addVectorToTensor(B1, b1).tocpu()   
+    t.assert_array_equal(C, A1+v1, "Vector Matrix addition not equal to numpy value")  
+          
+    gpu.addVectorToTensor(B1, b1,B1)    
+    t.assert_array_equal(B1.tocpu(), A1+v1, "Vector Matrix addition not equal to numpy value")  
+    
+def test_subVectorToTensor():
+    A1 = np.float32(np.random.rand(10,7,83,4))
+    v1 = np.float32(np.random.rand(4))
+    B1 = gpu.array(A1)
+    b1 = gpu.array(v1)    
+    
+    C = gpu.subVectorToTensor(B1, b1).tocpu()   
+    t.assert_array_equal(C, A1-v1, "Vector Matrix addition not equal to numpy value")  
+          
+    gpu.subVectorToTensor(B1, b1,B1)    
+    t.assert_array_equal(B1.tocpu(), A1-v1, "Vector Matrix addition not equal to numpy value")  
+    
+def test_mulVectorToTensor():
+    A1 = np.float32(np.random.rand(10,7,83,4))
+    v1 = np.float32(np.random.rand(4))
+    B1 = gpu.array(A1)
+    b1 = gpu.array(v1)    
+    
+    C = gpu.mulVectorToTensor(B1, b1).tocpu()   
+    t.assert_array_equal(C, A1*v1, "Vector Matrix addition not equal to numpy value")  
+          
+    gpu.mulVectorToTensor(B1, b1,B1)    
+    t.assert_array_equal(B1.tocpu(), A1*v1, "Vector Matrix addition not equal to numpy value")  
+    
+def test_divVectorToTensor():
+    A1 = np.float32(np.random.rand(10,7,83,4))
+    v1 = np.float32(np.random.rand(4))
+    B1 = gpu.array(A1)
+    b1 = gpu.array(v1)    
+    
+    C = gpu.divVectorToTensor(B1, b1).tocpu()   
+    t.assert_array_equal(C, A1/v1, "Vector Matrix addition not equal to numpy value")  
+          
+    gpu.divVectorToTensor(B1, b1,B1)    
+    t.assert_array_equal(B1.tocpu(), A1/v1, "Vector Matrix addition not equal to numpy value")  
+    
+    
 if __name__ == '__main__':    
     nose.run()

@@ -705,34 +705,69 @@ __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int c
 	}
 }
 
-//for column major data
-__global__ void kSubMatrixVector(float *A, float *v, float *out, int rows, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-  //offset = current_column * rows
-  int offset = 0;
 
-  for (unsigned int i = idx;i < size; i += numThreads)
-  {
-	  offset = (i / rows)*rows; //note: int arithmetic
-	  out[i] =  A[i] - v[i - offset];
-  }
+//for column major data
+__global__ void kAddVectorToTensor(float *A, float *v, float *out, int batches, int rows, int cols, int size)
+{
+	const unsigned int numThreads = blockDim.x * gridDim.x;
+	const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+	unsigned int mapOffset = rows*cols*blockIdx.y;
+	unsigned int batchOffset = rows*cols*gridDim.y*blockIdx.z;
+	int offset = 0;
+
+	for (unsigned int i = idx;i < size; i += numThreads)
+	{
+		offset = (i / rows); //note: int arithmetic
+		out[i + batchOffset + mapOffset] =  A[i + batchOffset + mapOffset] + v[offset];
+	}
 }
 
 //for column major data
-__global__ void kAddMatrixVector(float *A, float *v, float *out, int rows, int size)
+__global__ void kSubVectorToTensor(float *A, float *v, float *out, int batches, int rows, int cols, int size)
 {
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-  //offset = current_column * rows
-  int offset = 0;
+	const unsigned int numThreads = blockDim.x * gridDim.x;
+	const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+	unsigned int mapOffset = rows*cols*blockIdx.y;
+	unsigned int batchOffset = rows*cols*gridDim.y*blockIdx.z;
+	//offset = current_column * rows
+	int offset = 0;
+	for (unsigned int i = idx;i < size; i += numThreads)
+	{
+		offset = (i / rows); //note: int arithmetic
+		out[i + batchOffset + mapOffset] =  A[i + batchOffset + mapOffset] - v[offset];
+	}
+}
 
-  for (unsigned int i = idx;i < size; i += numThreads)
-  {
-	  offset = (i / rows); //note: int arithmetic
-	  out[i] =  A[i] + v[offset];
-  }
+//for column major data
+__global__ void kMulVectorToTensor(float *A, float *v, float *out, int batches, int rows, int cols, int size)
+{
+	const unsigned int numThreads = blockDim.x * gridDim.x;
+	const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+	unsigned int mapOffset = rows*cols*blockIdx.y;
+	unsigned int batchOffset = rows*cols*gridDim.y*blockIdx.z;
+	//offset = current_column * rows
+	int offset = 0;
+	for (unsigned int i = idx;i < size; i += numThreads)
+	{
+		offset = (i / rows); //note: int arithmetic
+		out[i + batchOffset + mapOffset] =  A[i + batchOffset + mapOffset] * v[offset];
+	}
+}
+
+//for column major data
+__global__ void kDivVectorToTensor(float *A, float *v, float *out, int batches, int rows, int cols, int size)
+{
+	const unsigned int numThreads = blockDim.x * gridDim.x;
+	const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+	unsigned int mapOffset = rows*cols*blockIdx.y;
+	unsigned int batchOffset = rows*cols*gridDim.y*blockIdx.z;
+	//offset = current_column * rows
+	int offset = 0;
+	for (unsigned int i = idx;i < size; i += numThreads)
+	{
+		offset = (i / rows); //note: int arithmetic
+		out[i + batchOffset + mapOffset] =  A[i + batchOffset + mapOffset] / v[offset];
+	}
 }
 
 //for column major data
@@ -750,20 +785,6 @@ __global__ void kAddScaledMatrixVector(float *A, float *v, float weight, float *
   }
 }
 
-//for column major data
-__global__ void kMulMatrixVector(float *A, float *v, float *out, int rows, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-  //offset = current_column * rows
-  int offset = 0;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-  {
-	  offset = (i / rows); //note: int arithmetic
-	  out[i] =  A[i] * v[offset];
-  }
-}
 
 __global__ void kArgmax(float* A, float* out, unsigned int rows, unsigned int cols)
 {

@@ -56,4 +56,14 @@ extern "C"
 	void inp_square(Tensor *A, Tensor *out){ pow(A,2.0f,out); }
 	Tensor *ffpow(Tensor *A, float power){ return pow(A,power); }
 	void inp_pow(Tensor *A, float power, Tensor *out){ pow(A,power,out); }
+
+	Tensor *faddVectorToTensor(Tensor *A, Tensor *v){ return addVectorToTensor(A,v); }
+	void inp_addVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ addVectorToTensor(A,v,out); }
+	Tensor *fsubVectorToTensor(Tensor *A, Tensor *v){ return subVectorToTensor(A,v); }
+	void inp_subVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ subVectorToTensor(A,v,out); }
+	Tensor *fmulVectorToTensor(Tensor *A, Tensor *v){ return mulVectorToTensor(A,v); }
+	void inp_mulVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ mulVectorToTensor(A,v,out); }
+	Tensor *fdivVectorToTensor(Tensor *A, Tensor *v){ return divVectorToTensor(A,v); }
+	void inp_divVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ divVectorToTensor(A,v,out); }
+
 }

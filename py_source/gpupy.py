@@ -61,6 +61,15 @@ lib.inp_square.restype = ct.c_void_p
 lib.ffpow.restype = ct.POINTER(Tensor)
 lib.inp_pow.restype = ct.c_void_p
 
+lib.faddVectorToTensor.restype = ct.POINTER(Tensor)
+lib.inp_addVectorToTensor.restype = ct.c_void_p
+lib.fsubVectorToTensor.restype = ct.POINTER(Tensor)
+lib.inp_subVectorToTensor.restype = ct.c_void_p
+lib.fmulVectorToTensor.restype = ct.POINTER(Tensor)
+lib.inp_mulVectorToTensor.restype = ct.c_void_p
+lib.fdivVectorToTensor.restype = ct.POINTER(Tensor)
+lib.inp_divVectorToTensor.restype = ct.c_void_p
+
 def __init__(): pass
 
 class array(object):
@@ -216,4 +225,20 @@ def square(x1,out=None):
 def power(x1,power, out=None):
     if out: lib.inp_pow(x1.pt,ct.c_float(power),out.pt);
     else: return array(None, lib.ffpow(x1.pt, ct.c_float(power)))
+    
+def addVectorToTensor(x1,v1, out=None):
+    if out: lib.inp_addVectorToTensor(x1.pt, v1.pt, out.pt)
+    else: return array(None, lib.faddVectorToTensor(x1.pt, v1.pt))
+    
+def subVectorToTensor(x1,v1, out=None):
+    if out: lib.inp_subVectorToTensor(x1.pt, v1.pt, out.pt)
+    else: return array(None, lib.fsubVectorToTensor(x1.pt, v1.pt))
+    
+def mulVectorToTensor(x1,v1, out=None):
+    if out: lib.inp_mulVectorToTensor(x1.pt, v1.pt, out.pt)
+    else: return array(None, lib.fmulVectorToTensor(x1.pt, v1.pt))
+    
+def divVectorToTensor(x1,v1, out=None):
+    if out: lib.inp_divVectorToTensor(x1.pt, v1.pt, out.pt)
+    else: return array(None, lib.fdivVectorToTensor(x1.pt, v1.pt))
     

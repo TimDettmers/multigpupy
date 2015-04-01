@@ -432,5 +432,90 @@ void abs(Tensor *A, Tensor *out)
 }
 
 
+Tensor *addVectorToTensor(Tensor *A, Tensor *v)
+{
+	Tensor *out = empty(A->batches,A->maps,A->rows,A->cols);
+	addVectorToTensor(A, v, out);
+
+	return out;
+}
+
+void addVectorToTensor(Tensor *A, Tensor *v, Tensor *out)
+{
+	dim3 grid((A->size/THREADS_PER_BLOCKS) + 1, A->maps,A->batches);
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kAddVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], v->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols);
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
+Tensor *subVectorToTensor(Tensor *A, Tensor *v)
+{
+	Tensor *out = empty(A->batches,A->maps,A->rows,A->cols);
+	subVectorToTensor(A, v, out);
+
+	return out;
+}
+
+void subVectorToTensor(Tensor *A, Tensor *v, Tensor *out)
+{
+	dim3 grid((A->size/THREADS_PER_BLOCKS) + 1, A->maps,A->batches);
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kSubVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], v->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols);
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
+Tensor *mulVectorToTensor(Tensor *A, Tensor *v)
+{
+	Tensor *out = empty(A->batches,A->maps,A->rows,A->cols);
+	mulVectorToTensor(A, v, out);
+
+	return out;
+}
+
+void mulVectorToTensor(Tensor *A, Tensor *v, Tensor *out)
+{
+	dim3 grid((A->size/THREADS_PER_BLOCKS) + 1, A->maps,A->batches);
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kMulVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], v->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols);
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
+Tensor *divVectorToTensor(Tensor *A, Tensor *v)
+{
+	Tensor *out = empty(A->batches,A->maps,A->rows,A->cols);
+	divVectorToTensor(A, v, out);
+
+	return out;
+}
+
+void divVectorToTensor(Tensor *A, Tensor *v, Tensor *out)
+{
+	dim3 grid((A->size/THREADS_PER_BLOCKS) + 1, A->maps,A->batches);
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kDivVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], v->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols);
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
+
 
 

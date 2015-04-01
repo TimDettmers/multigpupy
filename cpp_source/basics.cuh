@@ -56,6 +56,15 @@ void logistic(Tensor *A, Tensor *out);
 Tensor *logisticGrad(Tensor *A);
 void logisticGrad(Tensor *A, Tensor *out);
 
+Tensor *addVectorToTensor(Tensor *A, Tensor *v);
+void addVectorToTensor(Tensor *A, Tensor *v, Tensor *out);
+Tensor *subVectorToTensor(Tensor *A, Tensor *v);
+void subVectorToTensor(Tensor *A, Tensor *v, Tensor *out);
+Tensor *mulVectorToTensor(Tensor *A, Tensor *v);
+void mulVectorToTensor(Tensor *A, Tensor *v, Tensor *out);
+Tensor *divVectorToTensor(Tensor *A, Tensor *v);
+void divVectorToTensor(Tensor *A, Tensor *v, Tensor *out);
+
 
 
 
