@@ -173,14 +173,14 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 		{
 			case add_scalar: kScalarAdd<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], flt, out->data_gpus[i], A->size); break;
 			case mul_scalar: kScalarMul<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], flt, out->data_gpus[i], A->size); break;
-			case opAdd: kAdd<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size); break;
-			case opSub: kSub<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size); break;
-			case opMul: kMul<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size); break;
-			case opDiv: kDiv<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size); break;
-			case addvec: kAddVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
-			case subvec: kSubVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
-			case mulvec: kMulVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
-			case divvec: kDivVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
+			case add_tensor: kAdd<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size); break;
+			case sub_tensor: kSub<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size); break;
+			case mul_tensor: kMul<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size); break;
+			case div_tensor: kDiv<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size); break;
+			case add_vec: kAddVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
+			case sub_vec: kSubVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
+			case mul_vec: kMulVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
+			case div_vec: kDivVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
 			case abs_tensor: kAbs<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size); break;
 			case log_tensor: kLog<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size); break;
 			case exp_tensor: kExp<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size); break;
