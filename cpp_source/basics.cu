@@ -1,6 +1,20 @@
 #include <basics.cuh>
 
 
+Slice *emptySlice()
+{
+	Slice *out = new Slice();
+	out->batch_start = 0;
+	out->batch_stop = INT_MAX;
+	out->map_start = 0;
+	out->map_stop = INT_MAX;
+	out->row_start = 0;
+	out->row_stop = INT_MAX;
+	out->col_start = 0;
+	out->col_stop = INT_MAX;
+
+	return out;
+}
 
 Tensor *empty(int batches, int maps, int rows, int cols)
 {
@@ -149,6 +163,45 @@ void togpu(Tensor *out, float *cpu_buffer)
 	free(temp);
 }
 
+
+int sliceDimHelper(int dim, int start, int stop)
+{
+	if(start< 0 && stop == dim){ return -start; }
+	if(start >= 0 && stop < 0){ return start+stop; }
+	if(start >= 0 && stop<= dim){ return stop-start; }
+	if(start == 0 && stop > dim){ return dim; }
+	return 0;
+}
+
+Tensor *applySliceFunc(Tensor *A, Slice *S)
+{
+	Tensor *out = empty(
+			sliceDimHelper(A->batches,S->batch_start,S->batch_stop),
+			sliceDimHelper(A->maps,S->map_start,S->map_stop),
+			sliceDimHelper(A->rows,S->row_start,S->row_stop),
+			sliceDimHelper(A->cols,S->col_start,S->col_stop));
+	applySliceFunc(A, S, out);
+
+	return out;
+
+}
+
+void applySliceFunc(Tensor *A, Slice *S, Tensor *out)
+{
+	int block_size = (A->rows*A->cols/THREADS_PER_BLOCKS) + 1;
+	dim3 grid(block_size, A->maps,A->batches);
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+
+	}
+
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+
+}
+
 Tensor *applyFunc(Tensor *A, Tensor *B, Operation_t ops){ return applyFunc(A,B,0.0f,ops); }
 Tensor *applyFunc(Tensor *A, Tensor *B, float flt, Operation_t ops)
 {
@@ -161,8 +214,7 @@ Tensor *applyFunc(Tensor *A, Tensor *B, float flt, Operation_t ops)
 void applyFunc(Tensor *A, Tensor *B, Tensor *out, Operation_t ops){ applyFunc(A,B,out,0.0f,ops); }
 void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 {
-
-	int block_size = (A->size/THREADS_PER_BLOCKS) + 1;
+	int block_size = (A->rows*A->cols/THREADS_PER_BLOCKS) + 1;
 	dim3 grid(block_size, A->maps,A->batches);
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
@@ -177,10 +229,10 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 			case sub_tensor: kSub<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size); break;
 			case mul_tensor: kMul<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size); break;
 			case div_tensor: kDiv<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size); break;
-			case add_vec: kAddVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
-			case sub_vec: kSubVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
-			case mul_vec: kMulVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
-			case div_vec: kDivVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->cols, A->rows*A->cols); break;
+			case add_vec: kAddVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols); break;
+			case sub_vec: kSubVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols); break;
+			case mul_vec: kMulVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols); break;
+			case div_vec: kDivVectorToTensor<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols); break;
 			case abs_tensor: kAbs<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size); break;
 			case log_tensor: kLog<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size); break;
 			case exp_tensor: kExp<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size); break;
@@ -199,8 +251,6 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
-
-void applyEqual(Tensor *A, Tensor *B, Tensor *out, int block_size, int i) {  }
 
 
 

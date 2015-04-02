@@ -9,6 +9,22 @@ import ctypes as ct
 import util as u
 from library_interface import lib
 
+class Slice():
+    def __init__(self, slice_pointer):
+        self.pt = slice_pointer
+        self.batch = slice(int(slice_pointer.contents.batch_start), int(slice_pointer.contents.batch_stop), None)
+        self.map = slice(int(slice_pointer.contents.map_start), int(slice_pointer.contents.map_stop), None) 
+        self.row = slice(int(slice_pointer.contents.row_start), int(slice_pointer.contents.row_stop), None) 
+        self.col = slice(int(slice_pointer.contents.col_start), int(slice_pointer.contents.col_stop), None) 
+        
+    def setSliceValues(self, selectors):
+        selectors = u.handle_selectors(selectors)
+        self.batch = selectors[0]
+        self.map = selectors[1]
+        self.row = selectors[2]
+        self.col = selectors[3]
+             
+
 class array(object):
     def __init__(self, npArray = None, mat_pointer = None):
         self.shape = None
@@ -29,6 +45,14 @@ class array(object):
                
         self.pt = mat_pointer
         self.npArray = npArray      
+        pass
+    
+    def __getitem__(self, selectors):
+        print selectors
+        print selectors[0]
+        print selectors[1]
+        print selectors[1][0]
+        print selectors[1][1]
         pass
     
     
@@ -191,6 +215,9 @@ def greater_equal(x1,x2,out=None):
 def not_equal(x1,x2,out=None):
     if out: apply_func(x1,x2, lib.funcs.inp_ne, None, None, out)
     else: return apply_func(x1,x2, lib.funcs.fne, None, None)  
+    
+def emptySlice():
+    return Slice(lib.funcs.femptySlice())
 
     
     

@@ -66,10 +66,10 @@ __global__ void AddGradientsN(float **arrA, int size, int myrank, int matrix_cou
 __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int cols);
 __device__ void reduceToMax(float* sdata, unsigned int tid);
 __device__ void reduceToSumLocal(float* sdata, unsigned int tid);
-__global__ void kAddVectorToTensor(float *A, float *v, float *out, int batches, int rows, int cols, int size);
-__global__ void kSubVectorToTensor(float *A, float *v, float *out, int batches, int rows, int cols, int size);
-__global__ void kMulVectorToTensor(float *A, float *v, float *out, int batches, int rows, int cols, int size);
-__global__ void kDivVectorToTensor(float *A, float *v, float *out, int batches, int rows, int cols, int size);
+__global__ void kAddVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size);
+__global__ void kSubVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size);
+__global__ void kMulVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size);
+__global__ void kDivVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size);
 __global__ void kAddScaledMatrixVector(float *A, float *v, float weight, float *out, int rows, int size);
 __global__ void kDot8bit(unsigned char *A, unsigned char *B, float *out, int rowsA, int colsA, int colsB, float *flt_tbl, float precisionA, float precisionB);
 __global__ void kDot8bit_shared(unsigned char *A, unsigned char *B, float *out, int rowsA, int colsA, int colsB, float *flt_tbl, float precisionA, float precisionB);

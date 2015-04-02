@@ -18,6 +18,7 @@
 #include <iostream>
 #include <vector>
 #include <float.h>
+#include <limits.h>
 
 /**
  * This macro checks return value of the CUDA runtime call and exits
@@ -59,6 +60,20 @@ public:
 	  void freeTensor();
 };
 
+struct Slice
+{
+public:
+	int batch_start;
+	int batch_stop;
+	int map_start;
+	int map_stop;
+	int row_start;
+	int row_stop;
+	int col_start;
+	int col_stop;
+};
+
 
 
 #endif /* TENSOR_CUH_ */
+

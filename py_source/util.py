@@ -3,11 +3,10 @@ Created on Mar 24, 2015
 
 @author: tim
 '''
+import numpy as np
 
-
-
-def handle_shape(shape):
-    assert(len(shape)>4, "GPUpy only supports up tp four dimensions!")
+def handle_shape(shape):    
+    assert len(shape)<=4, "GPUpy only supports up tp four dimensions!"
     if len(shape) == 1: shape = (1,1,1) + shape
     if len(shape) == 2: shape = (1,1) + shape
     if len(shape) == 3: shape = (1,) + shape
@@ -18,3 +17,10 @@ def handle_dim(d0, d1, d2, d3):
     if d2 == None: d3 = d1; d2=d0; d1=1; d0=1
     if d3 == None: d3 = d2; d2=d1; d1=d0; d0=1
     return d0,d1,d2,d3
+
+def handle_selectors(selectors):
+    full_slice = slice(0,np.iinfo(np.int32).max)
+    if len(selectors) == 4: return selectors
+    if len(selectors) == 3: return [full_slice] + selectors
+    if len(selectors) == 2: return [full_slice,full_slice] + selectors
+    if len(selectors) == 1: return [full_slice,full_slice, full_slice, selectors[0]]

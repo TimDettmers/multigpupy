@@ -15,6 +15,19 @@ class Tensor(ct.Structure):
                 ('size', ct.c_int),
                 ('data', ct.POINTER(ct.c_float))]    
     def __init__(self): pass
+    
+class _Slice(ct.Structure):
+    _fields_ = [('batch_start', ct.c_int),
+                ('batch_stop', ct.c_int),
+                ('map_start', ct.c_int),
+                ('map_stop', ct.c_int),
+                ('row_start', ct.c_int),
+                ('row_stop', ct.c_int),
+                ('col_start', ct.c_int),
+                ('col_stop', ct.c_int)]    
+    def __init__(self): pass
+
+funcs.femptySlice.restype = ct.POINTER(_Slice)
 
 funcs.fempty.restype = ct.POINTER(Tensor)
 funcs.fzeros.restype = ct.POINTER(Tensor)

@@ -12,7 +12,7 @@
 
 
 
-
+Slice *emptySlice();
 Tensor *empty(int batches, int maps, int rows, int cols);
 Tensor *zeros(int batches, int maps, int rows, int cols);
 Tensor *ones(int batches, int maps, int rows, int cols);
@@ -32,6 +32,11 @@ Tensor *applyFunc(Tensor *A, Tensor *B, Operation_t ops);
 Tensor *applyFunc(Tensor *A, Tensor *B, float flt, Operation_t ops);
 void applyFunc(Tensor *A, Tensor *B, Tensor *out, Operation_t ops);
 void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops);
+
+Tensor *applySliceFunc(Tensor *A, Slice *S);
+void applySliceFunc(Tensor *A, Slice *S, Tensor *out);
+int sliceDimHelper(int dim, int start, int stop);
+
 
 
 

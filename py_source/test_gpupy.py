@@ -10,8 +10,6 @@ import random_gpupy as rdm
 import numpy as np
 import numpy.testing as t
 
-
-
 def setup():
     pass
 
@@ -470,6 +468,40 @@ def test_not_equal():
     t.assert_array_equal(C2, np.not_equal(A1,A2), "gpu.not_equal != np.not_equal")
     t.assert_array_equal((B1!=B1).tocpu(), A1!=A1, "gpu != != np !=")
     t.assert_array_equal((B1!=B2).tocpu(), A1!=A2, "gpu != != np !=")       
+    
+def test_Slice():
+    S = gpu.emptySlice()
+    assert S.batch.start == 0
+    assert S.batch.stop == np.iinfo(np.int32).max
+    assert S.map.start == 0
+    assert S.map.stop == np.iinfo(np.int32).max
+    assert S.row.start == 0
+    assert S.row.stop == np.iinfo(np.int32).max
+    assert S.col.start == 0
+    assert S.col.stop == np.iinfo(np.int32).max
+    
+    S.setSliceValues([slice(1,3),slice(3,6),slice(10,20)])
+    assert S.batch.start == 0
+    assert S.batch.stop == np.iinfo(np.int32).max
+    assert S.map.start == 1
+    assert S.map.stop == 3
+    assert S.row.start == 3
+    assert S.row.stop == 6
+    assert S.col.start == 10
+    assert S.col.stop == 20
+    
+    S.setSliceValues([slice(1,5)])
+    assert S.col.start == 1
+    assert S.col.stop == 5
+    
+    
+    
+def test_slicing():
+    A = np.float32(np.random.rand(10,7,83,4))
+    B = gpu.array(A)
+    C = B[:,0:6,7:3,::-1].tocpu()
+    
+    t.assert_array_equal(C, A[:,0:6,7:3,:], "np[:,0:6,7:3,:] != gpu[:,0:6,7:3,:]")
     
     
 if __name__ == '__main__':    
