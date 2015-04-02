@@ -7,87 +7,7 @@ Created on Mar 21, 2015
 import numpy as np
 import ctypes as ct
 import util as u
-lib = ct.cdll.LoadLibrary('./gpupylib.so')
-
-
-
-class Tensor(ct.Structure):
-    _fields_ = [('batches', ct.c_int),
-                ('maps', ct.c_int),
-                ('rows', ct.c_int),
-                ('cols', ct.c_int),
-                ('bytes', ct.c_size_t),
-                ('size', ct.c_int),
-                ('data', ct.POINTER(ct.c_float))]
-    
-    def __init__(self): pass
-
-lib.fempty.restype = ct.POINTER(Tensor)
-lib.fzeros.restype = ct.POINTER(Tensor)
-lib.fones.restype = ct.POINTER(Tensor)
-lib.ftocpu.restype = ct.POINTER(Tensor)
-lib.ftogpu.restype = ct.c_void_p
-lib.ffree.restype = ct.c_void_p
-lib.fT.restype = ct.POINTER(Tensor)
-lib.inp_T.restype = ct.c_void_p
-
-lib.fadd.restype = ct.POINTER(Tensor)
-lib.inp_add.restype = ct.c_void_p
-lib.fsub.restype = ct.POINTER(Tensor)
-lib.inp_sub.restype = ct.c_void_p
-lib.fmul.restype = ct.POINTER(Tensor)
-lib.inp_mul.restype = ct.c_void_p
-lib.fdiv.restype = ct.POINTER(Tensor)
-lib.inp_div.restype = ct.c_void_p
-lib.fscalarAdd.restype = ct.POINTER(Tensor)
-lib.inp_scalarAdd.restype = ct.c_void_p
-lib.fscalarSub.restype = ct.POINTER(Tensor)
-lib.inp_scalarSub.restype = ct.c_void_p
-lib.fscalarMul.restype = ct.POINTER(Tensor)
-lib.inp_scalarMul.restype = ct.c_void_p
-lib.fscalarDiv.restype = ct.POINTER(Tensor)
-lib.inp_scalarDiv.restype = ct.c_void_p
-
-lib.fexp.restype = ct.POINTER(Tensor)
-lib.inp_exp.restype = ct.c_void_p
-lib.flog.restype = ct.POINTER(Tensor)
-lib.inp_log.restype = ct.c_void_p
-lib.fsqrt.restype = ct.POINTER(Tensor)
-lib.inp_sqrt.restype = ct.c_void_p
-lib.flogistic.restype = ct.POINTER(Tensor)
-lib.inp_logistic.restype = ct.c_void_p
-lib.flogisticGrad.restype = ct.POINTER(Tensor)
-lib.inp_logisticGrad.restype = ct.c_void_p
-lib.ffabs.restype = ct.POINTER(Tensor)
-lib.inp_abs.restype = ct.c_void_p
-lib.fsquare.restype = ct.POINTER(Tensor)
-lib.inp_square.restype = ct.c_void_p
-lib.ffpow.restype = ct.POINTER(Tensor)
-lib.inp_pow.restype = ct.c_void_p
-
-lib.faddVectorToTensor.restype = ct.POINTER(Tensor)
-lib.inp_addVectorToTensor.restype = ct.c_void_p
-lib.fsubVectorToTensor.restype = ct.POINTER(Tensor)
-lib.inp_subVectorToTensor.restype = ct.c_void_p
-lib.fmulVectorToTensor.restype = ct.POINTER(Tensor)
-lib.inp_mulVectorToTensor.restype = ct.c_void_p
-lib.fdivVectorToTensor.restype = ct.POINTER(Tensor)
-lib.inp_divVectorToTensor.restype = ct.c_void_p
-
-lib.feq.restype = ct.POINTER(Tensor)
-lib.inp_eq.restype = ct.c_void_p
-lib.fls.restype = ct.POINTER(Tensor)
-lib.inp_ls.restype = ct.c_void_p
-lib.fgt.restype = ct.POINTER(Tensor)
-lib.inp_gt.restype = ct.c_void_p
-lib.fle.restype = ct.POINTER(Tensor)
-lib.inp_le.restype = ct.c_void_p
-lib.fge.restype = ct.POINTER(Tensor)
-lib.inp_ge.restype = ct.c_void_p
-lib.fne.restype = ct.POINTER(Tensor)
-lib.inp_ne.restype = ct.c_void_p
-
-def __init__(): pass
+from library_interface import lib
 
 class array(object):
     def __init__(self, npArray = None, mat_pointer = None):
@@ -97,8 +17,8 @@ class array(object):
         if type(npArray) == type(np.array(1)):
             npArray = np.float32(npArray)
             shape = u.handle_shape(npArray.shape)
-            mat_pointer = lib.fempty(shape[0],shape[1],shape[2],shape[3])
-            lib.ftogpu(mat_pointer, npArray.ctypes.data_as(ct.POINTER(ct.c_float)))
+            mat_pointer = lib.funcs.fempty(shape[0],shape[1],shape[2],shape[3])
+            lib.funcs.ftogpu(mat_pointer, npArray.ctypes.data_as(ct.POINTER(ct.c_float)))
             self.shape = npArray.shape 
             
         if mat_pointer:             
@@ -114,7 +34,7 @@ class array(object):
     
     def tocpu(self):
         data = np.empty(self.shape, dtype=np.float32)
-        lib.ftocpu(self.pt, data.ctypes.data_as(ct.POINTER(ct.c_float)))        
+        lib.funcs.ftocpu(self.pt, data.ctypes.data_as(ct.POINTER(ct.c_float)))        
         self.npArray = data    
         
         if data.shape[0] == 1 and data.shape[1] == 1: data = data.reshape(data.shape[2], data.shape[3])
@@ -125,35 +45,35 @@ class array(object):
         return data        
 
     @property
-    def T(self): return array(None, lib.fT(self.pt))         
-    def __del__(self): lib.ffree(self.pt)
-    def __add__(self, other): return apply_func(self,other, lib.fadd, lib.fscalarAdd, lib.faddVectorToTensor)
-    def __sub__(self, other): return apply_func(self,other, lib.fsub, lib.fscalarSub, lib.fsubVectorToTensor)
-    def __mul__(self, other): return apply_func(self,other, lib.fmul, lib.fscalarMul, lib.fmulVectorToTensor)
-    def __div__(self, other): return apply_func(self,other, lib.fdiv, lib.fscalarDiv, lib.fdivVectorToTensor)
-    def __eq__(self, other): return apply_func(self,other, lib.feq, None, None)
-    def __ls__(self, other): return apply_func(self,other, lib.fls, None, None)
-    def __gt__(self, other): return apply_func(self,other, lib.fgt, None, None)
-    def __ge__(self, other): return apply_func(self,other, lib.fge, None, None)
-    def __le__(self, other): return apply_func(self,other, lib.fle, None, None)
-    def __ne__(self, other): return apply_func(self,other, lib.fne, None, None)
+    def T(self): return array(None, lib.funcs.fT(self.pt))         
+    def __del__(self): lib.funcs.ffree(self.pt)
+    def __add__(self, other): return apply_func(self,other, lib.funcs.fadd, lib.funcs.fscalarAdd, lib.funcs.faddVectorToTensor)
+    def __sub__(self, other): return apply_func(self,other, lib.funcs.fsub, lib.funcs.fscalarSub, lib.funcs.fsubVectorToTensor)
+    def __mul__(self, other): return apply_func(self,other, lib.funcs.fmul, lib.funcs.fscalarMul, lib.funcs.fmulVectorToTensor)
+    def __div__(self, other): return apply_func(self,other, lib.funcs.fdiv, lib.funcs.fscalarDiv, lib.funcs.fdivVectorToTensor)
+    def __eq__(self, other): return apply_func(self,other, lib.funcs.feq, None, None)
+    def __ls__(self, other): return apply_func(self,other, lib.funcs.fls, None, None)
+    def __gt__(self, other): return apply_func(self,other, lib.funcs.fgt, None, None)
+    def __ge__(self, other): return apply_func(self,other, lib.funcs.fge, None, None)
+    def __le__(self, other): return apply_func(self,other, lib.funcs.fle, None, None)
+    def __ne__(self, other): return apply_func(self,other, lib.funcs.fne, None, None)
     #def abs(self): return absolute(self, out=None)
     
     
     def __iadd__(self, other): 
-        apply_func(self, other, lib.inp_add, lib.inp_scalarAdd, lib.inp_addVectorToTensor, out=self)
+        apply_func(self, other, lib.funcs.inp_add, lib.funcs.inp_scalarAdd, lib.funcs.inp_addVectorToTensor, out=self)
         return self
     
     def __isub__(self, other): 
-        apply_func(self, other, lib.inp_sub, lib.inp_scalarSub, lib.inp_subVectorToTensor, out=self)
+        apply_func(self, other, lib.funcs.inp_sub, lib.funcs.inp_scalarSub, lib.funcs.inp_subVectorToTensor, out=self)
         return self
     
     def __imul__(self, other): 
-        apply_func(self, other, lib.inp_mul, lib.inp_scalarMul, lib.inp_mulVectorToTensor, out=self)
+        apply_func(self, other, lib.funcs.inp_mul, lib.funcs.inp_scalarMul, lib.funcs.inp_mulVectorToTensor, out=self)
         return self
     
     def __idiv__(self, other): 
-        apply_func(self, other, lib.inp_div, lib.inp_scalarDiv, lib.inp_divVectorToTensor, out=self)
+        apply_func(self, other, lib.funcs.inp_div, lib.funcs.inp_scalarDiv, lib.funcs.inp_divVectorToTensor, out=self)
         return self
     
 def apply_func(x1, x2, func_matrix, func_scalar, func_vector = None, out=None): 
@@ -182,95 +102,95 @@ def is_vector(x):
 
 def zeros(shape):
     shape = u.handle_shape(shape)
-    out = array(None, lib.fzeros(shape[0],shape[1],shape[2],shape[3]))
+    out = array(None, lib.funcs.fzeros(shape[0],shape[1],shape[2],shape[3]))
     return out
 
 
 def ones(shape):
     shape = u.handle_shape(shape)
-    out = array(None, lib.fones(shape[0],shape[1],shape[2],shape[3]))
+    out = array(None, lib.funcs.fones(shape[0],shape[1],shape[2],shape[3]))
     return out
 
 def empty(shape):
     shape = u.handle_shape(shape)
-    out = array(None, lib.fempty(shape[0],shape[1],shape[2],shape[3]))
+    out = array(None, lib.funcs.fempty(shape[0],shape[1],shape[2],shape[3]))
     return out
 
 def add(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.inp_add, lib.inp_scalarAdd, lib.inp_addVectorToTensor, out)
-    else: return apply_func(x1,x2, lib.fadd, lib.fscalarAdd, lib.faddVectorToTensor)
+    if out: apply_func(x1,x2, lib.funcs.inp_add, lib.funcs.inp_scalarAdd, lib.funcs.inp_addVectorToTensor, out)
+    else: return apply_func(x1,x2, lib.funcs.fadd, lib.funcs.fscalarAdd, lib.funcs.faddVectorToTensor)
     
 def sub(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.inp_sub, lib.inp_scalarSub, lib.inp_subVectorToTensor, out)
-    else: return apply_func(x1,x2, lib.fsub, lib.fscalarSub, lib.fsubVectorToTensor)
+    if out: apply_func(x1,x2, lib.funcs.inp_sub, lib.funcs.inp_scalarSub, lib.funcs.inp_subVectorToTensor, out)
+    else: return apply_func(x1,x2, lib.funcs.fsub, lib.funcs.fscalarSub, lib.funcs.fsubVectorToTensor)
     
 def mul(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.inp_mul, lib.inp_scalarMul, lib.inp_mulVectorToTensor, out)
-    else: return apply_func(x1,x2, lib.fmul, lib.fscalarMul, lib.fmulVectorToTensor)
+    if out: apply_func(x1,x2, lib.funcs.inp_mul, lib.funcs.inp_scalarMul, lib.funcs.inp_mulVectorToTensor, out)
+    else: return apply_func(x1,x2, lib.funcs.fmul, lib.funcs.fscalarMul, lib.funcs.fmulVectorToTensor)
     
 def div(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.inp_div, lib.inp_scalarDiv, lib.inp_divVectorToTensor, out)
-    else: return apply_func(x1,x2, lib.fdiv, lib.fscalarDiv, lib.fdivVectorToTensor)       
+    if out: apply_func(x1,x2, lib.funcs.inp_div, lib.funcs.inp_scalarDiv, lib.funcs.inp_divVectorToTensor, out)
+    else: return apply_func(x1,x2, lib.funcs.fdiv, lib.funcs.fscalarDiv, lib.funcs.fdivVectorToTensor)       
     
 def exp(x1,out=None):
-    if out: lib.inp_exp(x1.pt,out.pt);
-    else: return array(None, lib.fexp(x1.pt))
+    if out: lib.funcs.inp_exp(x1.pt,out.pt);
+    else: return array(None, lib.funcs.fexp(x1.pt))
     
 def log(x1,out=None):
-    if out: lib.inp_log(x1.pt,out.pt);
-    else: return array(None, lib.flog(x1.pt))
+    if out: lib.funcs.inp_log(x1.pt,out.pt);
+    else: return array(None, lib.funcs.flog(x1.pt))
     
 def sqrt(x1,out=None):
-    if out: lib.inp_sqrt(x1.pt,out.pt);
-    else: return array(None, lib.fsqrt(x1.pt))
+    if out: lib.funcs.inp_sqrt(x1.pt,out.pt);
+    else: return array(None, lib.funcs.fsqrt(x1.pt))
     
 def logistic(x1,out=None):
-    if out: lib.inp_logistic(x1.pt,out.pt);
-    else: return array(None, lib.flogistic(x1.pt))
+    if out: lib.funcs.inp_logistic(x1.pt,out.pt);
+    else: return array(None, lib.funcs.flogistic(x1.pt))
 
 def logisticGrad(x1,out=None):    
     """Computes x1*(1-x1).
     :x1: Logistic Input.
     :out: Write output to this Tensor.
     """
-    if out: lib.inp_logisticGrad(x1.pt,out.pt);
-    else: return array(None, lib.flogisticGrad(x1.pt))
+    if out: lib.funcs.inp_logisticGrad(x1.pt,out.pt);
+    else: return array(None, lib.funcs.flogisticGrad(x1.pt))
 
 def abs(x1,out=None):    
-    if out: lib.inp_abs(x1.pt,out.pt);
-    else: return array(None, lib.ffabs(x1.pt))
+    if out: lib.funcs.inp_abs(x1.pt,out.pt);
+    else: return array(None, lib.funcs.ffabs(x1.pt))
     
 def square(x1,out=None):
-    if out: lib.inp_square(x1.pt,out.pt);
-    else: return array(None, lib.fsquare(x1.pt))
+    if out: lib.funcs.inp_square(x1.pt,out.pt);
+    else: return array(None, lib.funcs.fsquare(x1.pt))
     
 def power(x1,power, out=None):
-    if out: lib.inp_pow(x1.pt,ct.c_float(power),out.pt);
-    else: return array(None, lib.ffpow(x1.pt, ct.c_float(power)))    
+    if out: lib.funcs.inp_pow(x1.pt,ct.c_float(power),out.pt);
+    else: return array(None, lib.funcs.ffpow(x1.pt, ct.c_float(power)))    
     
 def equal(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.inp_eq, None, None, out)
-    else: return apply_func(x1,x2, lib.feq, None, None)
+    if out: apply_func(x1,x2, lib.funcs.inp_eq, None, None, out)
+    else: return apply_func(x1,x2, lib.funcs.feq, None, None)
     
 def less(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.inp_ls, None, None, out)
-    else: return apply_func(x1,x2, lib.fls, None, None)
+    if out: apply_func(x1,x2, lib.funcs.inp_ls, None, None, out)
+    else: return apply_func(x1,x2, lib.funcs.fls, None, None)
         
 def less_equal(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.inp_le, None, None, out)
-    else: return apply_func(x1,x2, lib.fle, None, None)
+    if out: apply_func(x1,x2, lib.funcs.inp_le, None, None, out)
+    else: return apply_func(x1,x2, lib.funcs.fle, None, None)
         
 def greater(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.inp_gt, None, None, out)
-    else: return apply_func(x1,x2, lib.fgt, None, None)
+    if out: apply_func(x1,x2, lib.funcs.inp_gt, None, None, out)
+    else: return apply_func(x1,x2, lib.funcs.fgt, None, None)
     
 def greater_equal(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.inp_ge, None, None, out)
-    else: return apply_func(x1,x2, lib.fge, None, None)
+    if out: apply_func(x1,x2, lib.funcs.inp_ge, None, None, out)
+    else: return apply_func(x1,x2, lib.funcs.fge, None, None)
   
 def not_equal(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.inp_ne, None, None, out)
-    else: return apply_func(x1,x2, lib.fne, None, None)  
+    if out: apply_func(x1,x2, lib.funcs.inp_ne, None, None, out)
+    else: return apply_func(x1,x2, lib.funcs.fne, None, None)  
 
     
     
