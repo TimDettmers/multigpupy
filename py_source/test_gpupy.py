@@ -470,6 +470,7 @@ def test_not_equal():
     t.assert_array_equal((B1!=B2).tocpu(), A1!=A2, "gpu != != np !=")       
     
 def test_Slice():
+    '''
     S = gpu.emptySlice()
     assert S.batch.start == 0
     assert S.batch.stop == np.iinfo(np.int32).max
@@ -495,13 +496,19 @@ def test_Slice():
     assert S.col.stop == 5
     
     
+    S.setSliceValues([slice(None,None, None)])
+    assert S.col.start == 0
+    assert S.col.stop == np.iinfo(np.int32).max
+    '''
+    
+    
     
 def test_slicing():
-    A = np.float32(np.random.rand(10,7,83,4))
+    A = np.float32(np.random.rand(17,83,10,17))
     B = gpu.array(A)
-    C = B[:,0:6,7:3,::-1].tocpu()
-    
-    t.assert_array_equal(C, A[:,0:6,7:3,:], "np[:,0:6,7:3,:] != gpu[:,0:6,7:3,:]")
+    B1 = B[:,:,:,-6:15]
+    C = B[-6:15].tocpu()    
+    t.assert_array_equal(C, A[:,:,:,-6:15], "np[:,0:6,7:3,:] != gpu[:,0:6,7:3,:]")
     
     
 if __name__ == '__main__':    

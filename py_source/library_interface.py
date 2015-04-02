@@ -94,7 +94,7 @@ funcs.inp_ge.restype = ct.c_void_p
 funcs.fne.restype = ct.POINTER(Tensor)
 funcs.inp_ne.restype = ct.c_void_p
 
-
+funcs.fslice.restype = ct.POINTER(Tensor)
 
 funcs.frand.restype = ct.POINTER(Tensor)
 funcs.frandn.restype = ct.POINTER(Tensor)

@@ -60,18 +60,6 @@ public:
 	  void freeTensor();
 };
 
-struct Slice
-{
-public:
-	int batch_start;
-	int batch_stop;
-	int map_start;
-	int map_stop;
-	int row_start;
-	int row_stop;
-	int col_start;
-	int col_stop;
-};
 
 
 

@@ -18,6 +18,7 @@ Slice *emptySlice()
 
 Tensor *empty(int batches, int maps, int rows, int cols)
 {
+
 	Tensor *out = new Tensor();
 	int size = batches*maps*rows*cols;
 	size_t bytes = size*sizeof(float);
@@ -104,6 +105,7 @@ void T(Tensor *A, Tensor *out,  int rows, int cols)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
 		kTransposeTensor<<< grid, threads >>>(A->data_gpus[i], out->data_gpus[i], A->batches, rows, cols);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
@@ -173,13 +175,47 @@ int sliceDimHelper(int dim, int start, int stop)
 	return 0;
 }
 
+void rearrageSlice(Slice *S, Tensor *A)
+{
+	if(S->batch_stop < 0){S->batch_start = A->batches + S->batch_start; }
+	if(S->map_stop < 0){S->map_stop = A->maps + S->map_stop; }
+	if(S->row_stop < 0){S->row_stop = A->rows + S->row_stop; }
+	if(S->col_stop < 0){S->col_stop = A->cols + S->col_stop; }
+
+	if(S->batch_start < 0){S->batch_start = A->batches + S->batch_start; }
+	if(S->map_start < 0){S->map_start = A->maps + S->map_start; }
+	if(S->row_start < 0){S->row_start = A->rows + S->row_start; }
+	if(S->col_start < 0){S->col_start = A->cols + S->col_start; }
+
+	if(S->batch_stop > A->batches) S->batch_stop = A->batches;
+	if(S->map_stop > A->maps) S->map_stop = A->maps;
+	if(S->row_stop > A->rows) S->row_stop = A->rows;
+	if(S->col_stop > A->cols) S->col_stop = A->cols;
+}
+
 Tensor *applySliceFunc(Tensor *A, Slice *S)
 {
-	Tensor *out = empty(
-			sliceDimHelper(A->batches,S->batch_start,S->batch_stop),
-			sliceDimHelper(A->maps,S->map_start,S->map_stop),
-			sliceDimHelper(A->rows,S->row_start,S->row_stop),
-			sliceDimHelper(A->cols,S->col_start,S->col_stop));
+
+
+
+	rearrageSlice(S,A);
+
+
+	std::cout << S->batch_start << ":" << S->batch_stop << std::endl;
+	std::cout << S->map_start << ":" << S->map_stop << std::endl;
+	std::cout << S->row_start << ":" << S->row_stop << std::endl;
+	std::cout << S->col_start << ":" << S->col_stop << std::endl;
+
+	Tensor *out = zeros(S->batch_stop-S->batch_start,
+						S->map_stop-S->map_start,
+						S->row_stop-S->row_start,
+						S->col_stop-S->col_start);
+
+
+	std::cout << out->batches << "x" << out->maps << "x" << out->rows << "x" << out->cols << std::endl;
+
+
+
 	applySliceFunc(A, S, out);
 
 	return out;
@@ -195,10 +231,20 @@ void applySliceFunc(Tensor *A, Slice *S, Tensor *out)
 	for(int i = 0; i < gpus; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-
+		dim3 grids(A->batches, A->maps,1);
+		dim3 blocks(32,32,1);
+		kSlice<<<grids,blocks>>>(A->data_gpus[i],out->data_gpus[i],
+				S->batch_start, S->batch_stop,
+				S->map_start, S->map_stop,
+				S->row_start, S->row_stop,
+				S->col_start, S->col_stop,
+				A->rows,A->cols,out->batches,out->maps,out->cols,out->rows);
+		//cudaDeviceSynchronize();
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
+
 
 }
 
@@ -248,6 +294,7 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 			case ne_tensor: kCompare<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],ne_tensor, A->size); break;
 			default: throw "Unsupported operation!";
 		}
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }

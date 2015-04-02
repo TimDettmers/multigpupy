@@ -20,7 +20,16 @@ def handle_dim(d0, d1, d2, d3):
 
 def handle_selectors(selectors):
     full_slice = slice(0,np.iinfo(np.int32).max)
-    if len(selectors) == 4: return selectors
-    if len(selectors) == 3: return [full_slice] + selectors
-    if len(selectors) == 2: return [full_slice,full_slice] + selectors
-    if len(selectors) == 1: return [full_slice,full_slice, full_slice, selectors[0]]
+    print type(selectors)
+    if type(selectors) == type(slice(1)): selectors = [selectors]
+    selects = []
+    for i, slice_obj in enumerate(selectors):
+        if not slice_obj.start and not slice_obj.stop: selects.append(slice(0,np.iinfo(np.int32).max))
+        elif not slice_obj.start and slice_obj.stop: selects.append(slice(0,slice_obj.stop))
+        elif slice_obj.start and not slice_obj.stop: selects.append(slice(slice_obj.start,np.iinfo(np.int32).max))
+        else: selects.append(slice_obj)
+        
+    if len(selects) == 4: return selects
+    if len(selects) == 3: return [full_slice] + selects
+    if len(selects) == 2: return [full_slice,full_slice] + selects
+    if len(selects) == 1: return [full_slice,full_slice, full_slice, selects[0]]

@@ -704,6 +704,44 @@ __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int c
 	}
 }
 
+//for column major data
+__global__ void kSlice(float *A, float *out, int b1, int b2, int m1, int m2, int r1, int r2, int c1, int c2,  int rows, int cols, int batches_slice, int maps_slice, int cols_slice, int rows_slice)
+{
+	int mapOffset = rows*cols;
+	int batchOffset = mapOffset*gridDim.y;
+	int mapOffsetSlice = rows_slice*cols_slice;
+	int batchOffsetSlice = mapOffsetSlice*maps_slice;
+	int batchidx=0;
+	int mapidx=0;
+	int colidx=0;
+	int batchidx_slice = 0;
+	int mapidx_slice = 0;
+	int colidx_slice = 0;
+
+	for(int batch = blockIdx.x+b1; batch < b2; batch+=gridDim.x)
+	{
+		batchidx = batch*batchOffset;
+		batchidx_slice = (batch - b1)*batchOffsetSlice;
+		for(int map = blockIdx.y+m1; map < m2; map+=gridDim.y)
+		{
+			mapidx = (map*mapOffset)+batchidx;
+			mapidx_slice = ((map-m1)*mapOffsetSlice) + batchidx_slice;
+			for(int col = threadIdx.y+c1; col < c2; col+=blockDim.y)
+			{
+				colidx =  (col*rows)+mapidx;
+				colidx_slice = ((col-c1)*rows_slice) + mapidx_slice;
+				for(int row = threadIdx.x; row < rows; row+=blockDim.x)
+				{
+					out[colidx_slice + (row-r1)] = A[colidx + (row < 0 ? (rows + row) : row)];
+				}
+
+			}
+		}
+	}
+
+
+}
+
 
 //for column major data
 __global__ void kAddVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size)

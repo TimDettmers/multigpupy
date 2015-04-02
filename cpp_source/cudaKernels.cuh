@@ -1,6 +1,17 @@
 #ifndef cudaKernels
 #define cudaKernels
 
+struct Slice
+{
+	int batch_start;
+	int batch_stop;
+	int map_start;
+	int map_stop;
+	int row_start;
+	int row_stop;
+	int col_start;
+	int col_stop;
+};
 
 enum Operation_t
 {
@@ -66,6 +77,7 @@ __global__ void AddGradientsN(float **arrA, int size, int myrank, int matrix_cou
 __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int cols);
 __device__ void reduceToMax(float* sdata, unsigned int tid);
 __device__ void reduceToSumLocal(float* sdata, unsigned int tid);
+__global__ void kSlice(float *A, float *out, int b1, int b2, int m1, int m2, int r1, int r2, int c1, int c2,  int rows, int cols, int batches_slice, int maps_slice, int cols_slice, int rows_slice);
 __global__ void kAddVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size);
 __global__ void kSubVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size);
 __global__ void kMulVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size);

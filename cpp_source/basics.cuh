@@ -36,6 +36,7 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops);
 Tensor *applySliceFunc(Tensor *A, Slice *S);
 void applySliceFunc(Tensor *A, Slice *S, Tensor *out);
 int sliceDimHelper(int dim, int start, int stop);
+void rearrageSlice(Slice *S, Tensor *A);
 
 
 

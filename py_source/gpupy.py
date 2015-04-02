@@ -23,7 +23,18 @@ class Slice():
         self.map = selectors[1]
         self.row = selectors[2]
         self.col = selectors[3]
-             
+        
+        self.pt.contents.batch_start = self.batch.start
+        self.pt.contents.batch_stop = self.batch.stop
+        self.pt.contents.map_start = self.map.start
+        self.pt.contents.map_stop = self.map.stop
+        self.pt.contents.row_start = self.row.start
+        self.pt.contents.row_stop = self.row.stop
+        self.pt.contents.col_start = self.col.start
+        self.pt.contents.col_stop = self.col.stop
+        print selectors
+        print self.col
+                     
 
 class array(object):
     def __init__(self, npArray = None, mat_pointer = None):
@@ -48,11 +59,10 @@ class array(object):
         pass
     
     def __getitem__(self, selectors):
-        print selectors
-        print selectors[0]
-        print selectors[1]
-        print selectors[1][0]
-        print selectors[1][1]
+        s = emptySlice()
+        s.setSliceValues(selectors)
+        
+        return array(None, lib.funcs.fslice(self.pt,s.pt))
         pass
     
     
@@ -218,6 +228,7 @@ def not_equal(x1,x2,out=None):
     
 def emptySlice():
     return Slice(lib.funcs.femptySlice())
+    
 
     
     

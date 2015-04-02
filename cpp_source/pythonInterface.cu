@@ -84,4 +84,6 @@ extern "C"
 	Tensor *fne(Tensor *A, Tensor *B){ return applyFunc(A,B,ne_tensor); }
 	void inp_ne(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,ne_tensor); }
 
+	Tensor *fslice(Tensor *A, Slice *S){ return applySliceFunc(A,S); }
+
 }
