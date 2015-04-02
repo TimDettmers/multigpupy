@@ -1,4 +1,3 @@
-#include <float.h>
 #include <Tensor.cuh>
 
 const int NUM_THREADS = 32;
@@ -836,6 +835,23 @@ __global__ void kEqual(float *A, float *B, float *out, int size)
 	  for (unsigned int i = idx;i < size; i += numThreads)
 	  {
 		  out[i] = (float)(A[i] == B[i]);
+	  }
+}
+
+//a template would be so good here, but it does not work due to extern C handling
+__global__ void kCompare(float *A, float *B, float *out, Operation_t strategy, int size)
+{
+	  const unsigned int numThreads = blockDim.x * gridDim.x;
+	  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+
+	  switch(strategy)
+	  {
+		  case eq_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] == B[i]); break;
+		  case ls_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] < B[i]); break;
+		  case gt_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] > B[i]); break;
+		  case le_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] <= B[i]); break;
+		  case ge_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] >= B[i]); break;
+		  case ne_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] != B[i]); break;
 	  }
 }
 

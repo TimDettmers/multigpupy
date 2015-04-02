@@ -70,4 +70,17 @@ extern "C"
 	Tensor *fdivVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,div_vec); }
 	void inp_divVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,div_vec); }
 
+	Tensor *feq(Tensor *A, Tensor *B){ return applyFunc(A,B,eq_tensor); }
+	void inp_eq(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,eq_tensor); }
+	Tensor *fls(Tensor *A, Tensor *B){ return applyFunc(A,B,ls_tensor); }
+	void inp_ls(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,ls_tensor); }
+	Tensor *fgt(Tensor *A, Tensor *B){ return applyFunc(A,B,gt_tensor); }
+	void inp_gt(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,gt_tensor); }
+	Tensor *fge(Tensor *A, Tensor *B){ return applyFunc(A,B,ge_tensor); }
+	void inp_ge(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,ge_tensor); }
+	Tensor *fle(Tensor *A, Tensor *B){ return applyFunc(A,B,le_tensor); }
+	void inp_le(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,le_tensor); }
+	Tensor *fne(Tensor *A, Tensor *B){ return applyFunc(A,B,ne_tensor); }
+	void inp_ne(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,ne_tensor); }
+
 }

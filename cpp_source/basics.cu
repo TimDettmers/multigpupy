@@ -188,13 +188,19 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 			case pow_tensor: kPow<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], flt, out->data_gpus[i], A->size); break;
 			case logistic: kLogistic<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size); break;
 			case logistic_grad: kLogisticGrad<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size); break;
+			case eq_tensor: kCompare<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],eq_tensor, A->size); break;
+			case ls_tensor: kCompare<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],ls_tensor, A->size); break;
+			case gt_tensor: kCompare<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],gt_tensor, A->size); break;
+			case ge_tensor: kCompare<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],ge_tensor, A->size); break;
+			case le_tensor: kCompare<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],le_tensor, A->size); break;
+			case ne_tensor: kCompare<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],ne_tensor, A->size); break;
 			default: throw "Unsupported operation!";
 		}
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
 
-
+void applyEqual(Tensor *A, Tensor *B, Tensor *out, int block_size, int i) {  }
 
 
 

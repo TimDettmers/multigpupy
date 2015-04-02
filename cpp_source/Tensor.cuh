@@ -17,6 +17,7 @@
 #include <cudaKernels.cuh>
 #include <iostream>
 #include <vector>
+#include <float.h>
 
 /**
  * This macro checks return value of the CUDA runtime call and exits

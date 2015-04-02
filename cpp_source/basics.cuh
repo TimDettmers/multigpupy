@@ -10,26 +10,8 @@
 #include <Tensor.cuh>
 #define THREADS_PER_BLOCKS (512)
 
-enum Operation_t
-{
-	add_scalar,
-	mul_scalar,
-	add_tensor,
-	sub_tensor,
-	mul_tensor,
-	div_tensor,
-	add_vec,
-	sub_vec,
-	mul_vec,
-	div_vec,
-	abs_tensor,
-	exp_tensor,
-	log_tensor,
-	sqrt_tensor,
-	pow_tensor,
-	logistic,
-	logistic_grad
-};
+
+
 
 Tensor *empty(int batches, int maps, int rows, int cols);
 Tensor *zeros(int batches, int maps, int rows, int cols);

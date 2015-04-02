@@ -1,6 +1,34 @@
 #ifndef cudaKernels
 #define cudaKernels
 
+
+enum Operation_t
+{
+	add_scalar,
+	mul_scalar,
+	add_tensor,
+	sub_tensor,
+	mul_tensor,
+	div_tensor,
+	add_vec,
+	sub_vec,
+	mul_vec,
+	div_vec,
+	abs_tensor,
+	exp_tensor,
+	log_tensor,
+	sqrt_tensor,
+	pow_tensor,
+	logistic,
+	logistic_grad,
+	eq_tensor,
+	ls_tensor,
+	gt_tensor,
+	ge_tensor,
+	le_tensor,
+	ne_tensor
+};
+
 __global__ void kRdmNumbers(float *seed, int size, float *out);
 __global__ void kCompression_8bit_test(float *tbl, float *A, float precision, int size, float *out);
 __global__ void kCompression_8bit(float *flt_tbl, float *A, float precision, int size, unsigned char *out);
@@ -48,6 +76,7 @@ __global__ void kDot8bit_shared(unsigned char *A, unsigned char *B, float *out, 
 __global__ void kArgmax(float* A, float* out, unsigned int height, unsigned int width);
 __global__ void kCreate_t_matrix(float *labels, float *out, int rows, int size);
 __global__ void kEqual(float *A, float *B, float *out, int size);
+__global__ void kCompare(float *A, float *B, float *out, Operation_t strategy, int size);
 __global__ void kSum(float *v, float *out, int size);
 __global__ void kLogistic(float *A, float *out, int size);
 __global__ void kLogisticGrad(float *A, float *out, int size);

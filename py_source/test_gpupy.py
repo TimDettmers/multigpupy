@@ -387,5 +387,90 @@ def test_is_vectors():
     assert gpu.is_vector(gpu.empty((2,2,1,2))) == False
     assert gpu.is_vector(gpu.empty((2,2,2,2))) == False
     
+def test_eq():
+    A1 = np.float32(np.random.rand(10,7,83,4))
+    A2 = np.float32(np.random.rand(10,7,83,4))
+    B1 = gpu.array(A1)
+    B2 = gpu.array(A2)
+    
+    C1 = gpu.equal(B1,B1).tocpu()
+    C2 = gpu.equal(B1,B2).tocpu()
+    
+    t.assert_array_equal(C1, np.equal(A1,A1), "gpu.equal != np.equal")
+    t.assert_array_equal(C2, np.equal(A1,A2), "gpu.equal != np.equal")
+    t.assert_array_equal((B1==B1).tocpu(), A1==A1, "gpu == != np ==")
+    t.assert_array_equal((B1==B2).tocpu(), A1==A2, "gpu == != np ==")
+ 
+def test_less():
+    A1 = np.float32(np.random.rand(10,7,83,4))
+    A2 = np.float32(np.random.rand(10,7,83,4))
+    B1 = gpu.array(A1)
+    B2 = gpu.array(A2)
+    
+    C1 = gpu.less(B1,B1).tocpu()
+    C2 = gpu.less(B1,B2).tocpu()
+    
+    t.assert_array_equal(C1, np.less(A1,A1), "gpu.less != np.less")
+    t.assert_array_equal(C2, np.less(A1,A2), "gpu.less != np.less")
+    t.assert_array_equal((B1<B1).tocpu(), A1<A1, "gpu < != np <")    
+    t.assert_array_equal((B1<B2).tocpu(), A1<A2, "gpu < != np <")
+    
+def test_greater():
+    A1 = np.float32(np.random.rand(10,7,83,4))
+    A2 = np.float32(np.random.rand(10,7,83,4))
+    B1 = gpu.array(A1)
+    B2 = gpu.array(A2)
+    
+    C1 = gpu.greater(B1,B1).tocpu()
+    C2 = gpu.greater(B1,B2).tocpu()
+    
+    t.assert_array_equal(C1, np.greater(A1,A1), "gpu.greater > np.greater")
+    t.assert_array_equal(C2, np.greater(A1,A2), "gpu.greater > np.greater")
+    t.assert_array_equal((B1>B1).tocpu(), A1>A1, "gpu > > np >")
+    t.assert_array_equal((B1>B2).tocpu(), A1>A2, "gpu > > np >")   
+    
+def test_less_equal():
+    A1 = np.float32(np.random.rand(10,7,83,4))
+    A2 = np.float32(np.random.rand(10,7,83,4))
+    B1 = gpu.array(A1)
+    B2 = gpu.array(A2)
+    
+    C1 = gpu.less_equal(B1,B1).tocpu()
+    C2 = gpu.less_equal(B1,B2).tocpu()
+    
+    t.assert_array_equal(C1, np.less_equal(A1,A1), "gpu.less_equal != np.less_equal")
+    t.assert_array_equal(C2, np.less_equal(A1,A2), "gpu.less_equal != np.less_equal")
+    t.assert_array_equal((B1<=B1).tocpu(), A1<=A1, "gpu <= != np <=")
+    t.assert_array_equal((B1<=B2).tocpu(), A1<=A2, "gpu <= != np <=")    
+    
+def test_greater_equal():
+    A1 = np.float32(np.random.rand(10,7,83,4))
+    A2 = np.float32(np.random.rand(10,7,83,4))
+    B1 = gpu.array(A1)
+    B2 = gpu.array(A2)
+    
+    C1 = gpu.greater_equal(B1,B1).tocpu()
+    C2 = gpu.greater_equal(B1,B2).tocpu()
+    
+    t.assert_array_equal(C1, np.greater_equal(A1,A1), "gpu.greater_equal != np.greater_equal")
+    t.assert_array_equal(C2, np.greater_equal(A1,A2), "gpu.greater_equal != np.greater_equal")
+    t.assert_array_equal((B1>=B1).tocpu(), A1>=A1, "gpu >= != np >=")
+    t.assert_array_equal((B1>=B2).tocpu(), A1>=A2, "gpu >= != np >=") 
+    
+def test_not_equal():
+    A1 = np.float32(np.random.rand(10,7,83,4))
+    A2 = np.float32(np.random.rand(10,7,83,4))
+    B1 = gpu.array(A1)
+    B2 = gpu.array(A2)
+    
+    C1 = gpu.not_equal(B1,B1).tocpu()
+    C2 = gpu.not_equal(B1,B2).tocpu()
+    
+    t.assert_array_equal(C1, np.not_equal(A1,A1), "gpu.not_equal != np.not_equal")
+    t.assert_array_equal(C2, np.not_equal(A1,A2), "gpu.not_equal != np.not_equal")
+    t.assert_array_equal((B1!=B1).tocpu(), A1!=A1, "gpu != != np !=")
+    t.assert_array_equal((B1!=B2).tocpu(), A1!=A2, "gpu != != np !=")       
+    
+    
 if __name__ == '__main__':    
     nose.run()
