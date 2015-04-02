@@ -111,6 +111,8 @@ def test_togpu():
 def test_add():
     A = np.random.rand(10,7,83,4)
     B = np.random.rand(10,7,83,4)
+    v = np.float32(np.random.rand(4))
+    w = gpu.array(v)
     C1 = gpu.array(A)
     C2 = gpu.array(B)
     C = gpu.add(C1,C2)  
@@ -118,13 +120,28 @@ def test_add():
     gpu.add(C1, C2, out)
     t.assert_array_almost_equal(C.tocpu(), A+B, 7, "Add not equal to numpy add!")
     t.assert_array_almost_equal(out.tocpu(), A+B, 7, "Add not equal to numpy add!")
-    t.assert_array_almost_equal((C1+C2).tocpu(), A+B, 7, "Add not equal to numpy add!")
+    t.assert_array_almost_equal((C1+C2).tocpu(), A+B, 7, "Add not equal to numpy add!")    
+    
+    C = gpu.add(C1,w)  
+    out = gpu.empty(C.shape)      
+    gpu.add(C1, w, out)
+    t.assert_array_almost_equal(C.tocpu(), A+v, 7, "Vector add not equal to numpy add!")
+    t.assert_array_almost_equal(out.tocpu(), A+v, 7, "Vector add not equal to numpy add!")        
+    t.assert_array_almost_equal((C1+w).tocpu(), A+v, 7, "Vector add not equal to numpy add!")
+    t.assert_array_almost_equal((w+C1).tocpu(), v+A, 7, "Vector add not equal to numpy add!")
+    
     C1+=C2
     t.assert_array_almost_equal(C1.tocpu(), A+B, 7, "Add not equal to numpy add!")
+    C1 = gpu.array(A)
+    C1+=w
+    t.assert_array_almost_equal(C1.tocpu(), A+v, 7, "Add not equal to numpy add!")    
     
+ 
 def test_sub():
     A = np.random.rand(10,7,83,4)
     B = np.random.rand(10,7,83,4)
+    v = np.float32(np.random.rand(4))
+    w = gpu.array(v)
     C1 = gpu.array(A)
     C2 = gpu.array(B)
     C = gpu.sub(C1,C2)  
@@ -133,12 +150,27 @@ def test_sub():
     t.assert_array_almost_equal(C.tocpu(), A-B, 7, "Add not equal to numpy sub!")
     t.assert_array_almost_equal(out.tocpu(), A-B, 7, "Add not equal to numpy sub!")
     t.assert_array_almost_equal((C1-C2).tocpu(), A-B, 7, "Add not equal to numpy sub!")
+    
+    C = gpu.sub(C1,w)  
+    out = gpu.empty(C.shape)      
+    gpu.sub(C1, w, out)
+    t.assert_array_almost_equal(C.tocpu(), A-v, 7, "Vector sub not equal to numpy sub!")
+    t.assert_array_almost_equal(out.tocpu(), A-v, 7, "Vector sub not equal to numpy sub!")        
+    t.assert_array_almost_equal((C1-w).tocpu(), A-v, 7, "Vector sub not equal to numpy sub!")
+    #TODO: Add scaling constant to vector-matrix operation
+    #t.assert_array_almost_equal((w-C1).tocpu(), v-A, 7, "Vector sub equal to numpy sub!")
+    
     C1-=C2
-    t.assert_array_almost_equal(C1.tocpu(), A-B, 7, "Add not equal to numpy sub!")
+    t.assert_array_almost_equal(C1.tocpu(), A-B, 7, "Sub not equal to numpy sub!")
+    C1 = gpu.array(A)
+    C1-=w
+    t.assert_array_almost_equal(C1.tocpu(), A-v, 7, "Sub not equal to numpy sub!")   
     
 def test_mul():
     A = np.random.rand(10,7,83,4)
     B = np.random.rand(10,7,83,4)
+    v = np.float32(np.random.rand(4))
+    w = gpu.array(v)
     C1 = gpu.array(A)
     C2 = gpu.array(B)
     C = gpu.mul(C1,C2)  
@@ -147,12 +179,26 @@ def test_mul():
     t.assert_array_almost_equal(C.tocpu(), A*B, 7, "Add not equal to numpy mul!")
     t.assert_array_almost_equal(out.tocpu(), A*B, 7, "Add not equal to numpy mul!")
     t.assert_array_almost_equal((C1*C2).tocpu(), A*B, 7, "Add not equal to numpy mul!")
+    
+    C = gpu.mul(C1,w)  
+    out = gpu.empty(C.shape)      
+    gpu.mul(C1, w, out)
+    t.assert_array_almost_equal(C.tocpu(), A*v, 7, "Vector mul not equal to numpy mul!")
+    t.assert_array_almost_equal(out.tocpu(), A*v, 7, "Vector mul not equal to numpy mul!")        
+    t.assert_array_almost_equal((C1*w).tocpu(), A*v, 7, "Vector mul not equal to numpy mul!")    
+    t.assert_array_almost_equal((w*C1).tocpu(), v*A, 7, "Vector mul equal to numpy mul!")
+    
     C1*=C2
-    t.assert_array_almost_equal(C1.tocpu(), A*B, 7, "Add not equal to numpy mul!")
+    t.assert_array_almost_equal(C1.tocpu(), A*B, 7, "mul not equal to numpy mul!")
+    C1 = gpu.array(A)
+    C1*=w
+    t.assert_array_almost_equal(C1.tocpu(), A*v, 7, "mul not equal to numpy mul!")  
     
 def test_div():
     A = np.float32(np.random.rand(10,7,83,4))
     B = np.float32(np.random.rand(10,7,83,4))
+    v = np.float32(np.random.rand(4))
+    w = gpu.array(v)
     C1 = gpu.array(A)
     C2 = gpu.array(B)
     C = gpu.div(C1,C2)  
@@ -162,30 +208,41 @@ def test_div():
     t.assert_array_almost_equal(out.tocpu(), A/B, 5, "Add not equal to numpy div!")
     t.assert_array_almost_equal((C1/C2).tocpu(), A/B, 5, "Add not equal to numpy div!")
     
+    C = gpu.div(C1,w)  
+    out = gpu.empty(C.shape)      
+    gpu.div(C1, w, out)
+    t.assert_array_almost_equal(C.tocpu(), A/v, 5, "Vector div not equal to numpy div!")
+    t.assert_array_almost_equal(out.tocpu(), A/v, 5, "Vector div not equal to numpy div!")        
+    t.assert_array_almost_equal((C1/w).tocpu(), A/v, 5, "Vector div not equal to numpy div!")
+    #TODO: 
+    #t.assert_array_almost_equal((w/C1).tocpu(), v/A, 7, "Vector div equal to numpy div!")
     
+    
+    C = gpu.div(C1,C2)       
+    gpu.div(C1, C2, out)
     t.assert_almost_equal(C.tocpu().sum(), (A/B).sum(), 5, "Add not equal to numpy div!")
     t.assert_almost_equal(out.tocpu().sum(), (A/B).sum(), 5, "Add not equal to numpy div!")
     t.assert_almost_equal((C1/C2).tocpu().sum(), (A/B).sum(), 5, "Add not equal to numpy div!")
     C1/=C2
     t.assert_array_almost_equal(C1.tocpu().sum(), (A/B).sum(), 5, "Add not equal to numpy div!")
-    
+ 
 def test_scalarAdd():
     A = np.float32(np.random.rand(10,7,83,4))
     flt = 17.83289
     B = gpu.array(A)
-    C = gpu.addScalar(B, flt).tocpu()    
+    C = gpu.add(B, flt).tocpu()    
     t.assert_array_equal(A+flt, C, "Scalar add not like numpy scalar add")
     t.assert_array_equal(A+flt, (B+flt).tocpu(), "Scalar add not like numpy scalar add")
     t.assert_array_equal(A+5, (B+5).tocpu(), "Scalar add not like numpy scalar add")
     B+=flt
     C = B.tocpu()
     t.assert_array_equal(A+flt, C, "Scalar add not like numpy scalar add")
-    
+   
 def test_scalarSub():
     A = np.float32(np.random.rand(10,7,83,4))
     flt = 17.83289
     B = gpu.array(A)
-    C = gpu.subScalar(B, flt).tocpu()    
+    C = gpu.sub(B, flt).tocpu()    
     t.assert_array_equal(A-flt, C, "Scalar sub not like numpy scalar sub") 
     t.assert_array_equal(A-flt, (B-flt).tocpu(), "Scalar sub not like numpy scalar sub")
     t.assert_array_equal(A-5, (B-5).tocpu(), "Scalar sub not like numpy scalar sub")
@@ -197,7 +254,7 @@ def test_scalarMul():
     A = np.float32(np.random.rand(10,7,83,4))
     flt = 17.83289
     B = gpu.array(A)
-    C = gpu.mulScalar(B, flt).tocpu()
+    C = gpu.mul(B, flt).tocpu()
     t.assert_array_equal(A*flt, C, "Scalar mul not like numpy scalar mul") 
     t.assert_array_equal(A*flt, (B*flt).tocpu(), "Scalar mul not like numpy scalar mul") 
     t.assert_array_equal(A*5, (B*5).tocpu(), "Scalar mul not like numpy scalar mul") 
@@ -209,14 +266,14 @@ def test_scalarDiv():
     A = np.float32(np.random.rand(10,7,83,4))
     flt = 17.83289
     B = gpu.array(A)
-    C = gpu.divScalar(B, flt).tocpu()    
+    C = gpu.div(B, flt).tocpu()    
     t.assert_array_almost_equal(A/flt, C, 5, "Scalar div not like numpy scalar div") 
     t.assert_array_almost_equal(A/flt, (B/flt).tocpu(), 5, "Scalar div not like numpy scalar div")
     t.assert_array_almost_equal(A/5, (B/5).tocpu(), 5, "Scalar div not like numpy scalar div")
     B/=flt
     C = B.tocpu()
     t.assert_array_almost_equal(A/flt, C, 5, "Scalar div not like numpy scalar div") 
-    
+  
 def test_exp():
     A = np.float32(np.random.rand(10,7,83,4))
     B = gpu.array(A)
@@ -273,22 +330,22 @@ def test_addVectorToTensor():
     B1 = gpu.array(A1)
     b1 = gpu.array(v1)    
     
-    C = gpu.addVectorToTensor(B1, b1).tocpu()   
+    C = gpu.add(B1, b1).tocpu()   
     t.assert_array_equal(C, A1+v1, "Vector Matrix addition not equal to numpy value")  
           
-    gpu.addVectorToTensor(B1, b1,B1)    
+    gpu.add(B1, b1,B1)    
     t.assert_array_equal(B1.tocpu(), A1+v1, "Vector Matrix addition not equal to numpy value")  
-    
+ 
 def test_subVectorToTensor():
     A1 = np.float32(np.random.rand(10,7,83,4))
     v1 = np.float32(np.random.rand(4))
     B1 = gpu.array(A1)
     b1 = gpu.array(v1)    
     
-    C = gpu.subVectorToTensor(B1, b1).tocpu()   
+    C = gpu.sub(B1, b1).tocpu()   
     t.assert_array_equal(C, A1-v1, "Vector Matrix addition not equal to numpy value")  
           
-    gpu.subVectorToTensor(B1, b1,B1)    
+    gpu.sub(B1, b1,B1)    
     t.assert_array_equal(B1.tocpu(), A1-v1, "Vector Matrix addition not equal to numpy value")  
     
 def test_mulVectorToTensor():
@@ -297,10 +354,10 @@ def test_mulVectorToTensor():
     B1 = gpu.array(A1)
     b1 = gpu.array(v1)    
     
-    C = gpu.mulVectorToTensor(B1, b1).tocpu()   
+    C = gpu.mul(B1, b1).tocpu()   
     t.assert_array_equal(C, A1*v1, "Vector Matrix addition not equal to numpy value")  
           
-    gpu.mulVectorToTensor(B1, b1,B1)    
+    gpu.mul(B1, b1,B1)    
     t.assert_array_equal(B1.tocpu(), A1*v1, "Vector Matrix addition not equal to numpy value")  
     
 def test_divVectorToTensor():
@@ -309,12 +366,26 @@ def test_divVectorToTensor():
     B1 = gpu.array(A1)
     b1 = gpu.array(v1)    
     
-    C = gpu.divVectorToTensor(B1, b1).tocpu()   
+    C = gpu.div(B1, b1).tocpu()   
     t.assert_array_equal(C, A1/v1, "Vector Matrix addition not equal to numpy value")  
           
-    gpu.divVectorToTensor(B1, b1,B1)    
+    gpu.div(B1, b1,B1)    
     t.assert_array_equal(B1.tocpu(), A1/v1, "Vector Matrix addition not equal to numpy value")  
+
     
+def test_is_vectors():
+    assert gpu.is_vector(gpu.empty((1,))) == True
+    assert gpu.is_vector(gpu.empty((1,2))) == True
+    assert gpu.is_vector(gpu.empty((2,2))) == False
+    assert gpu.is_vector(gpu.empty((1,1,2))) == True
+    assert gpu.is_vector(gpu.empty((1,2,2))) == False
+    assert gpu.is_vector(gpu.empty((2,1,2))) == False
+    assert gpu.is_vector(gpu.empty((1,1,1,2))) == True
+    assert gpu.is_vector(gpu.empty((1,1,2,2))) == False
+    assert gpu.is_vector(gpu.empty((1,2,1,2))) == False
+    assert gpu.is_vector(gpu.empty((2,1,1,2))) == False
+    assert gpu.is_vector(gpu.empty((2,2,1,2))) == False
+    assert gpu.is_vector(gpu.empty((2,2,2,2))) == False
     
 if __name__ == '__main__':    
     nose.run()

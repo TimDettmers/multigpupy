@@ -41,8 +41,12 @@ lib.fdiv.restype = ct.POINTER(Tensor)
 lib.inp_div.restype = ct.c_void_p
 lib.fscalarAdd.restype = ct.POINTER(Tensor)
 lib.inp_scalarAdd.restype = ct.c_void_p
+lib.fscalarSub.restype = ct.POINTER(Tensor)
+lib.inp_scalarSub.restype = ct.c_void_p
 lib.fscalarMul.restype = ct.POINTER(Tensor)
 lib.inp_scalarMul.restype = ct.c_void_p
+lib.fscalarDiv.restype = ct.POINTER(Tensor)
+lib.inp_scalarDiv.restype = ct.c_void_p
 
 lib.fexp.restype = ct.POINTER(Tensor)
 lib.inp_exp.restype = ct.c_void_p
@@ -110,37 +114,52 @@ class array(object):
     @property
     def T(self): return array(None, lib.fT(self.pt))         
     def __del__(self): lib.ffree(self.pt)
-    def __add__(self, other): return exec_scalar_or_matrix_op(self,other, add, addScalar)
-    def __sub__(self, other): return exec_scalar_or_matrix_op(self,other, sub, subScalar)
-    def __mul__(self, other): return exec_scalar_or_matrix_op(self,other, mul, mulScalar)
-    def __div__(self, other): return exec_scalar_or_matrix_op(self,other, div, divScalar)
+    def __add__(self, other): return apply_func(self,other, lib.fadd, lib.fscalarAdd, lib.faddVectorToTensor)
+    def __sub__(self, other): return apply_func(self,other, lib.fsub, lib.fscalarSub, lib.fsubVectorToTensor)
+    def __mul__(self, other): return apply_func(self,other, lib.fmul, lib.fscalarMul, lib.fmulVectorToTensor)
+    def __div__(self, other): return apply_func(self,other, lib.fdiv, lib.fscalarDiv, lib.fdivVectorToTensor)
     #def abs(self): return absolute(self, out=None)
     
     
     def __iadd__(self, other): 
-        exec_scalar_or_matrix_op(self, other, add, addScalar, inplace=True)
+        apply_func(self, other, lib.inp_add, lib.inp_scalarAdd, lib.inp_addVectorToTensor, out=self)
         return self
     
     def __isub__(self, other): 
-        exec_scalar_or_matrix_op(self, other, sub, subScalar, inplace=True)
+        apply_func(self, other, lib.inp_sub, lib.inp_scalarSub, lib.inp_subVectorToTensor, out=self)
         return self
     
     def __imul__(self, other): 
-        exec_scalar_or_matrix_op(self, other, mul, mulScalar, inplace=True)
+        apply_func(self, other, lib.inp_mul, lib.inp_scalarMul, lib.inp_mulVectorToTensor, out=self)
         return self
     
     def __idiv__(self, other): 
-        exec_scalar_or_matrix_op(self, other, div, divScalar, inplace=True)
+        apply_func(self, other, lib.inp_div, lib.inp_scalarDiv, lib.inp_divVectorToTensor, out=self)
         return self
     
-def exec_scalar_or_matrix_op(x1, x2, func_matrix, func_scalar, inplace=False): 
+def apply_func(x1, x2, func_matrix, func_scalar, func_vector = None, out=None): 
     is_scalar =  isinstance(x2, int) or isinstance(x2, float)
+    if not is_scalar: 
+        is_vectors = [is_vector(x1), is_vector(x2)]   
     if is_scalar: 
-        if inplace: func_scalar(x1,x2,x1)
-        else: return func_scalar(x1,x2)
-    else: 
-        if inplace:func_matrix(x1,x2,x1) 
-        else: return func_matrix(x1,x2)
+        if out: func_scalar(x1.pt,ct.c_float(x2),out.pt)
+        else: return array(None,func_scalar(x1.pt,ct.c_float(x2)))
+    elif any(is_vectors): 
+        if is_vectors[0] and out: func_vector(x2.pt, x1.pt,out.pt)
+        elif is_vectors[0]: return array(None,func_vector(x2.pt, x1.pt))
+        elif is_vectors[1] and out: func_vector(x1.pt, x2.pt,out.pt)
+        elif is_vectors[1]: return array(None,func_vector(x1.pt, x2.pt))
+    else:
+        if out: func_matrix(x1.pt,x2.pt,out.pt)
+        else: return array(None,func_matrix(x1.pt,x2.pt))
+        
+        
+def is_vector(x):
+    if type(x) != type(array): False
+    not_one_count = 0    
+    for dim in x.shape:
+        if dim > 1: not_one_count+=1
+    return (False if not_one_count > 1 else True)
 
 def zeros(shape):
     shape = u.handle_shape(shape)
@@ -159,36 +178,20 @@ def empty(shape):
     return out
 
 def add(x1,x2,out=None):
-    if out: lib.inp_add(x1.pt,x2.pt,out.pt);
-    else: return array(None, lib.fadd(x1.pt,x2.pt))
+    if out: apply_func(x1,x2, lib.inp_add, lib.inp_scalarAdd, lib.inp_addVectorToTensor, out)
+    else: return apply_func(x1,x2, lib.fadd, lib.fscalarAdd, lib.faddVectorToTensor)
     
 def sub(x1,x2,out=None):
-    if out: lib.inp_sub(x1.pt,x2.pt,out.pt);
-    else: return array(None, lib.fsub(x1.pt,x2.pt))
+    if out: apply_func(x1,x2, lib.inp_sub, lib.inp_scalarSub, lib.inp_subVectorToTensor, out)
+    else: return apply_func(x1,x2, lib.fsub, lib.fscalarSub, lib.fsubVectorToTensor)
     
 def mul(x1,x2,out=None):
-    if out: lib.inp_mul(x1.pt,x2.pt,out.pt);
-    else: return array(None, lib.fmul(x1.pt,x2.pt))
+    if out: apply_func(x1,x2, lib.inp_mul, lib.inp_scalarMul, lib.inp_mulVectorToTensor, out)
+    else: return apply_func(x1,x2, lib.fmul, lib.fscalarMul, lib.fmulVectorToTensor)
     
 def div(x1,x2,out=None):
-    if out: lib.inp_div(x1.pt,x2.pt,out.pt);
-    else: return array(None, lib.fdiv(x1.pt,x2.pt))        
-
-def addScalar(x1,flt,out=None):
-    if out: lib.inp_scalarAdd(x1.pt, ct.c_float(float(flt)), out.pt)
-    else: return array(None, lib.fscalarAdd(x1.pt, ct.c_float(float(flt))))
-    
-def subScalar(x1,flt,out=None):
-    if out: lib.inp_scalarAdd(x1.pt, ct.c_float(-flt), out.pt)
-    else: return array(None, lib.fscalarAdd(x1.pt, ct.c_float(-flt)))
-    
-def mulScalar(x1,flt,out=None):
-    if out: lib.inp_scalarMul(x1.pt, ct.c_float(flt), out.pt)
-    else: return array(None, lib.fscalarMul(x1.pt, ct.c_float(flt)))
-    
-def divScalar(x1,flt,out=None):
-    if out: lib.inp_scalarMul(x1.pt, ct.c_float(1.0/flt), out.pt)
-    else: return array(None, lib.fscalarMul(x1.pt, ct.c_float(1.0/flt)))
+    if out: apply_func(x1,x2, lib.inp_div, lib.inp_scalarDiv, lib.inp_divVectorToTensor, out)
+    else: return apply_func(x1,x2, lib.fdiv, lib.fscalarDiv, lib.fdivVectorToTensor)       
     
 def exp(x1,out=None):
     if out: lib.inp_exp(x1.pt,out.pt);
@@ -214,7 +217,7 @@ def logisticGrad(x1,out=None):
     if out: lib.inp_logisticGrad(x1.pt,out.pt);
     else: return array(None, lib.flogisticGrad(x1.pt))
 
-def abs(x1,out=None):
+def abs(x1,out=None):    
     if out: lib.inp_abs(x1.pt,out.pt);
     else: return array(None, lib.ffabs(x1.pt))
     
@@ -226,19 +229,4 @@ def power(x1,power, out=None):
     if out: lib.inp_pow(x1.pt,ct.c_float(power),out.pt);
     else: return array(None, lib.ffpow(x1.pt, ct.c_float(power)))
     
-def addVectorToTensor(x1,v1, out=None):
-    if out: lib.inp_addVectorToTensor(x1.pt, v1.pt, out.pt)
-    else: return array(None, lib.faddVectorToTensor(x1.pt, v1.pt))
-    
-def subVectorToTensor(x1,v1, out=None):
-    if out: lib.inp_subVectorToTensor(x1.pt, v1.pt, out.pt)
-    else: return array(None, lib.fsubVectorToTensor(x1.pt, v1.pt))
-    
-def mulVectorToTensor(x1,v1, out=None):
-    if out: lib.inp_mulVectorToTensor(x1.pt, v1.pt, out.pt)
-    else: return array(None, lib.fmulVectorToTensor(x1.pt, v1.pt))
-    
-def divVectorToTensor(x1,v1, out=None):
-    if out: lib.inp_divVectorToTensor(x1.pt, v1.pt, out.pt)
-    else: return array(None, lib.fdivVectorToTensor(x1.pt, v1.pt))
     

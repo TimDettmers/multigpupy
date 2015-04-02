@@ -36,8 +36,12 @@ extern "C"
 
 	Tensor *fscalarAdd(Tensor *A, float a){ return applyFunc(A,NULL,a,add_scalar); }
 	void inp_scalarAdd(Tensor *A, float a, Tensor *out){ applyFunc(A,NULL,out,a,add_scalar); }
+	Tensor *fscalarSub(Tensor *A, float a){ return applyFunc(A,NULL,-a,add_scalar); }
+	void inp_scalarSub(Tensor *A, float a, Tensor *out){ applyFunc(A,NULL,out,-a,add_scalar); }
 	Tensor *fscalarMul(Tensor *A, float a){ return applyFunc(A,NULL,a,mul_scalar); }
 	void inp_scalarMul(Tensor *A, float a, Tensor *out){ applyFunc(A,NULL,out,a,mul_scalar); }
+	Tensor *fscalarDiv(Tensor *A, float a){ return applyFunc(A,NULL,1.0f/a,mul_scalar); }
+	void inp_scalarDiv(Tensor *A, float a, Tensor *out){ applyFunc(A,NULL,out,1.0f/a,mul_scalar); }
 
 
 	Tensor *fexp(Tensor *A){ return applyFunc(A,NULL,exp_tensor); }
