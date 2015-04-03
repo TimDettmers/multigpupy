@@ -343,6 +343,24 @@ __global__ void kVectorWise(float *A, float *v, float *out, int batches, int row
 		case div_vec:
 			for (unsigned int i = idx;i < size; i += numThreads)
 			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  A[i + batchOffset + mapOffset] / v[offset]; } break;
+		case eq_vec:
+			for (unsigned int i = idx;i < size; i += numThreads)
+			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  (float)(A[i + batchOffset + mapOffset] == v[offset]); } break;
+		case ne_vec:
+			for (unsigned int i = idx;i < size; i += numThreads)
+			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  (float)(A[i + batchOffset + mapOffset] != v[offset]); } break;
+		case gt_vec:
+			for (unsigned int i = idx;i < size; i += numThreads)
+			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  (float)(A[i + batchOffset + mapOffset] > v[offset]); } break;
+		case ls_vec:
+			for (unsigned int i = idx;i < size; i += numThreads)
+			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  (float)(A[i + batchOffset + mapOffset] < v[offset]); } break;
+		case le_vec:
+			for (unsigned int i = idx;i < size; i += numThreads)
+			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  (float)(A[i + batchOffset + mapOffset] <= v[offset]); } break;
+		case ge_vec:
+			for (unsigned int i = idx;i < size; i += numThreads)
+			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  (float)(A[i + batchOffset + mapOffset] >= v[offset]); } break;
 	}
 }
 

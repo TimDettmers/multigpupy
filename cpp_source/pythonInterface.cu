@@ -80,6 +80,19 @@ extern "C"
 	Tensor *fne(Tensor *A, Tensor *B){ return applyFunc(A,B,ne_tensor); }
 	void inp_ne(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,ne_tensor); }
 
+	Tensor *fvec_eq(Tensor *A, Tensor *v){ return applyFunc(A,v,eq_vec); }
+	void inp_vec_eq(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,eq_vec); }
+	Tensor *fvec_ls(Tensor *A, Tensor *v){ return applyFunc(A,v,ls_vec); }
+	void inp_vec_ls(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,ls_vec); }
+	Tensor *fvec_gt(Tensor *A, Tensor *v){ return applyFunc(A,v,gt_vec); }
+	void inp_vec_gt(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,gt_vec); }
+	Tensor *fvec_le(Tensor *A, Tensor *v){ return applyFunc(A,v,le_vec); }
+	void inp_vec_le(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,le_vec); }
+	Tensor *fvec_ge(Tensor *A, Tensor *v){ return applyFunc(A,v,ge_vec); }
+	void inp_vec_ge(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,ge_vec); }
+	Tensor *fvec_ne(Tensor *A, Tensor *v){ return applyFunc(A,v,ne_vec); }
+	void inp_vec_ne(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,ne_vec); }
+
 	Tensor *fslice(Tensor *A, Slice *S){ return applySliceFunc(A,S); }
 
 }

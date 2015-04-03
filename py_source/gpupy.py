@@ -97,12 +97,12 @@ class array(object):
     def __sub__(self, other): return apply_func(self,other, lib.funcs.fsub, lib.funcs.fscalarSub, lib.funcs.fsubVectorToTensor)
     def __mul__(self, other): return apply_func(self,other, lib.funcs.fmul, lib.funcs.fscalarMul, lib.funcs.fmulVectorToTensor)
     def __div__(self, other): return apply_func(self,other, lib.funcs.fdiv, lib.funcs.fscalarDiv, lib.funcs.fdivVectorToTensor)
-    def __eq__(self, other): return apply_func(self,other, lib.funcs.feq, None, None)
-    def __ls__(self, other): return apply_func(self,other, lib.funcs.fls, None, None)
-    def __gt__(self, other): return apply_func(self,other, lib.funcs.fgt, None, None)
-    def __ge__(self, other): return apply_func(self,other, lib.funcs.fge, None, None)
-    def __le__(self, other): return apply_func(self,other, lib.funcs.fle, None, None)
-    def __ne__(self, other): return apply_func(self,other, lib.funcs.fne, None, None)
+    def __eq__(self, other): return apply_func(self,other, lib.funcs.feq, None, lib.funcs.fvec_eq)
+    def __ls__(self, other): return apply_func(self,other, lib.funcs.fls, None, lib.funcs.fvec_ls)
+    def __gt__(self, other): return apply_func(self,other, lib.funcs.fgt, None, lib.funcs.fvec_gt)
+    def __ge__(self, other): return apply_func(self,other, lib.funcs.fge, None, lib.funcs.fvec_ge)
+    def __le__(self, other): return apply_func(self,other, lib.funcs.fle, None, lib.funcs.fvec_le)
+    def __ne__(self, other): return apply_func(self,other, lib.funcs.fne, None, lib.funcs.fvec_ne)
     #def abs(self): return absolute(self, out=None)
     
     
@@ -215,28 +215,28 @@ def power(x1,power, out=None):
     else: return array(None, lib.funcs.ffpow(x1.pt, ct.c_float(power)))    
     
 def equal(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.funcs.inp_eq, None, None, out)
-    else: return apply_func(x1,x2, lib.funcs.feq, None, None)
+    if out: apply_func(x1,x2, lib.funcs.inp_eq, None, lib.funcs.inp_vec_eq, out)
+    else: return apply_func(x1,x2, lib.funcs.feq, None, lib.funcs.fvec_eq)
     
 def less(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.funcs.inp_ls, None, None, out)
-    else: return apply_func(x1,x2, lib.funcs.fls, None, None)
+    if out: apply_func(x1,x2, lib.funcs.inp_ls, None, lib.funcs.inp_vec_ls, out)
+    else: return apply_func(x1,x2, lib.funcs.fls, None, lib.funcs.fvec_ls)
         
 def less_equal(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.funcs.inp_le, None, None, out)
-    else: return apply_func(x1,x2, lib.funcs.fle, None, None)
+    if out: apply_func(x1,x2, lib.funcs.inp_le, None, lib.funcs.inp_vec_le, out)
+    else: return apply_func(x1,x2, lib.funcs.fle, None, lib.funcs.fvec_le)
         
 def greater(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.funcs.inp_gt, None, None, out)
-    else: return apply_func(x1,x2, lib.funcs.fgt, None, None)
+    if out: apply_func(x1,x2, lib.funcs.inp_gt, None, lib.funcs.inp_vec_gt, out)
+    else: return apply_func(x1,x2, lib.funcs.fgt, None, lib.funcs.fvec_gt)
     
 def greater_equal(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.funcs.inp_ge, None, None, out)
-    else: return apply_func(x1,x2, lib.funcs.fge, None, None)
+    if out: apply_func(x1,x2, lib.funcs.inp_ge, None, lib.funcs.inp_vec_ge, out)
+    else: return apply_func(x1,x2, lib.funcs.fge, None, lib.funcs.fvec_ge)
   
 def not_equal(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.funcs.inp_ne, None, None, out)
-    else: return apply_func(x1,x2, lib.funcs.fne, None, None)  
+    if out: apply_func(x1,x2, lib.funcs.inp_ne, None, lib.funcs.inp_vec_ne, out)
+    else: return apply_func(x1,x2, lib.funcs.fne, None, lib.funcs.fvec_ne)  
     
 def emptySlice():
     return Slice(lib.funcs.femptySlice())
