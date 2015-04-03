@@ -311,8 +311,39 @@ __global__ void kElementWise(float *A,float *B, float *out, int size, float flt,
 		  case abs_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = fabs(A[i]); break;
 		  case logistic: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __fdividef(1.0f , (1.0 + __expf(-A[i]))); break;
 		  case logistic_grad: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i]*(1.0f-A[i]); break;
+		  case eq_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] == B[i]); break;
+		  case ls_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] < B[i]); break;
+		  case gt_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] > B[i]); break;
+		  case le_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] <= B[i]); break;
+		  case ge_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] >= B[i]); break;
+		  case ne_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] != B[i]); break;
 	}
 
+}
+
+__global__ void kVectorWise(float *A, float *v, float *out, int batches, int rows, int size, Operation_t strategy)
+{
+	const unsigned int numThreads = blockDim.x * gridDim.x;
+	const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+	unsigned int mapOffset = size*blockIdx.y;
+	unsigned int batchOffset = size*gridDim.y*blockIdx.z;
+	int offset = 0;
+
+	switch(strategy)
+	{
+		case add_vec:
+			for (unsigned int i = idx;i < size; i += numThreads)
+			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  A[i + batchOffset + mapOffset] + v[offset]; } break;
+		case sub_vec:
+			for (unsigned int i = idx;i < size; i += numThreads)
+			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  A[i + batchOffset + mapOffset] - v[offset]; } break;
+		case mul_vec:
+			for (unsigned int i = idx;i < size; i += numThreads)
+			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  A[i + batchOffset + mapOffset] * v[offset]; } break;
+		case div_vec:
+			for (unsigned int i = idx;i < size; i += numThreads)
+			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  A[i + batchOffset + mapOffset] / v[offset]; } break;
+	}
 }
 
 __global__ void kSub_Sparse(float *A, float *data, int *ptr_rows, int *idx_cols, float *out, int rows, int cols, int size)
@@ -645,6 +676,7 @@ __global__ void kSlice(float *A, float *out, int b1, int b2, int m1, int m2, int
 }
 
 
+
 //for column major data
 __global__ void kAddVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size)
 {
@@ -778,22 +810,6 @@ __global__ void kEqual(float *A, float *B, float *out, int size)
 	  }
 }
 
-//a template would be good here, but it does not work due to extern C handling
-__global__ void kCompare(float *A, float *B, float *out, Operation_t strategy, int size)
-{
-	  const unsigned int numThreads = blockDim.x * gridDim.x;
-	  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-	  switch(strategy)
-	  {
-		  case eq_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] == B[i]); break;
-		  case ls_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] < B[i]); break;
-		  case gt_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] > B[i]); break;
-		  case le_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] <= B[i]); break;
-		  case ge_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] >= B[i]); break;
-		  case ne_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] != B[i]); break;
-	  }
-}
 
 __global__ void kRectifiedLinear(float *A, float *out, int size)
 {

@@ -36,7 +36,13 @@ enum Operation_t
 	gt_tensor,
 	ge_tensor,
 	le_tensor,
-	ne_tensor
+	ne_tensor,
+	eq_vec,
+	ls_vec,
+	gt_vec,
+	ge_vec,
+	le_vec,
+	ne_vec
 };
 
 __global__ void kRdmNumbers(float *seed, int size, float *out);
@@ -51,13 +57,6 @@ __global__ void kFill_with(int *m, int fill_value, int size);
 __global__ void kElementWise(float *A,float *B, float *out, int size, float flt, Operation_t strategy);
 __global__ void kAdd_to_z(float *z, float *z1, float *y, float *y_count, int batch_size, int units, float *out);
 __global__ void kSub_Sparse(float *A, float *data, int *ptr_rows, int *idx_cols, float *out, int rows, int cols, int size);
-__global__ void kExp(float *A, float *out, int size);
-__global__ void kLog(float *A, float *out, int size);
-__global__ void kSqrt(float *A, float *out, int size);
-__global__ void kPow(float *A, float power, float *out, int size);
-__global__ void kAbs(float *A, float *out, int size);
-__global__ void kScalarMul(float *A, float scalar, float *out, int size);
-__global__ void kScalarAdd(float *A, float scalar, float *out, int size);
 __global__ void kTranspose(float *A, float *out, int width, int height); 
 __global__ void kTransposeTensor(float *A, float *out, int batches, int width, int height);
 //__global__ void setup_kernel(curandState *state, int seed);
@@ -74,6 +73,7 @@ __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int c
 __device__ void reduceToMax(float* sdata, unsigned int tid);
 __device__ void reduceToSumLocal(float* sdata, unsigned int tid);
 __global__ void kSlice(float *A, float *out, int b1, int b2, int m1, int m2, int r1, int r2, int c1, int c2,  int rows, int cols, int batches_slice, int maps_slice, int cols_slice, int rows_slice);
+__global__ void kVectorWise(float *A, float *v, float *out, int batches, int rows, int size, Operation_t strategy);
 __global__ void kAddVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size);
 __global__ void kSubVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size);
 __global__ void kMulVectorToTensor(float *A, float *v, float *out, int batches, int rows, int size);
@@ -84,7 +84,6 @@ __global__ void kDot8bit_shared(unsigned char *A, unsigned char *B, float *out, 
 __global__ void kArgmax(float* A, float* out, unsigned int height, unsigned int width);
 __global__ void kCreate_t_matrix(float *labels, float *out, int rows, int size);
 __global__ void kEqual(float *A, float *B, float *out, int size);
-__global__ void kCompare(float *A, float *B, float *out, Operation_t strategy, int size);
 __global__ void kSum(float *v, float *out, int size);
 __global__ void kLogistic(float *A, float *out, int size);
 __global__ void kLogisticGrad(float *A, float *out, int size);
