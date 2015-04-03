@@ -317,6 +317,12 @@ __global__ void kElementWise(float *A,float *B, float *out, int size, float flt,
 		  case le_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] <= B[i]); break;
 		  case ge_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] >= B[i]); break;
 		  case ne_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] != B[i]); break;
+		  case eq_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] == flt); break;
+		  case ls_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] < flt); break;
+		  case gt_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] > flt); break;
+		  case le_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] <= flt); break;
+		  case ge_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] >= flt); break;
+		  case ne_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] != flt); break;
 	}
 
 }

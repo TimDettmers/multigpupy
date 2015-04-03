@@ -103,6 +103,19 @@ funcs.inp_vec_ge.restype = ct.c_void_p
 funcs.fvec_ne.restype = ct.POINTER(Tensor)
 funcs.inp_vec_ne.restype = ct.c_void_p
 
+funcs.fscalar_eq.restype = ct.POINTER(Tensor)
+funcs.inp_scalar_eq.restype = ct.c_void_p
+funcs.fscalar_ls.restype = ct.POINTER(Tensor)
+funcs.inp_scalar_ls.restype = ct.c_void_p
+funcs.fscalar_gt.restype = ct.POINTER(Tensor)
+funcs.inp_scalar_gt.restype = ct.c_void_p
+funcs.fscalar_le.restype = ct.POINTER(Tensor)
+funcs.inp_scalar_le.restype = ct.c_void_p
+funcs.fscalar_ge.restype = ct.POINTER(Tensor)
+funcs.inp_scalar_ge.restype = ct.c_void_p
+funcs.fscalar_ne.restype = ct.POINTER(Tensor)
+funcs.inp_scalar_ne.restype = ct.c_void_p
+
 funcs.fslice.restype = ct.POINTER(Tensor)
 
 funcs.frand.restype = ct.POINTER(Tensor)

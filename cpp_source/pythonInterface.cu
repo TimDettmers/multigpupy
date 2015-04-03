@@ -93,6 +93,19 @@ extern "C"
 	Tensor *fvec_ne(Tensor *A, Tensor *v){ return applyFunc(A,v,ne_vec); }
 	void inp_vec_ne(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,ne_vec); }
 
+	Tensor *fscalar_eq(Tensor *A, float flt){ return applyFunc(A,NULL,flt,eq_scalar); }
+	void inp_scalar_eq(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,eq_scalar); }
+	Tensor *fscalar_ls(Tensor *A, float flt){ return applyFunc(A,NULL,flt,ls_scalar); }
+	void inp_scalar_ls(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,ls_scalar); }
+	Tensor *fscalar_gt(Tensor *A, float flt){ return applyFunc(A,NULL,flt,gt_scalar); }
+	void inp_scalar_gt(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,gt_scalar); }
+	Tensor *fscalar_le(Tensor *A, float flt){ return applyFunc(A,NULL,flt,le_scalar); }
+	void inp_scalar_le(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,le_scalar); }
+	Tensor *fscalar_ge(Tensor *A, float flt){ return applyFunc(A,NULL,flt,ge_scalar); }
+	void inp_scalar_ge(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,ge_scalar); }
+	Tensor *fscalar_ne(Tensor *A, float flt){ return applyFunc(A,NULL,flt,ne_scalar); }
+	void inp_scalar_ne(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,ne_scalar); }
+
 	Tensor *fslice(Tensor *A, Slice *S){ return applySliceFunc(A,S); }
 
 }
