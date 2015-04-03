@@ -292,32 +292,27 @@ __global__ void kAdd_to_z(float *z, float *z1, float *y, float *y_count, int row
 }
 
 
-__global__ void kAdd(float *A, float *B, float *out, int size)
+__global__ void kElementWise(float *A,float *B, float *out, int size, float flt, Operation_t strategy)
 {
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+	const unsigned int numThreads = blockDim.x * gridDim.x;
+	const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = A[i] + B[i];
-}
+	switch(strategy)
+	{
+	  	  case add_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] + flt; break;
+	  	  case mul_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] * flt; break;
+		  case add_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] + B[i]; break;
+		  case sub_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] - B[i]; break;
+		  case mul_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] * B[i]; break;
+		  case div_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = fdividef(A[i], B[i]); break;
+		  case exp_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __expf(A[i]); break;
+		  case pow_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __powf(A[i],flt); break;
+		  case log_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __logf(A[i]); break;
+		  case abs_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = fabs(A[i]); break;
+		  case logistic: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __fdividef(1.0f , (1.0 + __expf(-A[i]))); break;
+		  case logistic_grad: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i]*(1.0f-A[i]); break;
+	}
 
-
-__global__ void kMul(float *A, float *B, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = A[i] * B[i];
-}
-
-__global__ void kSub(float *A, float *B, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = A[i] - B[i];
 }
 
 __global__ void kSub_Sparse(float *A, float *data, int *ptr_rows, int *idx_cols, float *out, int rows, int cols, int size)
@@ -342,99 +337,6 @@ __global__ void kSub_Sparse(float *A, float *data, int *ptr_rows, int *idx_cols,
       out[(idx_cols[i] * rows) + row_idx] = A[(idx_cols[i] * rows) + row_idx] - data[i];
   }
 }
-
-__global__ void kDiv(float *A, float *B, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = fdividef(A[i],B[i]);
-}
-
-__global__ void kExp(float *A, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = expf(A[i]);
-}
-
-__global__ void kLogistic(float *A, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = 1.0f / (1.0 + expf(-A[i]));
-
-}
-
-__global__ void kLogisticGrad(float *A, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = A[i]*(1 - A[i]);
-
-}
-
-__global__ void kSqrt(float *A, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = sqrtf(A[i]);
-}
-
-__global__ void kLog(float *A, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = logf(A[i]);
-}
-
-__global__ void kPow(float *A, float power, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = powf(A[i], power);
-}
-
-__global__ void kAbs(float *A, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = fabsf(A[i]);
-}
-
-__global__ void kScalarMul(float *A, float scalar, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = scalar*A[i];
-}
-
-__global__ void kScalarAdd(float *A, float scalar, float *out, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       out[i] = A[i]+scalar;
-}
-
  
 __global__ void kTranspose(float *A, float *out, int width, int height) 
 {
@@ -876,7 +778,7 @@ __global__ void kEqual(float *A, float *B, float *out, int size)
 	  }
 }
 
-//a template would be so good here, but it does not work due to extern C handling
+//a template would be good here, but it does not work due to extern C handling
 __global__ void kCompare(float *A, float *B, float *out, Operation_t strategy, int size)
 {
 	  const unsigned int numThreads = blockDim.x * gridDim.x;

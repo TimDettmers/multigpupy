@@ -187,8 +187,8 @@ def log(x1,out=None):
     else: return array(None, lib.funcs.flog(x1.pt))
     
 def sqrt(x1,out=None):
-    if out: lib.funcs.inp_sqrt(x1.pt,out.pt);
-    else: return array(None, lib.funcs.fsqrt(x1.pt))
+    if out: lib.funcs.inp_pow(x1.pt,ct.c_float(0.5),out.pt);
+    else: return array(None, lib.funcs.ffpow(x1.pt, ct.c_float(0.5)))    
     
 def logistic(x1,out=None):
     if out: lib.funcs.inp_logistic(x1.pt,out.pt);
@@ -207,8 +207,8 @@ def abs(x1,out=None):
     else: return array(None, lib.funcs.ffabs(x1.pt))
     
 def square(x1,out=None):
-    if out: lib.funcs.inp_square(x1.pt,out.pt);
-    else: return array(None, lib.funcs.fsquare(x1.pt))
+    if out: lib.funcs.inp_pow(x1.pt,ct.c_float(2.0),out.pt);
+    else: return array(None, lib.funcs.ffpow(x1.pt, ct.c_float(2.0)))    
     
 def power(x1,power, out=None):
     if out: lib.funcs.inp_pow(x1.pt,ct.c_float(power),out.pt);

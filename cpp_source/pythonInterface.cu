@@ -47,8 +47,6 @@ extern "C"
 
 	Tensor *fexp(Tensor *A){ return applyFunc(A,NULL,exp_tensor); }
 	void inp_exp(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,exp_tensor);}
-	Tensor *fsqrt(Tensor *A){ return applyFunc(A,NULL,sqrt_tensor); }
-	void inp_sqrt(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,sqrt_tensor); }
 	Tensor *flog(Tensor *A){ return applyFunc(A,NULL,log_tensor);}
 	void inp_log(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,log_tensor);}
 	Tensor *flogistic(Tensor *A){ return applyFunc(A,NULL,logistic);}
@@ -57,8 +55,6 @@ extern "C"
 	void inp_logisticGrad(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, logistic_grad); }
 	Tensor *ffabs(Tensor *A){ return applyFunc(A, NULL, abs_tensor); }
 	void inp_abs(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,abs_tensor); }
-	Tensor *fsquare(Tensor *A){ return applyFunc(A,NULL,2.0f,pow_tensor); }
-	void inp_square(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,2.0f,pow_tensor); }
 	Tensor *ffpow(Tensor *A, float power){ return applyFunc(A,NULL,power,pow_tensor); }
 	void inp_pow(Tensor *A, float power, Tensor *out){ applyFunc(A,NULL,out,power,pow_tensor); }
 

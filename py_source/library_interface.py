@@ -59,16 +59,12 @@ funcs.fexp.restype = ct.POINTER(Tensor)
 funcs.inp_exp.restype = ct.c_void_p
 funcs.flog.restype = ct.POINTER(Tensor)
 funcs.inp_log.restype = ct.c_void_p
-funcs.fsqrt.restype = ct.POINTER(Tensor)
-funcs.inp_sqrt.restype = ct.c_void_p
 funcs.flogistic.restype = ct.POINTER(Tensor)
 funcs.inp_logistic.restype = ct.c_void_p
 funcs.flogisticGrad.restype = ct.POINTER(Tensor)
 funcs.inp_logisticGrad.restype = ct.c_void_p
 funcs.ffabs.restype = ct.POINTER(Tensor)
 funcs.inp_abs.restype = ct.c_void_p
-funcs.fsquare.restype = ct.POINTER(Tensor)
-funcs.inp_square.restype = ct.c_void_p
 funcs.ffpow.restype = ct.POINTER(Tensor)
 funcs.inp_pow.restype = ct.c_void_p
 

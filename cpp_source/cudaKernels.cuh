@@ -28,7 +28,6 @@ enum Operation_t
 	abs_tensor,
 	exp_tensor,
 	log_tensor,
-	sqrt_tensor,
 	pow_tensor,
 	logistic,
 	logistic_grad,
@@ -49,12 +48,9 @@ __global__ void kGetNonZeroColumns(float *A, float *out, int rows, int cols);
 __global__ void kGetNonZeroElements(float *A, float *out, int size);
 __global__ void kFill_with(float *m, float fill_value, int size);
 __global__ void kFill_with(int *m, int fill_value, int size);
-__global__ void kAdd(float *A,float *B, float *out, int size);
+__global__ void kElementWise(float *A,float *B, float *out, int size, float flt, Operation_t strategy);
 __global__ void kAdd_to_z(float *z, float *z1, float *y, float *y_count, int batch_size, int units, float *out);
-__global__ void kSub(float *A,float *B, float *out, int size);
 __global__ void kSub_Sparse(float *A, float *data, int *ptr_rows, int *idx_cols, float *out, int rows, int cols, int size);
-__global__ void kMul(float *A,float *B, float *out, int size);
-__global__ void kDiv(float *A,float *B, float *out, int size);
 __global__ void kExp(float *A, float *out, int size);
 __global__ void kLog(float *A, float *out, int size);
 __global__ void kSqrt(float *A, float *out, int size);
