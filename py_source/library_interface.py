@@ -79,8 +79,8 @@ funcs.inp_divVectorToTensor.restype = ct.c_void_p
 
 funcs.feq.restype = ct.POINTER(Tensor)
 funcs.inp_eq.restype = ct.c_void_p
-funcs.fls.restype = ct.POINTER(Tensor)
-funcs.inp_ls.restype = ct.c_void_p
+funcs.flt.restype = ct.POINTER(Tensor)
+funcs.inp_lt.restype = ct.c_void_p
 funcs.fgt.restype = ct.POINTER(Tensor)
 funcs.inp_gt.restype = ct.c_void_p
 funcs.fle.restype = ct.POINTER(Tensor)
@@ -92,8 +92,8 @@ funcs.inp_ne.restype = ct.c_void_p
 
 funcs.fvec_eq.restype = ct.POINTER(Tensor)
 funcs.inp_vec_eq.restype = ct.c_void_p
-funcs.fvec_ls.restype = ct.POINTER(Tensor)
-funcs.inp_vec_ls.restype = ct.c_void_p
+funcs.fvec_lt.restype = ct.POINTER(Tensor)
+funcs.inp_vec_lt.restype = ct.c_void_p
 funcs.fvec_gt.restype = ct.POINTER(Tensor)
 funcs.inp_vec_gt.restype = ct.c_void_p
 funcs.fvec_le.restype = ct.POINTER(Tensor)
@@ -105,8 +105,8 @@ funcs.inp_vec_ne.restype = ct.c_void_p
 
 funcs.fscalar_eq.restype = ct.POINTER(Tensor)
 funcs.inp_scalar_eq.restype = ct.c_void_p
-funcs.fscalar_ls.restype = ct.POINTER(Tensor)
-funcs.inp_scalar_ls.restype = ct.c_void_p
+funcs.fscalar_lt.restype = ct.POINTER(Tensor)
+funcs.inp_scalar_lt.restype = ct.c_void_p
 funcs.fscalar_gt.restype = ct.POINTER(Tensor)
 funcs.inp_scalar_gt.restype = ct.c_void_p
 funcs.fscalar_le.restype = ct.POINTER(Tensor)

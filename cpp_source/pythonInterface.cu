@@ -69,8 +69,8 @@ extern "C"
 
 	Tensor *feq(Tensor *A, Tensor *B){ return applyFunc(A,B,eq_tensor); }
 	void inp_eq(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,eq_tensor); }
-	Tensor *fls(Tensor *A, Tensor *B){ return applyFunc(A,B,ls_tensor); }
-	void inp_ls(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,ls_tensor); }
+	Tensor *flt(Tensor *A, Tensor *B){ return applyFunc(A,B,lt_tensor); }
+	void inp_lt(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,lt_tensor); }
 	Tensor *fgt(Tensor *A, Tensor *B){ return applyFunc(A,B,gt_tensor); }
 	void inp_gt(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,gt_tensor); }
 	Tensor *fge(Tensor *A, Tensor *B){ return applyFunc(A,B,ge_tensor); }
@@ -82,8 +82,8 @@ extern "C"
 
 	Tensor *fvec_eq(Tensor *A, Tensor *v){ return applyFunc(A,v,eq_vec); }
 	void inp_vec_eq(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,eq_vec); }
-	Tensor *fvec_ls(Tensor *A, Tensor *v){ return applyFunc(A,v,ls_vec); }
-	void inp_vec_ls(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,ls_vec); }
+	Tensor *fvec_lt(Tensor *A, Tensor *v){ return applyFunc(A,v,lt_vec); }
+	void inp_vec_lt(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,lt_vec); }
 	Tensor *fvec_gt(Tensor *A, Tensor *v){ return applyFunc(A,v,gt_vec); }
 	void inp_vec_gt(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,gt_vec); }
 	Tensor *fvec_le(Tensor *A, Tensor *v){ return applyFunc(A,v,le_vec); }
@@ -95,8 +95,8 @@ extern "C"
 
 	Tensor *fscalar_eq(Tensor *A, float flt){ return applyFunc(A,NULL,flt,eq_scalar); }
 	void inp_scalar_eq(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,eq_scalar); }
-	Tensor *fscalar_ls(Tensor *A, float flt){ return applyFunc(A,NULL,flt,ls_scalar); }
-	void inp_scalar_ls(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,ls_scalar); }
+	Tensor *fscalar_lt(Tensor *A, float flt){ return applyFunc(A,NULL,flt,lt_scalar); }
+	void inp_scalar_lt(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,lt_scalar); }
 	Tensor *fscalar_gt(Tensor *A, float flt){ return applyFunc(A,NULL,flt,gt_scalar); }
 	void inp_scalar_gt(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,gt_scalar); }
 	Tensor *fscalar_le(Tensor *A, float flt){ return applyFunc(A,NULL,flt,le_scalar); }

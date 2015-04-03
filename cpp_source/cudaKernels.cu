@@ -312,13 +312,13 @@ __global__ void kElementWise(float *A,float *B, float *out, int size, float flt,
 		  case logistic: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __fdividef(1.0f , (1.0 + __expf(-A[i]))); break;
 		  case logistic_grad: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i]*(1.0f-A[i]); break;
 		  case eq_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] == B[i]); break;
-		  case ls_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] < B[i]); break;
+		  case lt_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] < B[i]); break;
 		  case gt_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] > B[i]); break;
 		  case le_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] <= B[i]); break;
 		  case ge_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] >= B[i]); break;
 		  case ne_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] != B[i]); break;
 		  case eq_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] == flt); break;
-		  case ls_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] < flt); break;
+		  case lt_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] < flt); break;
 		  case gt_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] > flt); break;
 		  case le_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] <= flt); break;
 		  case ge_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] >= flt); break;
@@ -358,7 +358,7 @@ __global__ void kVectorWise(float *A, float *v, float *out, int batches, int row
 		case gt_vec:
 			for (unsigned int i = idx;i < size; i += numThreads)
 			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  (float)(A[i + batchOffset + mapOffset] > v[offset]); } break;
-		case ls_vec:
+		case lt_vec:
 			for (unsigned int i = idx;i < size; i += numThreads)
 			{ offset = (i / rows); out[i + batchOffset + mapOffset] =  (float)(A[i + batchOffset + mapOffset] < v[offset]); } break;
 		case le_vec:

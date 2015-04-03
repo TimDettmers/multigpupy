@@ -97,12 +97,12 @@ class array(object):
     def __sub__(self, other): return apply_func(self,other, lib.funcs.fsub, lib.funcs.fscalarSub, lib.funcs.fsubVectorToTensor)
     def __mul__(self, other): return apply_func(self,other, lib.funcs.fmul, lib.funcs.fscalarMul, lib.funcs.fmulVectorToTensor)
     def __div__(self, other): return apply_func(self,other, lib.funcs.fdiv, lib.funcs.fscalarDiv, lib.funcs.fdivVectorToTensor)
-    def __eq__(self, other): return apply_func(self,other, lib.funcs.feq, lib.funcs.fscalar_eq, lib.funcs.fvec_eq)
+    def __eq__(self, other): return equal(self,other)
     def __lt__(self, other):  return less(self,other)
-    def __gt__(self, other): return apply_func(self,other, lib.funcs.fgt, lib.funcs.fscalar_gt, lib.funcs.fvec_gt)
-    def __ge__(self, other): return apply_func(self,other, lib.funcs.fge, lib.funcs.fscalar_ge, lib.funcs.fvec_ge)
-    def __le__(self, other): return apply_func(self,other, lib.funcs.fle, lib.funcs.fscalar_le, lib.funcs.fvec_le)
-    def __ne__(self, other): return apply_func(self,other, lib.funcs.fne, lib.funcs.fscalar_ne, lib.funcs.fvec_ne)
+    def __gt__(self, other): return greater(self,other)
+    def __ge__(self, other): return greater_equal(self,other)
+    def __le__(self, other): return less_equal(self,other)
+    def __ne__(self, other): return not_equal(self,other)
     #def abs(self): return absolute(self, out=None)
     
     
@@ -219,8 +219,8 @@ def equal(x1,x2,out=None):
     else: return apply_func(x1,x2, lib.funcs.feq, lib.funcs.fscalar_eq, lib.funcs.fvec_eq)
     
 def less(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.funcs.inp_ls, lib.funcs.inp_scalar_ls, lib.funcs.inp_vec_ls, out)
-    else: return apply_func(x1,x2, lib.funcs.fls, lib.funcs.fscalar_ls, lib.funcs.fvec_ls)
+    if out: apply_func(x1,x2, lib.funcs.inp_lt, lib.funcs.inp_scalar_lt, lib.funcs.inp_vec_lt, out)
+    else: return apply_func(x1,x2, lib.funcs.flt, lib.funcs.fscalar_lt, lib.funcs.fvec_lt)
         
 def less_equal(x1,x2,out=None):
     if out: apply_func(x1,x2, lib.funcs.inp_le, lib.funcs.inp_scalar_le, lib.funcs.inp_vec_le, out)
