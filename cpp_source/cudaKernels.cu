@@ -50,28 +50,6 @@ __global__ void kRenormalizeWeights(float *w, float *unit_sums, float limit, int
 
 }
 
-
-
-
-
-__global__ void kFill_with(float *m, float fill_value, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       m[i] = fill_value;
-}
-
-__global__ void kFill_with(int *m, int fill_value, int size)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx;i < size; i += numThreads)
-       m[i] = fill_value;
-}
-
 __global__ void kRdmNumbers(float *seed, int size, float *out)
 {
 	const unsigned int numThreads = blockDim.x * gridDim.x;
@@ -455,39 +433,6 @@ __global__ void kTransposeTensor(float *A, float *out, int batches, int width, i
 
 }
 
-//for column major data
-__global__ void slice_rows(float *A, float *out, int size_out, int rows_A, int start, int end)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-  int current_col = 0;
-  int current_row = 0;
-  int offset = 0;
-  int rows_out = (end - start) + 1;
-
-  for (unsigned int i = idx;i < size_out; i += numThreads)
-  {
-	  current_col = i / rows_out; //note: int arithmetic
-	  current_row = i - (current_col*rows_out);
-	  offset = rows_A*current_col;
-
-	  out[i] = A[offset + start + current_row];
-  }
-}
-
-//for column major data
-__global__ void slice_cols(float *A, float *out, int start, int rows, int size_out)
-{
-  const unsigned int numThreads = blockDim.x * gridDim.x;
-  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-  for (unsigned int i = idx; i < size_out; i += numThreads)
-  {
-     out[i] = A[i+(start*rows)];
-  }
-}
-
-
 
 __device__ void reduceToMax(float* sdata, unsigned int tid)
 {
@@ -757,18 +702,6 @@ __global__ void kCreate_t_matrix(float *labels, float *out, int rows, int size)
 
 }
 
-__global__ void kEqual(float *A, float *B, float *out, int size)
-{
-	  const unsigned int numThreads = blockDim.x * gridDim.x;
-	  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-	  for (unsigned int i = idx;i < size; i += numThreads)
-	  {
-		  out[i] = (float)(A[i] == B[i]);
-	  }
-}
-
-
 __global__ void kRectifiedLinear(float *A, float *out, int size)
 {
 	  const unsigned int numThreads = blockDim.x * gridDim.x;
@@ -877,17 +810,6 @@ __global__ void kSquaredError(float *A, float *t, float *out, int size)
 
 	  for (unsigned int i = idx;i < size; i += numThreads)
 		  out[i] = powf(A[i] -t[i],2.0f);
-}
-
-__global__ void kSum(float *v, float *out, int size)
-{
-	  const unsigned int numThreads = blockDim.x * gridDim.x;
-	  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-	  out[0] = 0.0f;
-	  for (unsigned int i = idx;i < size; i += numThreads)
-	  {
-		  atomicAdd(&out[0],v[i]);
-	  }
 }
 
 

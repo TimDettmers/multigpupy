@@ -187,15 +187,12 @@ void applySliceFunc(Tensor *A, Slice *S, Tensor *out)
 	for(int i = 0; i < gpus; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		dim3 grids(A->batches, A->maps,1);
-		dim3 blocks(32,32,1);
-		kSlice<<<grids,blocks>>>(A->data_gpus[i],out->data_gpus[i],
+		kSlice<<<dim3(A->batches, A->maps,1),dim3(32,32,1)>>>(A->data_gpus[i],out->data_gpus[i],
 				S->batch_start, S->batch_stop,
 				S->map_start, S->map_stop,
 				S->row_start, S->row_stop,
 				S->col_start, S->col_stop,
 				A->rows,A->cols,out->batches,out->maps,out->cols,out->rows);
-		//cudaDeviceSynchronize();
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 
