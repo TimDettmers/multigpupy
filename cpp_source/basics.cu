@@ -166,55 +166,12 @@ void togpu(Tensor *out, float *cpu_buffer)
 }
 
 
-int sliceDimHelper(int dim, int start, int stop)
-{
-	if(start< 0 && stop == dim){ return -start; }
-	if(start >= 0 && stop < 0){ return start+stop; }
-	if(start >= 0 && stop<= dim){ return stop-start; }
-	if(start == 0 && stop > dim){ return dim; }
-	return 0;
-}
-
-void rearrageSlice(Slice *S, Tensor *A)
-{
-	if(S->batch_stop < 0){S->batch_start = A->batches + S->batch_start; }
-	if(S->map_stop < 0){S->map_stop = A->maps + S->map_stop; }
-	if(S->row_stop < 0){S->row_stop = A->rows + S->row_stop; }
-	if(S->col_stop < 0){S->col_stop = A->cols + S->col_stop; }
-
-	if(S->batch_start < 0){S->batch_start = A->batches + S->batch_start; }
-	if(S->map_start < 0){S->map_start = A->maps + S->map_start; }
-	if(S->row_start < 0){S->row_start = A->rows + S->row_start; }
-	if(S->col_start < 0){S->col_start = A->cols + S->col_start; }
-
-	if(S->batch_stop > A->batches) S->batch_stop = A->batches;
-	if(S->map_stop > A->maps) S->map_stop = A->maps;
-	if(S->row_stop > A->rows) S->row_stop = A->rows;
-	if(S->col_stop > A->cols) S->col_stop = A->cols;
-}
-
 Tensor *applySliceFunc(Tensor *A, Slice *S)
 {
-
-
-
-	rearrageSlice(S,A);
-
-
-	std::cout << S->batch_start << ":" << S->batch_stop << std::endl;
-	std::cout << S->map_start << ":" << S->map_stop << std::endl;
-	std::cout << S->row_start << ":" << S->row_stop << std::endl;
-	std::cout << S->col_start << ":" << S->col_stop << std::endl;
-
 	Tensor *out = zeros(S->batch_stop-S->batch_start,
 						S->map_stop-S->map_start,
 						S->row_stop-S->row_start,
 						S->col_stop-S->col_start);
-
-
-	std::cout << out->batches << "x" << out->maps << "x" << out->rows << "x" << out->cols << std::endl;
-
-
 
 	applySliceFunc(A, S, out);
 

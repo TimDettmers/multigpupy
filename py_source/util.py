@@ -18,18 +18,28 @@ def handle_dim(d0, d1, d2, d3):
     if d3 == None: d3 = d2; d2=d1; d1=d0; d0=1
     return d0,d1,d2,d3
 
-def handle_selectors(selectors):
-    full_slice = slice(0,np.iinfo(np.int32).max)
-    print type(selectors)
+def convert_shape_value(value, dim, start=True):
+    if value == None and start: return 0
+    elif value == None and not start: return dim
+    elif value < 0: return dim+value
+    elif value > dim: return dim
+    else: return value
+
+def handle_selectors(selectors, shape):
     if type(selectors) == type(slice(1)): selectors = [selectors]
-    selects = []
-    for i, slice_obj in enumerate(selectors):
-        if not slice_obj.start and not slice_obj.stop: selects.append(slice(0,np.iinfo(np.int32).max))
-        elif not slice_obj.start and slice_obj.stop: selects.append(slice(0,slice_obj.stop))
-        elif slice_obj.start and not slice_obj.stop: selects.append(slice(slice_obj.start,np.iinfo(np.int32).max))
-        else: selects.append(slice_obj)
-        
-    if len(selects) == 4: return selects
-    if len(selects) == 3: return [full_slice] + selects
-    if len(selects) == 2: return [full_slice,full_slice] + selects
-    if len(selects) == 1: return [full_slice,full_slice, full_slice, selects[0]]
+    select = [[0,shape[0]], [0,shape[1]],[0,shape[2]],[0,shape[3]]]
+    select_buffer = [[0,shape[0]], [0,shape[1]],[0,shape[2]],[0,shape[3]]]
+    for i, selector in enumerate(selectors):
+        dimGreaterOneCount = 0
+        for idx, (start, stop) in enumerate(select):
+            if stop > 1:
+                if i ==  dimGreaterOneCount:
+                    select_buffer[idx][0] = convert_shape_value(selector.start, stop)
+                    select_buffer[idx][1] = convert_shape_value(selector.stop, stop,False)                    
+                dimGreaterOneCount+=1
+               
+    return select_buffer
+    
+            
+             
+          

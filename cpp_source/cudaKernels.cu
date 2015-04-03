@@ -730,7 +730,7 @@ __global__ void kSlice(float *A, float *out, int b1, int b2, int m1, int m2, int
 			{
 				colidx =  (col*rows)+mapidx;
 				colidx_slice = ((col-c1)*rows_slice) + mapidx_slice;
-				for(int row = threadIdx.x; row < rows; row+=blockDim.x)
+				for(int row = threadIdx.x+r1; row < r2; row+=blockDim.x)
 				{
 					out[colidx_slice + (row-r1)] = A[colidx + (row < 0 ? (rows + row) : row)];
 				}
