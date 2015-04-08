@@ -9,6 +9,8 @@ import ctypes as ct
 import util as u
 from library_interface import lib
 
+p_gpupy = lib.funcs.fGPUpy()
+
 class Slice():
     def __init__(self, slice_pointer):
         self.pt = slice_pointer
@@ -240,6 +242,9 @@ def not_equal(x1,x2,out=None):
     
 def emptySlice():
     return Slice(lib.funcs.femptySlice())
+
+def dot(a,b,out=None):
+    return array(None, lib.funcs.fdot(p_gpupy, a.pt,b.pt))
     
 
     

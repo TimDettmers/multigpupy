@@ -747,6 +747,15 @@ def test_slicing():
     C = B[:15,:15,:15,:15].tocpu()    
     t.assert_array_equal(C, A[:15,:15,:15,:15], "np[:15,:15,:15,:15] != gpu[:15,:15,:15,:15]")   
     
+def test_dot():
+    A1 = np.float32(np.random.rand(17,83))
+    B1 = np.float32(np.random.rand(83,13)) 
+    A2 = gpu.array(A1)
+    B2 = gpu.array(B1)
+    C = gpu.dot(A2,B2).tocpu()
+    t.assert_array_almost_equal(C, np.dot(A1,B1), 5, "np.dot != gpu.dot 2 dimensions!")
+       
+    
     
 if __name__ == '__main__':    
     nose.run()

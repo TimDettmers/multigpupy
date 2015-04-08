@@ -19,6 +19,7 @@
 #include <vector>
 #include <float.h>
 #include <limits.h>
+#include <assert.h>
 
 /**
  * This macro checks return value of the CUDA runtime call and exits
