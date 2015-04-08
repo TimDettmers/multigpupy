@@ -766,16 +766,16 @@ def test_dot():
     B4 = gpu.array(B3)
     
     gpu.dotT(A2,B4,C)
-    t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B3.T), 5, "np.dot != gpu.dot 2 dimensions!")  
+    t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B3.T), 5, "np.dotT != gpu.dot 2 dimensions!")  
     C*=0.0  
     gpu.dotT(A2,B4,C)
-    t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B3.T), 5, "np.dot != gpu.dot 2 dimensions!")
+    t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B3.T), 5, "np.dotT != gpu.dot 2 dimensions!")
     
     gpu.Tdot(A4,B2,C)
-    t.assert_array_almost_equal(C.tocpu(), np.dot(A3.T,B1), 5, "np.dot != gpu.dot 2 dimensions!")  
+    t.assert_array_almost_equal(C.tocpu(), np.dot(A3.T,B1), 5, "np.Tdot != gpu.dot 2 dimensions!")  
     C*=0.0  
     gpu.Tdot(A4,B2,C)
-    t.assert_array_almost_equal(C.tocpu(), np.dot(A3.T,B1), 5, "np.dot != gpu.dot 2 dimensions!")
+    t.assert_array_almost_equal(C.tocpu(), np.dot(A3.T,B1), 5, "np.Tdot != gpu.dot 2 dimensions!")
        
     
     

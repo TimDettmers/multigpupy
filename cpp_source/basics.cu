@@ -156,12 +156,15 @@ Tensor *tocpu(Tensor *A, float *cpu_buffer)
 
 void togpu(Tensor *out, float *cpu_buffer)
 {
+
 	Tensor *temp = empty(out->batches,out->maps,out->rows,out->cols);
-	CUDA_CHECK_RETURN(cudaMemcpy(out->data,cpu_buffer,out->bytes,cudaMemcpyDefault));
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++){ CUDA_CHECK_RETURN(cudaMemcpy(out->data_gpus[i],cpu_buffer,out->bytes,cudaMemcpyDefault)); }
 	to_col_major(out,temp);
-	CUDA_CHECK_RETURN(cudaMemcpy(out->data,temp->data,out->bytes,cudaMemcpyDefault));
-	CUDA_CHECK_RETURN(cudaFree(temp->data));
-	free(temp);
+	for(int i = 0; i < gpus; i++){ CUDA_CHECK_RETURN(cudaMemcpy(out->data_gpus[i],temp->data_gpus[i],out->bytes,cudaMemcpyDefault)); }
+
+	temp->freeTensor();
 }
 
 
