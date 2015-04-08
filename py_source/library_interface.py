@@ -134,6 +134,7 @@ funcs.inp_dotT.restype = ct.c_void_p
 
 funcs.fsynchronizingAdd.restype = ct.POINTER(Tensor)
 funcs.inp_synchronizingAdd.restype = ct.c_void_p
+funcs.fGPUCount.restype = ct.c_int32
 
 class lib(object): funcs = funcs
 

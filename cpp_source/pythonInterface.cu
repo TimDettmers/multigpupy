@@ -118,4 +118,6 @@ extern "C"
 	Tensor *fsynchronizingAdd(GPUpy *gpupy, Tensor *A){ return gpupy->synchronizingAdd(A); }
 	void inp_synchronizingAdd(GPUpy *gpupy, Tensor *A, Tensor *out){ gpupy->synchronizingAdd(A,out); }
 
+	int fGPUCount(GPUpy *gpupy){ return gpupy->DEVICE_COUNT; }
+
 }

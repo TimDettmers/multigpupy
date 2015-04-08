@@ -93,7 +93,8 @@ class array(object):
         return data        
 
     @property
-    def T(self): return array(None, lib.funcs.fT(self.pt))         
+    def T(self): return array(None, lib.funcs.fT(self.pt))   
+      
     def __del__(self): lib.funcs.ffree(self.pt)
     def __add__(self, other): return apply_func(self,other, lib.funcs.fadd, lib.funcs.fscalarAdd, lib.funcs.faddVectorToTensor)
     def __sub__(self, other): return apply_func(self,other, lib.funcs.fsub, lib.funcs.fscalarSub, lib.funcs.fsubVectorToTensor)
@@ -259,6 +260,8 @@ def fsynchronizingAdd(x1, out=None):
     if out: lib.funcs.inp_synchronizingAdd(p_gpupy, x1.pt, out.pt)
     return array(None, lib.funcs.fsynchronizingAdd(p_gpupy,x1.pt))
     
+
+def gpu_count(): return lib.funcs.fGPUCount(p_gpupy)   
 
     
     

@@ -782,10 +782,10 @@ def test_synchronizingAdd():
     B = gpu.array(A)    
     C = gpu.fsynchronizingAdd(B)   
     
-    t.assert_array_almost_equal(C.tocpu(), A*2, 7, "Synchronizing add does not work!")
+    t.assert_array_almost_equal(C.tocpu(), A*gpu.gpu_count(), 7, "Synchronizing add does not work!")
     C*=0
     gpu.fsynchronizingAdd(B,C)
-    t.assert_array_almost_equal(C.tocpu(), A*2, 7, "Synchronizing add does not work!")
+    t.assert_array_almost_equal(C.tocpu(), A*gpu.gpu_count(), 7, "Synchronizing add does not work!")
     
        
     
