@@ -255,7 +255,9 @@ def dotT(a,b,out=None):
     if out: lib.funcs.inp_dotT(p_gpupy, a.pt, b.pt, out.pt)
     else: return array(None, lib.funcs.fdotT(p_gpupy, a.pt,b.pt))
     
-def fsynchronizingAdd(x1): return array(None, lib.funcs.fsynchronizingAdd(p_gpupy,x1.pt))
+def fsynchronizingAdd(x1, out=None): 
+    if out: lib.funcs.inp_synchronizingAdd(p_gpupy, x1.pt, out.pt)
+    return array(None, lib.funcs.fsynchronizingAdd(p_gpupy,x1.pt))
     
 
     

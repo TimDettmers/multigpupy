@@ -780,11 +780,12 @@ def test_dot():
 def test_synchronizingAdd():
     A = np.float32(np.random.rand(17,83))
     B = gpu.array(A)    
-    C = gpu.fsynchronizingAdd(B).tocpu()
+    C = gpu.fsynchronizingAdd(B)   
     
-    
-    
-    t.assert_array_almost_equal(C, A*2, 7, "Synchronizing add does not work!")
+    t.assert_array_almost_equal(C.tocpu(), A*2, 7, "Synchronizing add does not work!")
+    C*=0
+    gpu.fsynchronizingAdd(B,C)
+    t.assert_array_almost_equal(C.tocpu(), A*2, 7, "Synchronizing add does not work!")
     
        
     
