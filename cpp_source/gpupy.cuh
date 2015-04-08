@@ -51,7 +51,7 @@ public:
 	Tensor *dotT(Tensor *A, Tensor *B);
 	void dot(Tensor *A, Tensor *B, Tensor *out);
 	void dotT(Tensor *A, Tensor *B, Tensor *out);
-	void TdotT(Tensor *A, Tensor *B, Tensor *out);
+	void Tdot(Tensor *A, Tensor *B, Tensor *out);
 	void dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasOperation_t T2);
 
 private:

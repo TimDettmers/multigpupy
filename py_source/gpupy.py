@@ -247,6 +247,14 @@ def dot(a,b,out=None):
     if out: lib.funcs.inp_dot(p_gpupy, a.pt, b.pt, out.pt)
     else: return array(None, lib.funcs.fdot(p_gpupy, a.pt,b.pt))
     
+def Tdot(a,b,out=None):
+    if out: lib.funcs.inp_Tdot(p_gpupy, a.pt, b.pt, out.pt)
+    else: return array(None, lib.funcs.fTdot(p_gpupy, a.pt,b.pt))
+    
+def dotT(a,b,out=None):
+    if out: lib.funcs.inp_dotT(p_gpupy, a.pt, b.pt, out.pt)
+    else: return array(None, lib.funcs.fdotT(p_gpupy, a.pt,b.pt))
+    
 
     
     

@@ -62,7 +62,7 @@ Tensor *GPUpy::Tdot(Tensor *A, Tensor *B){ Tensor *out = empty(1,1,A->rows,B->co
 Tensor *GPUpy::dotT(Tensor *A, Tensor *B){ Tensor *out = empty(1,1,A->rows,B->cols); dot(A,B,out,CUBLAS_OP_N,CUBLAS_OP_T); return out; }
 void GPUpy::dot(Tensor *A, Tensor *B, Tensor *out){ dot(A,B,out,CUBLAS_OP_N,CUBLAS_OP_N); }
 void GPUpy::dotT(Tensor *A, Tensor *B, Tensor *out){ dot(A,B,out,CUBLAS_OP_N,CUBLAS_OP_T); }
-void GPUpy::TdotT(Tensor *A, Tensor *B, Tensor *out){ dot(A,B,out,CUBLAS_OP_T,CUBLAS_OP_N); }
+void GPUpy::Tdot(Tensor *A, Tensor *B, Tensor *out){ dot(A,B,out,CUBLAS_OP_T,CUBLAS_OP_N); }
 void GPUpy::dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasOperation_t T2)
 {
 	const float alpha = 1.0f;

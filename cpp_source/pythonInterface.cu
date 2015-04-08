@@ -110,5 +110,9 @@ extern "C"
 
 	Tensor *fdot(GPUpy *gpupy, Tensor *A, Tensor *B){ return gpupy->dot(A,B); }
 	void inp_dot(GPUpy *gpupy, Tensor *A, Tensor *B, Tensor *out){ gpupy->dot(A,B, out); }
+	Tensor *fTdot(GPUpy *gpupy, Tensor *A, Tensor *B){ return gpupy->Tdot(A,B); }
+	void inp_Tdot(GPUpy *gpupy, Tensor *A, Tensor *B, Tensor *out){ gpupy->Tdot(A,B, out); }
+	Tensor *fdotT(GPUpy *gpupy, Tensor *A, Tensor *B){ return gpupy->dotT(A,B); }
+	void inp_dotT(GPUpy *gpupy, Tensor *A, Tensor *B, Tensor *out){ gpupy->dotT(A,B, out); }
 
 }
