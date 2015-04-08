@@ -244,7 +244,8 @@ def emptySlice():
     return Slice(lib.funcs.femptySlice())
 
 def dot(a,b,out=None):
-    return array(None, lib.funcs.fdot(p_gpupy, a.pt,b.pt))
+    if out: lib.funcs.inp_dot(p_gpupy, a.pt, b.pt, out.pt)
+    else: return array(None, lib.funcs.fdot(p_gpupy, a.pt,b.pt))
     
 
     

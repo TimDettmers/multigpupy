@@ -109,5 +109,6 @@ extern "C"
 	Tensor *fslice(Tensor *A, Slice *S){ return applySliceFunc(A,S); }
 
 	Tensor *fdot(GPUpy *gpupy, Tensor *A, Tensor *B){ return gpupy->dot(A,B); }
+	void inp_dot(GPUpy *gpupy, Tensor *A, Tensor *B, Tensor *out){ gpupy->dot(A,B, out); }
 
 }

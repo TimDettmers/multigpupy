@@ -752,8 +752,12 @@ def test_dot():
     B1 = np.float32(np.random.rand(83,13)) 
     A2 = gpu.array(A1)
     B2 = gpu.array(B1)
-    C = gpu.dot(A2,B2).tocpu()
-    t.assert_array_almost_equal(C, np.dot(A1,B1), 5, "np.dot != gpu.dot 2 dimensions!")
+    C = gpu.dot(A2,B2)
+    t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B1), 5, "np.dot != gpu.dot 2 dimensions!")
+    
+    C*=0.0
+    gpu.dot(A2,B2,C)
+    t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B1), 5, "np.dot != gpu.dot 2 dimensions!")
        
     
     

@@ -126,6 +126,7 @@ funcs.fseeded_GPUpy.restype = ct.c_void_p
 funcs.fGPUpy.restype = ct.c_void_p
 
 funcs.fdot.restype = ct.POINTER(Tensor)
+funcs.inp_dot.restype = ct.c_void_p
 
 class lib(object): funcs = funcs
 
