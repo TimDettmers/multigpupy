@@ -23,6 +23,10 @@ void GPUpy::init(int seed)
 		cublasHandle_t handle;
 		CUBLAS_CHECK_RETURN(cublasCreate_v2(&handle));
 		cublashandles.push_back(handle);
+
+		cudaStream_t s;
+		CUDA_CHECK_RETURN(cudaStreamCreate(&s));
+		streams.push_back(s);
 	}
 
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
@@ -96,4 +100,37 @@ void GPUpy::dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasO
 
 
 
+void GPUpy::enablePeerAccess()
+{
+	for(int gpu1 = 0; gpu1 < DEVICE_COUNT; gpu1++)
+		for(int gpu2 = 0; gpu2 < DEVICE_COUNT; gpu2++)
+			if(gpu1!=gpu2)
+			{
+				CUDA_CHECK_RETURN(cudaSetDevice(gpu1));
+				CUDA_CHECK_RETURN(cudaDeviceEnablePeerAccess(gpu2,0));
+			}
+
+	hasPeerAccess = true;
+}
+
+Tensor *GPUpy::synchronizingAdd(Tensor *A){ Tensor *out = empty(A->batches,A->maps,A->rows,A->cols); synchronizingAdd(A,out); return out; }
+void GPUpy::synchronizingAdd(Tensor *A, Tensor *out)
+{
+	if(!hasPeerAccess){ enablePeerAccess(); }
+
+	int copyid = 0;
+	for(int offset = 1; offset < DEVICE_COUNT; offset++)
+	{
+		for(int myid = 0; myid < DEVICE_COUNT; myid++)
+		{
+			copyid = myid + offset;
+			copyid = copyid >= DEVICE_COUNT ? copyid-DEVICE_COUNT : copyid;
+
+			synchronize(A,out,myid,copyid,streams[myid], add_tensor);
+
+		}
+		for(int myid = 0; myid < DEVICE_COUNT; myid++){ CUDA_CHECK_RETURN(cudaStreamSynchronize(streams[myid]));}
+	}
+
+}
 

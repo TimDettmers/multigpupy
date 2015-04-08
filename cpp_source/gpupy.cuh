@@ -53,10 +53,15 @@ public:
 	void dotT(Tensor *A, Tensor *B, Tensor *out);
 	void Tdot(Tensor *A, Tensor *B, Tensor *out);
 	void dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasOperation_t T2);
+	void enablePeerAccess();
+	Tensor *synchronizingAdd(Tensor *A);
+	void synchronizingAdd(Tensor *A, Tensor *out);
 
 private:
 	std::vector<curandGenerator_t> generators;
 	std::vector<cublasHandle_t> cublashandles;
+	std::vector<cudaStream_t> streams;
+	bool hasPeerAccess;
 
 };
 

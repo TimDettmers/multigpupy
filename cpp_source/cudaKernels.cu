@@ -270,6 +270,8 @@ __global__ void kAdd_to_z(float *z, float *z1, float *y, float *y_count, int row
 }
 
 
+
+
 __global__ void kElementWise(float *A,float *B, float *out, int size, float flt, Operation_t strategy)
 {
 	const unsigned int numThreads = blockDim.x * gridDim.x;

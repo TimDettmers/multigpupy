@@ -115,4 +115,6 @@ extern "C"
 	Tensor *fdotT(GPUpy *gpupy, Tensor *A, Tensor *B){ return gpupy->dotT(A,B); }
 	void inp_dotT(GPUpy *gpupy, Tensor *A, Tensor *B, Tensor *out){ gpupy->dotT(A,B, out); }
 
+	void fsynchronizingAdd(GPUpy *gpupy, Tensor *A){ gpupy->synchronizingAdd(A); }
+
 }

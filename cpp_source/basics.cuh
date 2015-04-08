@@ -33,13 +33,12 @@ Tensor *applyFunc(Tensor *A, Tensor *B, float flt, Operation_t ops);
 void applyFunc(Tensor *A, Tensor *B, Tensor *out, Operation_t ops);
 void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops);
 
+void synchronize(Tensor *A, Tensor *out, int myid, int copyid, cudaStream_t stream,Operation_t ops);
+
 Tensor *applySliceFunc(Tensor *A, Slice *S);
 void applySliceFunc(Tensor *A, Slice *S, Tensor *out);
 int sliceDimHelper(int dim, int start, int stop);
 void rearrageSlice(Slice *S, Tensor *A);
-
-
-
 
 
 

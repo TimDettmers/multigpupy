@@ -776,6 +776,16 @@ def test_dot():
     C*=0.0  
     gpu.Tdot(A4,B2,C)
     t.assert_array_almost_equal(C.tocpu(), np.dot(A3.T,B1), 5, "np.Tdot != gpu.dot 2 dimensions!")
+    
+def test_synchronizingAdd():
+    A = np.float32(np.random.rand(17,83))
+    B = gpu.array(A)    
+    C = gpu.fsynchronizingAdd(B).tocpu()
+    
+    
+    
+    t.assert_array_almost_equal(C, A*2, 7, "Synchronizing add does not work!")
+    
        
     
     

@@ -15,6 +15,8 @@ Slice *emptySlice()
 	return out;
 }
 
+
+
 Tensor *empty(int batches, int maps, int rows, int cols)
 {
 
@@ -267,5 +269,13 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
 
+
+void synchronize(Tensor *A, Tensor *out, int myid, int copyid, cudaStream_t stream,Operation_t ops)
+{
+	int block_size = (A->rows*A->cols/THREADS_PER_BLOCKS) + 1;
+	CUDA_CHECK_RETURN(cudaSetDevice(myid));
+	kElementWise<<<block_size,THREADS_PER_BLOCKS,0,stream>>>(A->data_gpus[myid],A->data_gpus[copyid],out->data_gpus[myid],A->size,0.0f,ops);
+	CUDA_CHECK_RETURN(cudaPeekAtLastError());
+}
 
 
