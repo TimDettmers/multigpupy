@@ -178,7 +178,7 @@ class Layer(object):
         
     def print_reset_error(self, error_name='Train'):
         error = np.array(self.current_error).mean()
-        print '{1} error: {0} ({2},{3})'.format(np.round(error,4),error_name, np.round(error-(self.current_SE[-1]*1.96),4), np.round(error+(self.current_SE[-1]*1.96),4))
+        print '{1} error: {0}\t ({2},{3})'.format(np.round(error,4),error_name, np.round(error-(self.current_SE[-1]*1.96),4), np.round(error+(self.current_SE[-1]*1.96),4))
         del self.current_error
         del self.current_SE
         self.current_error = []

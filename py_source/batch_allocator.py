@@ -144,10 +144,11 @@ class batch_allocator(object):
         if self.net:
             if self.relative_error:
                 if len(self.net.current_error) > 2:
-                    error = np.mean(np.array(self.net.current_error)) + 1e-10
-                    if self.net.current_SE[-1]/error < self.relative_error: 
-                        self.relative_error = None
-                        raise StopIteration
+                    error = np.mean(np.array(self.net.current_error))
+                    if error > 0:
+                        if self.net.current_SE[-1]/error < self.relative_error: 
+                            self.relative_error = None
+                            raise StopIteration
         return ret_idx
     
     def handle_copy_index(self):
