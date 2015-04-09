@@ -29,7 +29,7 @@ Tensor *empty(int batches, int maps, int rows, int cols)
 	out->cols = cols;
 	out->bytes = bytes;
 	out->size = size;
-	out->onGPU = 1;
+	out->isCUDA = 1;
 
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
@@ -44,6 +44,27 @@ Tensor *empty(int batches, int maps, int rows, int cols)
 	}
 
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
+
+	return out;
+}
+
+Tensor *empty_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer)
+{
+	Tensor *out = new Tensor();
+	int size = batches*maps*rows*cols;
+	float *pinned_data;
+	size_t bytes = size*sizeof(float);
+	CUDA_CHECK_RETURN(cudaHostAlloc(&pinned_data, bytes, cudaHostAllocPortable));
+	if(cpu_buffer)
+		CUDA_CHECK_RETURN(cudaMemcpy(pinned_data,cpu_buffer,bytes,cudaMemcpyDefault));
+	out->batches = batches;
+	out->maps = maps;
+	out->rows = rows;
+	out->cols = cols;
+	out->bytes = bytes;
+	out->size = size;
+	out->isCUDA = 1;
+	out->data = pinned_data;
 
 	return out;
 }
@@ -147,7 +168,7 @@ Tensor *tocpu(Tensor *A, float *cpu_buffer)
 	out->bytes = temp->bytes;
 	out->size = temp->size;
 	out->data = cpu_buffer;
-	out->onGPU = 0;
+	out->isCUDA = 0;
 
 	CUDA_CHECK_RETURN(cudaFree(temp->data));
 	delete temp;
@@ -227,6 +248,7 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
 		switch(ops)
 		{
+			case copy: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, copy); break;
 			case add_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, add_scalar); break;
 			case mul_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, mul_scalar); break;
 			case add_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size, flt, add_tensor); break;

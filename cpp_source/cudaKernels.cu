@@ -279,6 +279,7 @@ __global__ void kElementWise(float *A,float *B, float *out, int size, float flt,
 
 	switch(strategy)
 	{
+		  case copy: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i]; break;
 	  	  case add_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] + flt; break;
 	  	  case mul_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] * flt; break;
 		  case add_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] + B[i]; break;

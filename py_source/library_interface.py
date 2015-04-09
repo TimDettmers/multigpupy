@@ -136,6 +136,11 @@ funcs.fsynchronizingAdd.restype = ct.POINTER(Tensor)
 funcs.inp_synchronizingAdd.restype = ct.c_void_p
 funcs.fGPUCount.restype = ct.c_int32
 
+funcs.fBatchAllocator.restype = ct.c_void_p
+funcs.fallocateNextAsync.restype = ct.c_void_p
+funcs.freplaceCurrentBatch.restype = ct.c_void_p
+funcs.fto_pinned.restype = ct.POINTER(Tensor)
+
 class lib(object): funcs = funcs
 
 

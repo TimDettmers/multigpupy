@@ -48,7 +48,8 @@ enum Operation_t
 	gt_vec,
 	ge_vec,
 	le_vec,
-	ne_vec
+	ne_vec,
+	copy
 };
 
 __global__ void kRdmNumbers(float *seed, int size, float *out);

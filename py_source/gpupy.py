@@ -34,8 +34,6 @@ class Slice():
         self.pt.contents.row_stop = self.row.stop
         self.pt.contents.col_start = self.col.start
         self.pt.contents.col_stop = self.col.stop
-        print selectors
-        print self.col
                      
 
 class array(object):
@@ -162,7 +160,7 @@ def ones(shape):
 
 def empty(shape):
     shape = u.handle_shape(shape)
-    out = array(None, lib.funcs.fempty(shape[0],shape[1],shape[2],shape[3]))
+    out = array(None, lib.funcs.fempty(shape[0],shape[1],ct.c_int32(shape[2]),shape[3]))
     return out
 
 def add(x1,x2,out=None):
@@ -262,6 +260,3 @@ def fsynchronizingAdd(x1, out=None):
     
 
 def gpu_count(): return lib.funcs.fGPUCount(p_gpupy)   
-
-    
-    

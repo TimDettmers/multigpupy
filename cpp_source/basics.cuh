@@ -14,6 +14,7 @@
 
 Slice *emptySlice();
 Tensor *empty(int batches, int maps, int rows, int cols);
+Tensor *empty_pinned(int batches, int maps, int rows, int cols,float *cpu_buffer);
 Tensor *zeros(int batches, int maps, int rows, int cols);
 Tensor *ones(int batches, int maps, int rows, int cols);
 Tensor *fill_with_number(Tensor *A, float number);

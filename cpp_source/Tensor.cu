@@ -2,7 +2,7 @@
 
 void Tensor::freeTensor()
 {
-	if(onGPU)
+	if(isCUDA)
 	{
 		for(int i = 0;i < data_gpus.size(); i++)
 		{
