@@ -320,6 +320,22 @@ void synchronize(Tensor *A, Tensor *out, int myid, int copyid, cudaStream_t stre
 	CUDA_CHECK_RETURN(cudaPeekAtLastError());
 }
 
+float sum(Tensor *A)
+{
+	thrust::device_ptr<float> ptr(A->data);
+	return thrust::reduce(ptr, ptr+A->size);
+}
 
+float max(Tensor *A)
+{
+	thrust::device_ptr<float> ptr(A->data);
+	float res = -1.0f;
+	return thrust::reduce(ptr, ptr+A->size,res, thrust::maximum<float>());
+}
 
-
+float min(Tensor *A)
+{
+	thrust::device_ptr<float> ptr(A->data);
+	float res = -1.0f;
+	return thrust::reduce(ptr, ptr+A->size,res, thrust::minimum<float>());
+}

@@ -8,6 +8,7 @@
 #ifndef BASICS_CUH_
 #define BASICS_CUH_
 #include <Tensor.cuh>
+#include <thrust/reduce.h>
 #define THREADS_PER_BLOCKS (512)
 
 
@@ -42,6 +43,10 @@ Tensor *applySliceFunc(Tensor *A, Slice *S);
 void applySliceFunc(Tensor *A, Slice *S, Tensor *out);
 int sliceDimHelper(int dim, int start, int stop);
 void rearrageSlice(Slice *S, Tensor *A);
+
+float sum(Tensor *A);
+float max(Tensor *A);
+float min(Tensor *A);
 
 
 

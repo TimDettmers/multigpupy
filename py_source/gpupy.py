@@ -89,6 +89,11 @@ class array(object):
         self.npArray = data
         
         return data        
+    
+    
+    def sum(self): return lib.funcs.fsum(self.pt)
+    def min(self): return lib.funcs.ffmin(self.pt)
+    def max(self): return lib.funcs.ffmax(self.pt)
 
     @property
     def T(self): return array(None, lib.funcs.fT(self.pt))   
@@ -282,3 +287,7 @@ def dropout(x1,rate, out=None):
 def softmax(x1,out=None):
     if out: lib.funcs.inp_softmax(x1.pt, out.pt)
     return array(None, lib.funcs.fsoftmax(x1.pt))  
+
+def sum(x1): return lib.funcs.fsum(x1.pt)
+def min(x1): return lib.funcs.ffmin(x1.pt)
+def max(x1): return lib.funcs.ffmax(x1.pt)

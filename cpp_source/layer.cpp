@@ -102,7 +102,7 @@ void Layer::unit_activation(bool useDropout)
 			applyFunc(out,NULL,activation,0.0f,rectified_linear);
 			break;
 		case Softmax:
-			//softmax(out,out);
+			softmax(out,out);
 			break;
 		case Double_Rectified_Linear:
 			//doubleRectifiedLinear(out,activation);
@@ -118,8 +118,8 @@ void Layer::unit_activation(bool useDropout)
 	{
 		if(useDropout)
 			gpu->dropout(activation,out,DROPOUT);
-		//else
-			//scalarMul(activation,1.0f-DROPOUT, out);
+		else
+			applyFunc(activation,NULL,out,1.0f-DROPOUT,add_scalar);
 	}
 
 
@@ -131,10 +131,10 @@ void Layer::activation_gradient()
 	switch(UNIT_TYPE)
 	{
 		case Logistic:
-			//logisticGrad(activation,out);
+			applyFunc(activation,NULL,out,0.0f,logistic_grad);
 			break;
 		case Rectified_Linear:
-			//rectified_linear_derivative(activation,out);
+			applyFunc(activation,NULL,out,0.0f,gt_tensor);
 			break;
 		case Double_Rectified_Linear:
 			//double_rectified_linear_derivative(activation,out);
@@ -197,7 +197,7 @@ void Layer::handle_offsize()
 
 void Layer::dot_switch(Tensor *A, Tensor *B, Tensor *out)
 {
-	//GPU->dot(A,B,out);
+	gpu->dot(A,B,out);
 
 	//Tensor *Achar = empty_char(A->rows,A->cols);
 	//Tensor *Bchar = empty_char(B->rows,B->cols);
@@ -233,7 +233,7 @@ void Layer::forward(bool useDropout)
 
 	//GPU->dot(prev->out,prev->w_next,out);
 	dot_switch(prev->out,prev->w_next,out);
-	//addTensorVector(out,prev->b_next,out);
+	applyFunc(out,prev->b_next,out,0.0f,add_vec);
     unit_activation(useDropout);
 
     if(next){ next->forward(useDropout); }

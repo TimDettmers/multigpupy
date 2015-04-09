@@ -869,6 +869,13 @@ def test_softmax():
     gpu.softmax(B,C)
     t.assert_array_almost_equal(C.tocpu(), u.softmax(A), 4, "Softmax problem")
     
+def test_reduce_functions():
+    A = np.float32(np.random.randn(2,3,17,83))
+    B = gpu.array(A)
+    t.assert_equal(B.max(), A.max(), "max not equal")
+    t.assert_equal(B.min(), A.min(), "min not equal")
+    t.assert_array_almost_equal(B.sum(), A.sum(), 3, "sum not equal")
+    
      
     
     
