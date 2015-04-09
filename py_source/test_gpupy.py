@@ -11,6 +11,7 @@ import numpy as np
 import numpy.testing as t
 from batch_allocator import batch_allocator
 import time
+import util as u
 
 def setup():
     pass
@@ -791,15 +792,17 @@ def test_synchronizingAdd():
     
 def test_allocator_init():    
     data = np.float32(np.random.rand(6735,800))
-    labels = np.float32(np.random.rand(6735,800))
+    labels = np.float32(np.random.randint(0,10,(6735,)))
     
     batch_size = 128
     alloc = batch_allocator(data, labels, 0.2, 0.0, batch_size)
     for i in range(0,np.int32(np.ceil(data.shape[0]*0.8))-batch_size,batch_size):
         batch = data[i:i+batch_size]
+        batch_y = u.create_t_matrix(labels[i:i+batch_size],10)
         alloc.allocate_next_batch()
         alloc.replace_current_batch()
         t.assert_equal(alloc.batch.tocpu().T.reshape(batch.shape), batch)
+        t.assert_equal(alloc.batch_y.tocpu().T.reshape(batch_y.shape),batch_y )
         
     t0 = time.time()
     for epoch in range(10):
@@ -808,7 +811,8 @@ def test_allocator_init():
             alloc.replace_current_batch()
     sec = time.time()-t0
     GB = 10*data.shape[0]*data.shape[1]*4*(1024**-3)
-    assert GB/sec > 1.00
+    assert GB/sec > 0.75
+    
     
     
        

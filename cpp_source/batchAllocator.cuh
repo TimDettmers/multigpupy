@@ -14,10 +14,11 @@ class BatchAllocator
 {
 public:
 	BatchAllocator();
-	void allocateNextAsync(Tensor *batch, float *cpu_buffer);
-	void replaceCurrentBatch(Tensor *current_batch, Tensor *next_batch);
+	void allocateNextAsync(Tensor *batch, float *cpu_buffer, Tensor *batch_y, float *cpu_buffer_y);
+	void replaceCurrentBatch();
 
 	std::vector<cudaStream_t> streams;
+	std::vector<cudaStream_t> streams_y;
 	int DEVICE_COUNT;
 
 

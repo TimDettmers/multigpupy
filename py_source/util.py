@@ -41,5 +41,12 @@ def handle_selectors(selectors, shape):
     return select_buffer
     
             
+def create_t_matrix(y, classes = None):
+    if not classes: classes = np.max(y)+1
+    t = np.zeros((y.shape[0], classes))
+    for i in range(y.shape[0]):
+        t[np.int32(i), np.int32(y[i])] = 1.0
+        
+    return t
              
           
