@@ -61,9 +61,9 @@ def swap_pointer(x1, x2):
     swap = x1.pt    
     x1.pt = x2.pt
     x2.pt = swap
-    swap = x1.shape
-    x1.shape = x2.shape
-    x2.shape = swap      
+    #swap = x1.shape
+    #x1.shape = x2.shape
+    #x2.shape = swap      
 
 def create_uniform_rdm_weight(input_size,output_size):
     rdm = np.random.RandomState(1234)        

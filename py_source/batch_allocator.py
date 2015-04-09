@@ -23,8 +23,11 @@ class batch_allocator(object):
         shape = u.handle_shape(data.shape)  
         shape_label = u.handle_shape(labels.shape)
         
-        data = np.float32(np.transpose(data.reshape(shape),(0,1,3,2)))  
-        labels =  np.float32(np.transpose(labels.reshape(shape_label),(0,1,3,2)))       
+        data = np.float32(np.asanyarray(data,order='F'))
+        data = data.reshape(shape)
+        labels = np.float32(np.asanyarray(labels,order='F'))
+        labels = labels.reshape(shape_label)
+               
         
         self.batch_size = batch_size
         self.cv_percent = cv_percent
@@ -91,9 +94,9 @@ class batch_allocator(object):
     @property
     def batch_y(self): return self.current_y
     def allocate_next_batch(self):
-        if self.next_batch_id >= self.batches[0]: self.next_batch_id = 0
-        batch = np.float32(self.X[:,:,:,self.next_batch_id*self.batch_size:(self.next_batch_id+1)*self.batch_size])
-        batch_y = np.float32(self.y[:,:,:,self.next_batch_id*self.batch_size:(self.next_batch_id+1)*self.batch_size]) 
+        if self.next_batch_id >= self.batches[0]: self.next_batch_id = 0        
+        batch = np.float32(np.asfortranarray(self.X[:,:,self.next_batch_id*self.batch_size:(self.next_batch_id+1)*self.batch_size,:]))
+        batch_y = np.float32(np.asfortranarray(self.y[:,:,self.next_batch_id*self.batch_size:(self.next_batch_id+1)*self.batch_size,:]))
         lib.funcs.fallocateNextAsync(p_allocator, self.next.pt,batch.ctypes.data_as(ct.POINTER(ct.c_float)),self.next_y.pt,batch_y.ctypes.data_as(ct.POINTER(ct.c_float)))
         
     def replace_current_batch(self): 

@@ -89,6 +89,7 @@ class Layer(object):
         self.bias = gpu.empty((1,batch_size))
         
     def handle_offsize(self, batch_size):
+        print batch_size
         if self.activation_offsize == None:
             self.activation_offsize = gpu.empty((batch_size,self.unitcount))
             self.out_offsize = gpu.empty((batch_size,self.unitcount))
@@ -123,7 +124,7 @@ class Layer(object):
         return root    
         
     def forward(self, data=None, target=None,inTrainingMode=True):       
-        if data is not None: 
+        if data is not None:
             shape = u.handle_shape(data.shape)
             self.unitcount = shape[3] 
             self.handle_input_size(shape[2])           
@@ -162,7 +163,6 @@ class Layer(object):
         
     def weight_update(self):
         if self.next:
-            #print self.w_grad_next.tocpu().sum()
             lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(0.9),ct.c_float(0.001), self.out.shape[2])
             gpu.sub(self.w_next, self.w_grad_next, self.w_next)
         
