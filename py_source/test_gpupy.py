@@ -813,6 +813,38 @@ def test_allocator_init():
     GB = 10*data.shape[0]*data.shape[1]*4*(1024**-3)
     assert GB/sec > 0.75
     
+def test_dropout():
+    A = np.float32(np.random.rand(14,13,17,83))
+    B = gpu.array(A)
+    C = gpu.dropout(B, 0.2)
+    
+    t.assert_almost_equal(C.tocpu().sum()/100000, A.sum()*0.8/100000, 2, "Dropout seems to be fishy")
+    
+    C = gpu.dropout(B, 0.5)  
+    t.assert_almost_equal(C.tocpu().sum()/100000, A.sum()*0.5/100000, 2, "Dropout seems to be fishy")
+    
+    C = gpu.dropout(B, 0.8)   
+    t.assert_almost_equal(C.tocpu().sum()/100000, A.sum()*0.2/100000, 2, "Dropout seems to be fishy")    
+    
+    C = gpu.dropout(B, 1.0)    
+    t.assert_almost_equal(C.tocpu().sum(), 0.0, 0, "Dropout seems to be fishy")
+    
+    C*=0
+    gpu.dropout(B,0.2,C)
+    t.assert_almost_equal(C.tocpu().sum()/100000, A.sum()*0.8/100000, 2, "Dropout seems to be fishy")    
+    
+    C*=0
+    gpu.dropout(B,0.5,C)
+    t.assert_almost_equal(C.tocpu().sum()/100000, A.sum()*0.5/100000, 2, "Dropout seems to be fishy")    
+    
+    C*=0
+    gpu.dropout(B,0.8,C)
+    t.assert_almost_equal(C.tocpu().sum()/100000, A.sum()*0.2/100000, 2, "Dropout seems to be fishy")    
+    
+    C*=0
+    gpu.dropout(B,1.0,C)
+    t.assert_almost_equal(C.tocpu().sum(), 0.0, 0, "Dropout seems to be fishy")
+     
     
     
        

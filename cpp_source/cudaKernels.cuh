@@ -49,7 +49,8 @@ enum Operation_t
 	ge_vec,
 	le_vec,
 	ne_vec,
-	copy
+	copy,
+	dropout_tensor
 };
 
 __global__ void kRdmNumbers(float *seed, int size, float *out);

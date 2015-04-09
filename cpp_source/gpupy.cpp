@@ -99,6 +99,21 @@ void GPUpy::dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasO
 }
 
 
+Tensor *GPUpy::dropout(Tensor *A, float dropout_rate)
+{
+	Tensor *out = empty(A->batches, A->maps, A->rows, A->cols);
+
+	dropout(A, out, dropout_rate);
+	return out;
+}
+
+void GPUpy::dropout(Tensor *A, Tensor *out, float dropout_rate)
+{
+	rand(out);
+	applyFunc(A, NULL, out, dropout_rate, dropout_tensor);
+}
+
+
 
 void GPUpy::enablePeerAccess()
 {

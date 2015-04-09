@@ -139,6 +139,7 @@ def apply_func(x1, x2, func_matrix, func_scalar, func_vector = None, out=None):
         if out: func_matrix(x1.pt,x2.pt,out.pt)
         else: return array(None,func_matrix(x1.pt,x2.pt))
         
+def gpu_count(): return lib.funcs.fGPUCount(p_gpupy)  
         
 def is_vector(x):
     if type(x) != type(array): False
@@ -256,7 +257,8 @@ def dotT(a,b,out=None):
     
 def fsynchronizingAdd(x1, out=None): 
     if out: lib.funcs.inp_synchronizingAdd(p_gpupy, x1.pt, out.pt)
-    return array(None, lib.funcs.fsynchronizingAdd(p_gpupy,x1.pt))
-    
+    return array(None, lib.funcs.fsynchronizingAdd(p_gpupy,x1.pt))  
 
-def gpu_count(): return lib.funcs.fGPUCount(p_gpupy)   
+def dropout(x1,rate, out=None):
+    if out: lib.funcs.inp_dropout(p_gpupy, x1.pt, out.pt, ct.c_float(rate))
+    else: return array(None, lib.funcs.fdropout(p_gpupy, x1.pt, ct.c_float(rate)))

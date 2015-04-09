@@ -132,6 +132,9 @@ funcs.inp_Tdot.restype = ct.c_void_p
 funcs.fdotT.restype = ct.POINTER(Tensor)
 funcs.inp_dotT.restype = ct.c_void_p
 
+funcs.fdropout.restype = ct.POINTER(Tensor)
+funcs.inp_dropout.restype = ct.c_void_p
+
 funcs.fsynchronizingAdd.restype = ct.POINTER(Tensor)
 funcs.inp_synchronizingAdd.restype = ct.c_void_p
 funcs.fGPUCount.restype = ct.c_int32

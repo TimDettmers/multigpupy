@@ -122,6 +122,9 @@ extern "C"
 	Tensor *fdotT(GPUpy *gpupy, Tensor *A, Tensor *B){ return gpupy->dotT(A,B); }
 	void inp_dotT(GPUpy *gpupy, Tensor *A, Tensor *B, Tensor *out){ gpupy->dotT(A,B, out); }
 
+	Tensor *fdropout(GPUpy *gpupy, Tensor *A, float dropout_rate){ return gpupy->dropout(A,dropout_rate); }
+	void inp_dropout(GPUpy *gpupy, Tensor *A, Tensor *out, float dropout_rate){ gpupy->dropout(A,out,dropout_rate); }
+
 	Tensor *fsynchronizingAdd(GPUpy *gpupy, Tensor *A){ return gpupy->synchronizingAdd(A); }
 	void inp_synchronizingAdd(GPUpy *gpupy, Tensor *A, Tensor *out){ gpupy->synchronizingAdd(A,out); }
 

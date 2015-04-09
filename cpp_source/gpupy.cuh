@@ -11,9 +11,6 @@
 #include <curand.h>
 #include <cublas_v2.h>
 
-
-
-
 #define CURAND_CHECK_RETURN(value) {											\
 	curandStatus_t _m_cudaStat = value;										\
 	if (_m_cudaStat != CURAND_STATUS_SUCCESS) {										\
@@ -29,6 +26,52 @@
 				_m_cudaStat, __LINE__, __FILE__);		\
 		exit(1);															\
 	} }
+
+typedef enum Unittype_t
+{
+	Logistic = 0,
+	Rectified_Linear = 1,
+	Softmax = 2,
+	Linear = 4,
+	Double_Rectified_Linear = 8,
+	Input = 16
+} Unittype_t;
+
+typedef enum DataPropagationType_t
+{
+	Training = 0,
+	Trainerror = 1,
+	CVerror = 2
+} DataPropagationType_t;
+
+
+typedef enum WeightUpdateType_t
+{
+	NesterovRMSProp = 0,
+	NesterovMomentum = 1,
+	RMSProp = 2,
+	Momentum = 4,
+	NoMomentum = 8
+} WeightUpdateType_t;
+
+
+typedef enum ParallelismType_t
+{
+	None = 0,
+	DataParallelism = 1,
+	ModelParallelism = 2
+} ParallelismType_t;
+
+
+typedef enum Costfunction_t
+{
+	Cross_Entropy = 0,
+	Squared_Error = 1,
+	Root_Squared_Error = 2,
+	Misclassification = 4
+} Costfunction_t;
+
+
 
 class GPUpy
 {
@@ -56,6 +99,9 @@ public:
 	void enablePeerAccess();
 	Tensor *synchronizingAdd(Tensor *A);
 	void synchronizingAdd(Tensor *A, Tensor *out);
+
+	Tensor *dropout(Tensor *A, float dropout_rate);
+	void dropout(Tensor *A, Tensor *out, float dropout_rate);
 
 private:
 	std::vector<curandGenerator_t> generators;
