@@ -72,6 +72,8 @@ extern "C"
 
 	Tensor *fsoftmax(Tensor *A){return softmax(A); }
 	void inp_softmax(Tensor *A, Tensor *out){ softmax(A, out); }
+	Tensor *fargmax(Tensor *A){return argmax(A); }
+	void inp_argmax(Tensor *A, Tensor *out){ argmax(A, out); }
 
 	Tensor *faddVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,add_vec); }
 	void inp_addVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,add_vec); }

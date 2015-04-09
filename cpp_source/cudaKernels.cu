@@ -572,10 +572,6 @@ __device__ void reduceToSumLocal(float* sdata, unsigned int tid)
   }
 }
 
-
-
-
-
 __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int cols)
 {
 	const unsigned int numThreads = blockDim.x * gridDim.x;
@@ -616,6 +612,32 @@ __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int c
 		}
 	}
 
+}
+
+__global__ void kArgmax(float* A, float* out, unsigned int rows, unsigned int cols)
+{
+	const unsigned int numThreads = blockDim.x * gridDim.x;
+	const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+	unsigned int mapOffset = rows*cols*blockIdx.y;
+	unsigned int batchOffset = rows*cols*gridDim.y*blockIdx.x;
+	float max_value = -FLT_MAX;
+	float max_i = 0;
+	float col_value = 0.0f;
+
+	for (unsigned int row = idx; row < rows; row += numThreads)
+	{
+	  for (unsigned int i = 0; i < cols; i++)
+	  {
+		  col_value = A[(i*rows) + row +mapOffset+batchOffset];
+		  if(col_value > max_value)
+		  {
+			  max_value = col_value;
+			  max_i = i;
+		  }
+
+	  }
+	  out[row+batchOffset+mapOffset] = max_i;
+	}
 }
 
 //for column major data
@@ -669,32 +691,6 @@ __global__ void kAddScaledMatrixVector(float *A, float *v, float weight, float *
 	  offset = (i / rows); //note: int arithmetic
 	  out[i] =  A[i] + (v[offset]*weight);
   }
-}
-
-
-__global__ void kArgmax(float* A, float* out, unsigned int rows, unsigned int cols)
-{
-	  const unsigned int numThreads = blockDim.x * gridDim.x;
-	  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-	  float max_value = -FLT_MAX;
-	  float max_i = 0;
-	  float col_value = 0.0f;
-
-	  for (unsigned int row = idx; row < rows; row += numThreads)
-	  {
-		  for (unsigned int i = 0; i < cols; i++)
-		  {
-			  col_value = A[(i*rows) + row];
-			  if(col_value > max_value)
-			  {
-				  max_value = col_value;
-				  max_i = i;
-			  }
-
-		  }
-		  out[row] = max_i;
-	  }
-
 }
 
 __global__ void kCreate_t_matrix(float *labels, float *out, int rows, int size)

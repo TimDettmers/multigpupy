@@ -864,10 +864,20 @@ def test_softmax():
     B = gpu.array(A)
     C = gpu.softmax(B)
     
-    t.assert_array_almost_equal(C.tocpu(), u.softmax(A), 4, "Softmax problem")
+    t.assert_array_almost_equal(C.tocpu(), u.softmax(A), 4, "Softmax problem!")
     C*=0
     gpu.softmax(B,C)
-    t.assert_array_almost_equal(C.tocpu(), u.softmax(A), 4, "Softmax problem")
+    t.assert_array_almost_equal(C.tocpu(), u.softmax(A), 4, "Softmax problem!")
+    
+def test_argmax():
+    A = np.float32(np.random.rand(17,83))
+    B = gpu.array(A)
+    C = gpu.argmax(B)
+    
+    t.assert_array_almost_equal(C.tocpu(), np.argmax(A,1)[np.newaxis].T, 4, "Softmax problem!")
+    C*=0
+    gpu.argmax(B,C)
+    t.assert_array_almost_equal(C.tocpu(), np.argmax(A,1)[np.newaxis].T, 4, "Softmax problem!")
     
 def test_reduce_functions():
     A = np.float32(np.random.randn(2,3,17,83))

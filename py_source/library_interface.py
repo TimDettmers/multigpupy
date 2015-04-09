@@ -40,6 +40,8 @@ funcs.fT.restype = ct.POINTER(Tensor)
 funcs.inp_T.restype = ct.c_void_p
 funcs.fsoftmax.restype = ct.POINTER(Tensor)
 funcs.inp_softmax.restype = ct.c_void_p
+funcs.fargmax.restype = ct.POINTER(Tensor)
+funcs.inp_argmax.restype = ct.c_void_p
 
 funcs.fadd.restype = ct.POINTER(Tensor)
 funcs.inp_add.restype = ct.c_void_p

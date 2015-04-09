@@ -27,6 +27,8 @@ Tensor *T(Tensor *A);
 void T(Tensor *A, Tensor *out, int rows, int cols);
 Tensor *softmax(Tensor *A);
 void softmax(Tensor *A, Tensor *out);
+Tensor *argmax(Tensor *A);
+void argmax(Tensor *A, Tensor *out);
 
 Tensor *to_col_major(Tensor *A);
 void to_col_major(Tensor *A, Tensor *out);

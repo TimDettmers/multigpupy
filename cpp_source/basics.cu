@@ -304,7 +304,23 @@ void softmax(Tensor *A, Tensor *out)
 	for(int i = 0; i < gpus; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kSoftMax<<<grids,threads >>>(A->data, out->data, A->rows, A->cols);
+		kSoftMax<<<grids,threads >>>(A->data_gpus[i], out->data_gpus[i], A->rows, A->cols);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
+Tensor *argmax(Tensor *A){ Tensor *out = empty(A->batches,A->maps,A->rows,1); argmax(A,out); return out; }
+void argmax(Tensor *A, Tensor *out)
+{
+	dim3 grids(A->batches, A->maps);
+	dim3 threads(A->rows > THREADS_PER_BLOCKS ? THREADS_PER_BLOCKS : A->rows, 1);
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kArgmax<<<grids,threads >>>(A->data_gpus[i], out->data_gpus[i], A->rows, A->cols);
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
