@@ -294,6 +294,24 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 }
 
 
+Tensor *softmax(Tensor *A){ Tensor *out = empty(A->batches,A->maps,A->rows,A->cols); softmax(A,out); return out; }
+void softmax(Tensor *A, Tensor *out)
+{
+	dim3 grids(A->batches, A->maps);
+	dim3 threads(A->rows > THREADS_PER_BLOCKS ? THREADS_PER_BLOCKS : A->rows, 1);
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kSoftMax<<<grids,threads >>>(A->data, out->data, A->rows, A->cols);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
+
+
 void synchronize(Tensor *A, Tensor *out, int myid, int copyid, cudaStream_t stream,Operation_t ops)
 {
 	int block_size = (A->rows*A->cols/THREADS_PER_BLOCKS) + 1;
@@ -301,5 +319,7 @@ void synchronize(Tensor *A, Tensor *out, int myid, int copyid, cudaStream_t stre
 	kElementWise<<<block_size,THREADS_PER_BLOCKS,0,stream>>>(A->data_gpus[myid],A->data_gpus[copyid],out->data_gpus[myid],A->size,0.0f,ops);
 	CUDA_CHECK_RETURN(cudaPeekAtLastError());
 }
+
+
 
 

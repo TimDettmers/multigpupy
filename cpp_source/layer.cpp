@@ -99,7 +99,7 @@ void Layer::unit_activation(bool useDropout)
 			applyFunc(out,NULL,activation,0.0f,logistic);
 			break;
 		case Rectified_Linear:
-			//rectified_linear(out,activation);
+			applyFunc(out,NULL,activation,0.0f,rectified_linear);
 			break;
 		case Softmax:
 			//softmax(out,out);

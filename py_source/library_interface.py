@@ -35,8 +35,11 @@ funcs.fones.restype = ct.POINTER(Tensor)
 funcs.ftocpu.restype = ct.POINTER(Tensor)
 funcs.ftogpu.restype = ct.c_void_p
 funcs.ffree.restype = ct.c_void_p
+
 funcs.fT.restype = ct.POINTER(Tensor)
 funcs.inp_T.restype = ct.c_void_p
+funcs.fsoftmax.restype = ct.POINTER(Tensor)
+funcs.inp_softmax.restype = ct.c_void_p
 
 funcs.fadd.restype = ct.POINTER(Tensor)
 funcs.inp_add.restype = ct.c_void_p
@@ -147,8 +150,6 @@ funcs.flogistic_grad.restype = ct.POINTER(Tensor)
 funcs.inp_logistic_grad.restype = ct.c_void_p
 funcs.fReLU.restype = ct.POINTER(Tensor)
 funcs.inp_ReLU.restype = ct.c_void_p
-funcs.fReLU_grad.restype = ct.POINTER(Tensor)
-funcs.inp_ReLU_grad.restype = ct.c_void_p
 
 class lib(object): funcs = funcs
 

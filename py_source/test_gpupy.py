@@ -858,6 +858,17 @@ def test_rectified_linear():
     C*=0    
     gpu.ReLU_grad(B,C)
     t.assert_equal(C.tocpu(), A>0, "Bad rectified linear grad values")
+    
+def test_softmax():
+    A = np.float32(np.random.rand(17,83))
+    B = gpu.array(A)
+    C = gpu.softmax(B)
+    
+    t.assert_array_almost_equal(C.tocpu(), u.softmax(A), 4, "Softmax problem")
+    C*=0
+    gpu.softmax(B,C)
+    t.assert_array_almost_equal(C.tocpu(), u.softmax(A), 4, "Softmax problem")
+    
      
     
     

@@ -24,6 +24,8 @@ void togpu(Tensor *out, float *cpu_buffer);
 Tensor *tocpu(Tensor *A, float *cpu_buffer);
 Tensor *T(Tensor *A);
 void T(Tensor *A, Tensor *out, int rows, int cols);
+Tensor *softmax(Tensor *A);
+void softmax(Tensor *A, Tensor *out);
 
 Tensor *to_col_major(Tensor *A);
 void to_col_major(Tensor *A, Tensor *out);

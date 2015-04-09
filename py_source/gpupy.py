@@ -278,3 +278,7 @@ def fsynchronizingAdd(x1, out=None):
 def dropout(x1,rate, out=None):
     if out: lib.funcs.inp_dropout(p_gpupy, x1.pt, out.pt, ct.c_float(rate))
     else: return array(None, lib.funcs.fdropout(p_gpupy, x1.pt, ct.c_float(rate)))
+    
+def softmax(x1,out=None):
+    if out: lib.funcs.inp_softmax(x1.pt, out.pt)
+    return array(None, lib.funcs.fsoftmax(x1.pt))  

@@ -572,10 +572,16 @@ __device__ void reduceToSumLocal(float* sdata, unsigned int tid)
   }
 }
 
+
+
+
+
 __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int cols)
 {
 	const unsigned int numThreads = blockDim.x * gridDim.x;
 	const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+	unsigned int mapOffset = rows*cols*blockIdx.y;
+	unsigned int batchOffset = rows*cols*gridDim.y*blockIdx.x;
 	float col_value = 0.0f;
 
 	__shared__ float max_values[THREADS_PER_BLOCKS];
@@ -590,7 +596,7 @@ __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int c
 		 //calc max value of the row
 		for (unsigned int i = 0; i < cols; i++)
 		{
-			col_value = A[(i*rows) + row];
+			col_value = A[(i*rows) + row+mapOffset + batchOffset];
 			if(col_value > max_values[idx])
 			{
 				max_values[idx] = col_value;
@@ -606,9 +612,10 @@ __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int c
 		//calc the value of each element in the row
 		for (unsigned int i = 0; i < cols; i++)
 		{
-			out[(i*rows) + row] = __expf(A[(i*rows) + row] - max_values[idx])/row_sums[idx];
+			out[(i*rows) + row+mapOffset + batchOffset] = __expf(A[(i*rows) + row] - max_values[idx])/row_sums[idx];
 		}
 	}
+
 }
 
 //for column major data

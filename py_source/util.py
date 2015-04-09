@@ -48,5 +48,13 @@ def create_t_matrix(y, classes = None):
         t[np.int32(i), np.int32(y[i])] = 1.0
         
     return t
+
+def softmax(X):
+    '''numerically stable softmax function
+    '''
+    max_row_values = np.matrix(np.max(X,axis=1)).T
+    result = np.exp(X - max_row_values)
+    sums = np.matrix(np.sum(result,axis=1))        
+    return result/sums
              
           

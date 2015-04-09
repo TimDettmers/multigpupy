@@ -70,6 +70,9 @@ extern "C"
 	Tensor *fReLU(Tensor *A){ return applyFunc(A,NULL,rectified_linear);}
 	void inp_ReLU(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, rectified_linear);}
 
+	Tensor *fsoftmax(Tensor *A){return softmax(A); }
+	void inp_softmax(Tensor *A, Tensor *out){ softmax(A, out); }
+
 	Tensor *faddVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,add_vec); }
 	void inp_addVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,add_vec); }
 	Tensor *fsubVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,sub_vec); }
