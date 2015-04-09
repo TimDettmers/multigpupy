@@ -80,8 +80,7 @@ class array(object):
     def tocpu(self):
         data = np.empty(self.shape, dtype=np.float32)
         lib.funcs.ftocpu(self.pt, data.ctypes.data_as(ct.POINTER(ct.c_float)))        
-        self.npArray = data
-        
+        self.npArray = data        
         if data.shape[0] == 1 and data.shape[1] == 1 and data.shape[2] == 1: data = data.reshape(data.shape[3])
         if data.shape[0] == 1 and data.shape[1] == 1: data = data.reshape(data.shape[2], data.shape[3])
         if data.shape[0] == 1 and data.shape[1] > 1: data = data.reshape(data.shape[1], data.shape[2], data.shape[3])

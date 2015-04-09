@@ -48,7 +48,7 @@ Tensor *empty(int batches, int maps, int rows, int cols)
 	return out;
 }
 
-Tensor *empty_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer)
+float *empty_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer)
 {
 	Tensor *out = new Tensor();
 	int size = batches*maps*rows*cols;
@@ -66,7 +66,7 @@ Tensor *empty_pinned(int batches, int maps, int rows, int cols, float *cpu_buffe
 	out->isCUDA = 1;
 	out->data = pinned_data;
 
-	return out;
+	return pinned_data;
 }
 
 Tensor *zeros(int batches, int maps, int rows, int cols)

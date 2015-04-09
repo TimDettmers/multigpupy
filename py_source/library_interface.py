@@ -143,7 +143,7 @@ funcs.fGPUCount.restype = ct.c_int32
 funcs.fBatchAllocator.restype = ct.c_void_p
 funcs.fallocateNextAsync.restype = ct.c_void_p
 funcs.freplaceCurrentBatch.restype = ct.c_void_p
-funcs.fto_pinned.restype = ct.POINTER(Tensor)
+funcs.fto_pinned.restype = ct.POINTER(ct.c_float)
 
 
 funcs.flogistic.restype = ct.POINTER(Tensor)
@@ -161,6 +161,8 @@ funcs.ffmax.restype = ct.c_float
 
 funcs.fLayer.restype = ct.c_void_p
 funcs.fLayer_init.restype = ct.c_void_p
+
+funcs.inp_RMSProp.restype = ct.c_void_p
 
 class lib(object): funcs = funcs
 

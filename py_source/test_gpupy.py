@@ -792,18 +792,23 @@ def test_synchronizingAdd():
     t.assert_array_almost_equal(C.tocpu(), A*gpu.gpu_count(), 7, "Synchronizing add does not work!")
     
 def test_allocator_init():    
-    data = np.float32(np.random.rand(6735,800))
-    labels = np.float32(np.random.randint(0,10,(6735,)))
+    data = np.float32(np.random.rand(10,3))
+    labels = np.float32(np.random.randint(0,10,(10,)))
     
-    batch_size = 128
+    batch_size = 2
     alloc = batch_allocator(data, labels, 0.2, 0.0, batch_size)
-    for i in range(0,np.int32(np.ceil(data.shape[0]*0.8))-batch_size,batch_size):
-        batch = data[i:i+batch_size]
-        batch_y = u.create_t_matrix(labels[i:i+batch_size],10)
-        alloc.allocate_next_batch()
-        alloc.replace_current_batch()
-        t.assert_equal(alloc.batch.tocpu().T.reshape(batch.shape), batch)
-        t.assert_equal(alloc.batch_y.tocpu().T.reshape(batch_y.shape),batch_y )
+    for epoch in range(1):
+        for i in range(0,np.int32(np.ceil(data.shape[0]*0.8))-batch_size,batch_size):
+            batch = data[i:i+batch_size]
+            batch_y = u.create_t_matrix(labels[i:i+batch_size],10)
+            alloc.allocate_next_batch()
+            alloc.replace_current_batch()
+            #C = gpu.argmax(alloc.batch).tocpu()
+            #t.assert_equal(C,np.argmax(batch,1)[:, np.newaxis])
+            #print alloc.batch.tocpu()
+            #print batch
+            t.assert_equal(alloc.batch.tocpu().T.reshape(batch.shape), batch)
+            t.assert_equal(alloc.batch_y.tocpu().T.reshape(batch_y.shape),batch_y )
         
     t0 = time.time()
     for epoch in range(10):
@@ -812,7 +817,8 @@ def test_allocator_init():
             alloc.replace_current_batch()
     sec = time.time()-t0
     GB = 10*data.shape[0]*data.shape[1]*4*(1024**-3)
-    assert GB/sec > 0.75
+    #print GB/sec
+    #assert GB/sec > 0.75
     
 def test_dropout():
     A = np.float32(np.random.rand(14,13,17,83))
@@ -897,15 +903,45 @@ def test_linear():
     gpu.linear(B,C)
     t.assert_array_equal(C.tocpu(), A, "Copy/linear not working!")
     
-def test_forward():
+def test_layer():
     net = Layer()
     net.add(Layer(800, Logistic()))
     net.add(Layer(10,Softmax()))
-    A = np.float32(np.random.rand(83,10))
-    B = gpu.array(A)
-    net.forward(B)    
-    while net.next: net = net.next    
-    t.assert_almost_equal(net.activation.tocpu().sum(1), np.ones((83,)), 5, "Layer.forward is broken")  
+    
+    X = np.load('./mnist_mini_X.npy')
+    y = np.load('./mnist_mini_y.npy')
+    
+    alloc = batch_allocator(X,y, 0.2,0.0,32)
+    alloc.allocate_next_batch()
+    alloc.replace_current_batch()
+    
+    batch_size = 128
+    t0 = time.time()
+    for epoch in range(50):
+        for i in range(0,np.int32(np.ceil(X.shape[0]*0.8))-batch_size,batch_size):
+            batch = X[i:i+batch_size]
+            batch_y = u.create_t_matrix(y[i:i+batch_size],10)
+            alloc.allocate_next_batch()            
+            net.forward(gpu.array(batch),gpu.array(batch_y))          
+            net.backward_errors()
+            net.backward_grads()
+            net.weight_update()
+            alloc.replace_current_batch()
+            
+        #print net.w_next.tocpu().sum()
+        C2 = net.predict(gpu.array(X)).tocpu()        
+        #print np.sum((c2-y)**2)
+    print time.time()-t0
+    
+    
+    #print np.sum((C2-y)**2)
+    #print C2[0:20].T
+    #print y[0:20].T
+     
+    
+    assert np.sum((C2-y)**2) < 500
+    
+  
     
     
 if __name__ == '__main__':    

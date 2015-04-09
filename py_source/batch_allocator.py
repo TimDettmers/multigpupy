@@ -13,8 +13,10 @@ import gpupy as gpu
 p_allocator = lib.funcs.fBatchAllocator()
 
 class batch_allocator(object):
-    def __init__(self, data, labels, cv_percent, test_percent, batch_size):       
-        if len(labels.shape) ==1: labels = u.create_t_matrix(labels)  
+    def __init__(self, data, labels, cv_percent, test_percent, batch_size):     
+        print labels.shape  
+        if len(labels.shape) ==1: labels = u.create_t_matrix(labels)
+        elif labels.shape[0]==1 or labels.shape[1]==1: labels = u.create_t_matrix(labels)    
         self.size = labels.shape[0]
         self.shapes = [data.shape[1],labels.shape[1]]
             
@@ -96,13 +98,8 @@ class batch_allocator(object):
         
     def replace_current_batch(self): 
         lib.funcs.freplaceCurrentBatch(p_allocator)
-        temp = self.current.pt
-        self.current.pt = self.next.pt
-        self.next.pt = temp
-        
-        temp = self.current_y.pt
-        self.current_y.pt = self.next_y.pt
-        self.next_y.pt = temp
+        u.swap_pointer(self.current, self.next)
+        u.swap_pointer(self.current_y, self.next_y)
         self.next_batch_id +=1
         
         

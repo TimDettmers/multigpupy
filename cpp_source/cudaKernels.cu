@@ -907,14 +907,6 @@ __global__ void kRMSprop_with_momentum_update (float *RMS, float *grad, float *w
 	  }
 }
 
-
-
-
-__global__ void kLocalGrad (float *z, float *w, float *y, float *m, float learning_rate, int batch_size, int size, float momentum)
-{
-
-}
-
 __global__ void kRMSprop_with_momentum_weight_update (float *RMS, float *grad, float *w, float *m, float RMS_multiplier, float learning_rate, int batch_size, int size, float momentum)
 {
 	  const unsigned int numThreads = blockDim.x * gridDim.x;
