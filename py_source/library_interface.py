@@ -59,10 +59,6 @@ funcs.fexp.restype = ct.POINTER(Tensor)
 funcs.inp_exp.restype = ct.c_void_p
 funcs.flog.restype = ct.POINTER(Tensor)
 funcs.inp_log.restype = ct.c_void_p
-funcs.flogistic.restype = ct.POINTER(Tensor)
-funcs.inp_logistic.restype = ct.c_void_p
-funcs.flogisticGrad.restype = ct.POINTER(Tensor)
-funcs.inp_logisticGrad.restype = ct.c_void_p
 funcs.ffabs.restype = ct.POINTER(Tensor)
 funcs.inp_abs.restype = ct.c_void_p
 funcs.ffpow.restype = ct.POINTER(Tensor)
@@ -143,6 +139,16 @@ funcs.fBatchAllocator.restype = ct.c_void_p
 funcs.fallocateNextAsync.restype = ct.c_void_p
 funcs.freplaceCurrentBatch.restype = ct.c_void_p
 funcs.fto_pinned.restype = ct.POINTER(Tensor)
+
+
+funcs.flogistic.restype = ct.POINTER(Tensor)
+funcs.inp_logistic.restype = ct.c_void_p
+funcs.flogistic_grad.restype = ct.POINTER(Tensor)
+funcs.inp_logistic_grad.restype = ct.c_void_p
+funcs.fReLU.restype = ct.POINTER(Tensor)
+funcs.inp_ReLU.restype = ct.c_void_p
+funcs.fReLU_grad.restype = ct.POINTER(Tensor)
+funcs.inp_ReLU_grad.restype = ct.c_void_p
 
 class lib(object): funcs = funcs
 

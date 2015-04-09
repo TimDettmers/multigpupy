@@ -196,13 +196,29 @@ def logistic(x1,out=None):
     if out: lib.funcs.inp_logistic(x1.pt,out.pt);
     else: return array(None, lib.funcs.flogistic(x1.pt))
 
-def logisticGrad(x1,out=None):    
+def logistic_grad(x1,out=None):    
     """Computes x1*(1-x1).
     :x1: Logistic Input.
     :out: Write output to this Tensor.
     """
-    if out: lib.funcs.inp_logisticGrad(x1.pt,out.pt);
-    else: return array(None, lib.funcs.flogisticGrad(x1.pt))
+    if out: lib.funcs.inp_logistic_grad(x1.pt,out.pt);
+    else: return array(None, lib.funcs.flogistic_grad(x1.pt))
+    
+def rectified_linear(x1,out=None):
+    if out: lib.funcs.inp_ReLU(x1.pt,out.pt);
+    else: return array(None, lib.funcs.fReLU(x1.pt))
+    
+def ReLU(x1,out=None): 
+    if out: rectified_linear(x1, out)
+    else: return rectified_linear(x1, out)
+
+def ReLU_grad(x1,out=None):    
+    """Computes x1>0 elementwise
+    :x1: Logistic Input.
+    :out: Write output to this Tensor.
+    """
+    if out: greater(x1,0.0,out)
+    else: return greater(x1,0.0,out)
 
 def abs(x1,out=None):    
     if out: lib.funcs.inp_abs(x1.pt,out.pt);

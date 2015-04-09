@@ -302,7 +302,7 @@ def test_logistic():
 def test_logisticGrad():
     A = np.float32(np.random.rand(10,7,83,4))
     B = gpu.array(A)
-    C = gpu.logisticGrad(B).tocpu()  
+    C = gpu.logistic_grad(B).tocpu()  
     t.assert_array_almost_equal(C, A*(1.0-A), 5, "LogisticGrad not like numpy equivalent") 
     
 def test_abs():    
@@ -844,6 +844,20 @@ def test_dropout():
     C*=0
     gpu.dropout(B,1.0,C)
     t.assert_almost_equal(C.tocpu().sum(), 0.0, 0, "Dropout seems to be fishy")
+    
+def test_rectified_linear():
+    A = np.float32(np.random.rand(2,2,17,83))
+    B = gpu.array(A)
+    C = gpu.ReLU(B)
+    t.assert_equal(C.tocpu(), A*(A>0), "Bad rectified linear values")    
+    C = gpu.ReLU_grad(B)
+    t.assert_equal(C.tocpu(), A>0, "Bad rectified linear grad values")
+    C*=0
+    gpu.ReLU(B,C)
+    t.assert_equal(C.tocpu(), A*(A>0), "Bad rectified linear values")
+    C*=0    
+    gpu.ReLU_grad(B,C)
+    t.assert_equal(C.tocpu(), A>0, "Bad rectified linear grad values")
      
     
     

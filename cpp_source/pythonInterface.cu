@@ -9,6 +9,7 @@
 #include <gpupy.cuh>
 #include <time.h>
 #include <batchAllocator.cuh>
+#include <layer.cuh>
 
 extern "C"
 {
@@ -56,14 +57,18 @@ extern "C"
 	void inp_exp(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,exp_tensor);}
 	Tensor *flog(Tensor *A){ return applyFunc(A,NULL,log_tensor);}
 	void inp_log(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,log_tensor);}
-	Tensor *flogistic(Tensor *A){ return applyFunc(A,NULL,logistic);}
-	void inp_logistic(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, logistic);}
-	Tensor *flogisticGrad(Tensor *A){ return applyFunc(A, NULL, logistic_grad); }
-	void inp_logisticGrad(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, logistic_grad); }
 	Tensor *ffabs(Tensor *A){ return applyFunc(A, NULL, abs_tensor); }
 	void inp_abs(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,abs_tensor); }
 	Tensor *ffpow(Tensor *A, float power){ return applyFunc(A,NULL,power,pow_tensor); }
 	void inp_pow(Tensor *A, float power, Tensor *out){ applyFunc(A,NULL,out,power,pow_tensor); }
+
+
+	Tensor *flogistic(Tensor *A){ return applyFunc(A,NULL,logistic);}
+	void inp_logistic(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, logistic);}
+	Tensor *flogistic_grad(Tensor *A){ return applyFunc(A, NULL, logistic_grad); }
+	void inp_logistic_grad(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, logistic_grad); }
+	Tensor *fReLU(Tensor *A){ return applyFunc(A,NULL,rectified_linear);}
+	void inp_ReLU(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, rectified_linear);}
 
 	Tensor *faddVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,add_vec); }
 	void inp_addVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,add_vec); }

@@ -9,6 +9,7 @@
 #define LAYER_CUH_
 #include <gpupy.cuh>
 #include <Tensor.cuh>
+#include <basics.cuh>
 
 class Layer
 {
@@ -19,13 +20,6 @@ public:
 	Layer *prev;
 	Tensor *w_next;
 	Tensor *b_next;
-
-	Tensor *w_next_sync;
-	Tensor *b_next_sync;
-	Tensor *w_next_sync_recv;
-	Tensor *b_next_sync_recv;
-	Tensor *w_next_sync_send;
-	Tensor *b_next_sync_send;
 
 	Tensor *w_rms_next;
 	Tensor *b_rms_next;
@@ -44,10 +38,7 @@ public:
 	Tensor *target;
 	Tensor *target_Tensor;
 
-	MPI_Request *send_request;
-	MPI_Request *recv_request;
-
-	GPUpy *GPU;
+	GPUpy *gpu;
 
 	float LEARNING_RATE;
 	float MOMENTUM;

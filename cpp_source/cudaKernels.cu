@@ -292,6 +292,7 @@ __global__ void kElementWise(float *A,float *B, float *out, int size, float flt,
 		  case abs_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = fabs(A[i]); break;
 		  case logistic: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __fdividef(1.0f , (1.0 + __expf(-A[i]))); break;
 		  case logistic_grad: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i]*(1.0f-A[i]); break;
+		  case rectified_linear: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] > 0.0f ? A[i] : 0.0f; break;
 		  case eq_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] == B[i]); break;
 		  case lt_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] < B[i]); break;
 		  case gt_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] > B[i]); break;
@@ -703,26 +704,6 @@ __global__ void kCreate_t_matrix(float *labels, float *out, int rows, int size)
 		  offset = (label*rows) + i;
 		  out[offset] = 1.0f;
 	  }
-
-}
-
-__global__ void kRectifiedLinear(float *A, float *out, int size)
-{
-	  const unsigned int numThreads = blockDim.x * gridDim.x;
-	  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-	  for (unsigned int i = idx;i < size; i += numThreads)
-		  out[i] = A[i] > 0.0f ? A[i] : 0.0f;
-
-}
-
-__global__ void kRectifiedLinear_Derivative(float *A, float *out, int size)
-{
-	  const unsigned int numThreads = blockDim.x * gridDim.x;
-	  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-	  for (unsigned int i = idx;i < size; i += numThreads)
-		  out[i] = A[i] > 0.0f ? 1.0f : 0.0f;
 
 }
 

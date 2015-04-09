@@ -261,6 +261,7 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 			case pow_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, pow_tensor); break;
 			case logistic: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, logistic); break;
 			case logistic_grad: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, logistic_grad); break;
+			case rectified_linear: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, rectified_linear); break;
 			case eq_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size, flt,eq_tensor); break;
 			case lt_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size, flt,lt_tensor); break;
 			case gt_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size, flt,gt_tensor); break;

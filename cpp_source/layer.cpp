@@ -17,28 +17,16 @@ Layer::Layer(int unitcount, int start_batch_size, Unittype_t unit, Layer *prev, 
 Layer::Layer(int unitcount, Unittype_t unit, Layer *prev){ init(unitcount, 0,unit, NULL); prev->link_with_next_layer(this); }
 Layer::Layer(int unitcount, Layer *prev){ init(unitcount, 0,Rectified_Linear, NULL); prev->link_with_next_layer(this); }
 
-void Layer::init(int unitcount, int start_batch_size, Unittype_t unit, GPUpy *gpu)
+void Layer::init(int unitcount, int start_batch_size, Unittype_t unit, GPUpy *gpupy)
 {
-
-	send_request = new MPI_Request;
-	recv_request = new MPI_Request;
 	next = NULL;
 	prev = NULL;
 	w_next = NULL;
 	b_next = NULL;
-	w_next_sync = NULL;
-	b_next_sync = NULL;
 	w_rms_next = NULL;
 	b_rms_next = NULL;
 	w_grad_next = NULL;
 	b_grad_next = NULL;
-
-	w_next_sync_send = NULL;
-	b_next_sync_send = NULL;
-	w_next_sync_recv = NULL;
-	b_next_sync_recv = NULL;
-
-	isSynchronizing = false;
 
 	target = NULL;
 	target_Tensor = NULL;
@@ -58,13 +46,13 @@ void Layer::init(int unitcount, int start_batch_size, Unittype_t unit, GPUpy *gp
 	COST = Misclassification;
 	PARALLELISM = None;
 
-	GPU = gpu;
+	gpu = gpupy;
 
 	if(BATCH_SIZE > 0)
 	{
-		out = zeros(BATCH_SIZE, UNITCOUNT);
-		bias_activations = ones(1, BATCH_SIZE);
-		activation = zeros(BATCH_SIZE, UNITCOUNT);
+		out = zeros(1,1,BATCH_SIZE, UNITCOUNT);
+		bias_activations = ones(1,1,1, BATCH_SIZE);
+		activation = zeros(1,1,BATCH_SIZE, UNITCOUNT);
 	}
 	else
 	{
@@ -79,29 +67,24 @@ void Layer::link_with_next_layer(Layer *next_layer)
 {
 	next = next_layer;
 	if(next->BATCH_SIZE == 0){ next->BATCH_SIZE = BATCH_SIZE; }
-	if(!next->GPU){next->GPU = GPU;}
+	if(!next->gpu){next->gpu = gpu;}
 
 	//Tensor *w = GPU->uniformSqrtWeight(UNITCOUNT,next_layer->UNITCOUNT);
-	Tensor *w = GPU->normal(1,1,UNITCOUNT,next_layer->UNITCOUNT, 0,0.1);
+	Tensor *w = gpu->normal(1,1,UNITCOUNT,next_layer->UNITCOUNT, 0,0.1);
 	w_next = w;
-	w_grad_next = zeros(UNITCOUNT,next_layer->UNITCOUNT);
-	w_rms_next = zeros(UNITCOUNT,next_layer->UNITCOUNT);
-	if(PARALLELISM == DataParallelism){w_next_sync = zeros(UNITCOUNT,next_layer->UNITCOUNT); }
-	if(PARALLELISM == DataParallelism){w_next_sync_send = empty_char(UNITCOUNT,next_layer->UNITCOUNT); }
-	if(PARALLELISM == DataParallelism){w_next_sync_recv = empty_char(UNITCOUNT,next_layer->UNITCOUNT); }
+	w_grad_next = zeros(1,1,UNITCOUNT,next_layer->UNITCOUNT);
+	w_rms_next = zeros(1,1,UNITCOUNT,next_layer->UNITCOUNT);
+	//if(PARALLELISM == DataParallelism){w_next_sync = zeros(1,1,UNITCOUNT,next_layer->UNITCOUNT); }
 
-	Tensor *b = zeros(1,next_layer->UNITCOUNT);
+	Tensor *b = zeros(1,1,1,next_layer->UNITCOUNT);
 	b_next = b;
-	b_grad_next = zeros(1,next_layer->UNITCOUNT);
-	b_rms_next = zeros(1,next_layer->UNITCOUNT);
-	if(PARALLELISM == DataParallelism){b_next_sync = zeros(1,next_layer->UNITCOUNT); }
-	if(PARALLELISM == DataParallelism){b_next_sync_send = empty_char(1,next_layer->UNITCOUNT); }
-	if(PARALLELISM == DataParallelism){b_next_sync_recv = empty_char(1,next_layer->UNITCOUNT); }
+	b_grad_next = zeros(1,1,1,next_layer->UNITCOUNT);
+	b_rms_next = zeros(1,1,1,next_layer->UNITCOUNT);
 
-	next->out = zeros(BATCH_SIZE, next->UNITCOUNT);
-	next->activation = zeros(BATCH_SIZE, next->UNITCOUNT);
-	next->error = zeros(BATCH_SIZE, next->UNITCOUNT);
-	next->bias_activations = ones(1, BATCH_SIZE);
+	next->out = zeros(1,1,BATCH_SIZE, next->UNITCOUNT);
+	next->activation = zeros(1,1,BATCH_SIZE, next->UNITCOUNT);
+	next->error = zeros(1,1,BATCH_SIZE, next->UNITCOUNT);
+	next->bias_activations = ones(1,1,1, BATCH_SIZE);
 	next->prev = this;
 }
 
@@ -112,19 +95,20 @@ void Layer::unit_activation(bool useDropout)
 	switch(UNIT_TYPE)
 	{
 		case Logistic:
-			logistic(out,activation);
+			//logistic(out,activation);
+			applyFunc(out,NULL,activation,0.0f,logistic);
 			break;
 		case Rectified_Linear:
-			rectified_linear(out,activation);
+			//rectified_linear(out,activation);
 			break;
 		case Softmax:
-			softmax(out,out);
+			//softmax(out,out);
 			break;
 		case Double_Rectified_Linear:
-			doubleRectifiedLinear(out,activation);
+			//doubleRectifiedLinear(out,activation);
 			break;
 		case Linear:
-			LinearUnit(out, activation);
+			//LinearUnit(out, activation);
 			break;
 		case Input:
 			break;
@@ -133,9 +117,9 @@ void Layer::unit_activation(bool useDropout)
 	if(UNIT_TYPE != Softmax)
 	{
 		if(useDropout)
-			GPU->dropout(activation,out,DROPOUT);
-		else
-			scalarMul(activation,1.0f-DROPOUT, out);
+			gpu->dropout(activation,out,DROPOUT);
+		//else
+			//scalarMul(activation,1.0f-DROPOUT, out);
 	}
 
 
@@ -147,13 +131,13 @@ void Layer::activation_gradient()
 	switch(UNIT_TYPE)
 	{
 		case Logistic:
-			logisticGrad(activation,out);
+			//logisticGrad(activation,out);
 			break;
 		case Rectified_Linear:
-			rectified_linear_derivative(activation,out);
+			//rectified_linear_derivative(activation,out);
 			break;
 		case Double_Rectified_Linear:
-			double_rectified_linear_derivative(activation,out);
+			//double_rectified_linear_derivative(activation,out);
 			break;
 		case Softmax:
 			break;
@@ -168,12 +152,12 @@ void Layer::handle_offsize()
 {
 	if(!prev)
 	{
-		if(!out){ out = empty(activation->rows, activation->cols); }
+		if(!out){ out = empty(1,1,activation->rows, activation->cols); }
 		else if(out->rows != activation->rows)
 		{
 			cudaFree(out->data);
 			free(out);
-			out = empty(activation->rows, activation->cols);
+			out = empty(1,1,activation->rows, activation->cols);
 		}
 	}
 	else
@@ -189,11 +173,11 @@ void Layer::handle_offsize()
 				cudaFree(target_Tensor_offsize->data);
 			}
 
-			out_offsize = empty(prev->out->rows, UNITCOUNT);
-			activation_offsize = empty(prev->out->rows, UNITCOUNT);
-			error_offsize = empty(prev->out->rows, UNITCOUNT);
-			bias_activations_offsize = empty(1,prev->out->rows);
-			target_Tensor_offsize = zeros(prev->out->rows, UNITCOUNT);
+			out_offsize = empty(1,1,prev->out->rows, UNITCOUNT);
+			activation_offsize = empty(1,1,prev->out->rows, UNITCOUNT);
+			error_offsize = empty(1,1,prev->out->rows, UNITCOUNT);
+			bias_activations_offsize = empty(1,1,1,prev->out->rows);
+			target_Tensor_offsize = zeros(1,1,prev->out->rows, UNITCOUNT);
 		}
 
 
@@ -215,26 +199,26 @@ void Layer::dot_switch(Tensor *A, Tensor *B, Tensor *out)
 {
 	//GPU->dot(A,B,out);
 
-	Tensor *Achar = empty_char(A->rows,A->cols);
-	Tensor *Bchar = empty_char(B->rows,B->cols);
-	Tensor *absA = empty(A->rows,A->cols);
-	Tensor *absB = empty(B->rows,B->cols);
+	//Tensor *Achar = empty_char(A->rows,A->cols);
+	//Tensor *Bchar = empty_char(B->rows,B->cols);
+	Tensor *absA = empty(1,1,A->rows,A->cols);
+	Tensor *absB = empty(1,1,B->rows,B->cols);
 
-	abs(A,absA);
-	abs(B,absB);
+	//abs(A,absA);
+	//abs(B,absB);
 
 	//GPU->compression_8bit(A,max(absA),Achar);
 	//GPU->compression_8bit(B,max(absB),Bchar);
 
 	//GPU->dot8bit_shared(Achar,Bchar,max(absA),max(absB),out);
 
-	cudaFree(Achar->char_data);
-	cudaFree(Bchar->char_data);
+	//cudaFree(Achar->char_data);
+	//cudaFree(Bchar->char_data);
 	cudaFree(absA->data);
 	cudaFree(absB->data);
 
-	free(Achar);
-	free(Bchar);
+	//free(Achar);
+	//free(Bchar);
 	free(absA);
 	free(absB);
 
@@ -249,7 +233,7 @@ void Layer::forward(bool useDropout)
 
 	//GPU->dot(prev->out,prev->w_next,out);
 	dot_switch(prev->out,prev->w_next,out);
-	addTensorVector(out,prev->b_next,out);
+	//addTensorVector(out,prev->b_next,out);
     unit_activation(useDropout);
 
     if(next){ next->forward(useDropout); }
@@ -269,9 +253,9 @@ void Layer::running_error()
 	switch(COST)
 	{
 		case Misclassification:
-			result = argmax(out);
-			eq = equal(result,target);
-			sum_value = sum(eq);
+			//result = argmax(out);
+			//eq = equal(result,target);
+			//sum_value = sum(eq);
 			RUNNING_ERROR += (out->rows  - sum_value);
 			RUNNING_SAMPLE_SIZE += out->rows;
 			break;
@@ -291,22 +275,22 @@ void Layer::backward_errors()
 	if(!target){ next->backward_errors(); }
 	if(target)
 	{
-		if(out->cols != target->cols && !target_Tensor){ target_Tensor = zeros(BATCH_SIZE,out->cols); }
-		if(out->cols != target->cols){ create_t_Tensor(target,target_Tensor); sub(out,target_Tensor,error); return; }
-		else{ sub(activation,target,error);  return;}
+		//if(out->cols != target->cols && !target_Tensor){ target_Tensor = zeros(1,1,BATCH_SIZE,out->cols); }
+		//if(out->cols != target->cols){ create_t_Tensor(target,target_Tensor); sub(out,target_Tensor,error); return; }
+		//else{ sub(activation,target,error);  return;}
 	}
 
 	if(UNIT_TYPE == Input){ backward_grads(); return; }
 
 	activation_gradient();
-	GPU->dotT(next->error, w_next,error);
-	mul(error, out, error);
+	gpu->dotT(next->error, w_next,error);
+	//mul(error, out, error);
 
 }
 
 void Layer::backward_grads()
 {
-	GPU->Tdot(activation, next->error, w_grad_next);
+	gpu->Tdot(activation, next->error, w_grad_next);
 	MPI_synchronization_async();
 	if(!next->target){ next->backward_grads(); }
 	//GPU->dot(next->bias_activations, next->error,b_grad_next);
@@ -315,10 +299,12 @@ void Layer::backward_grads()
 
 void Layer::MPI_synchronization_async()
 {
+	/*
 	if(PARALLELISM != DataParallelism){ return; }
 
-	int target = GPU->MYRANK +1 == GPU->MPI_SIZE ? 0 : GPU->MYRANK+1;
-	int source = GPU->MYRANK-1 == -1 ? GPU->MPI_SIZE-1 : GPU->MYRANK-1;
+	int target = gpu->MYRANK +1 == gpu->MPI_SIZE ? 0 : gpu->MYRANK+1;
+	int source = gpu->MYRANK-1 == -1 ? gpu->MPI_SIZE-1 : gpu->MYRANK-1;
+	*/
 
 
 	/*
@@ -335,15 +321,16 @@ void Layer::MPI_synchronization_async()
 
 
 
-
-	for (int i = 0; i < GPU->MPI_SIZE - 1; i++)
+/*
+	for (int i = 0; i < gpu->MPI_SIZE - 1; i++)
 	{
 		MPI_Isend(w_grad_next->data,w_grad_next->size,MPI_FLOAT,target,i,MPI_COMM_WORLD, send_request);
 		MPI_Irecv(w_next_sync->data,w_grad_next->size,MPI_FLOAT,source,i,MPI_COMM_WORLD,recv_request);
-		target = target +1 == GPU->MPI_SIZE ? 0 : target+1;
-		source = source-1 == -1 ? GPU->MPI_SIZE-1 : source-1;
+		target = target +1 == gpu->MPI_SIZE ? 0 : target+1;
+		source = source-1 == -1 ? gpu->MPI_SIZE-1 : source-1;
 	}
 	isSynchronizing = true;
+	*/
 
 
 
@@ -351,6 +338,7 @@ void Layer::MPI_synchronization_async()
 
 void Layer::wait_for_synchronization()
 {
+	/*
 	if(target){ return; }
 	if(!isSynchronizing){ return; }
 	//GPU->tick();
@@ -364,6 +352,7 @@ void Layer::wait_for_synchronization()
 	//GPU->decompression_8bit(w_next_sync_recv,0.001,w_next_sync);
 	add(w_next_sync,w_grad_next,w_grad_next);
 	isSynchronizing = false;
+	*/
 }
 
 void Layer::weight_update()
@@ -375,7 +364,7 @@ void Layer::weight_update()
 	switch(UPDATE_TYPE)
 	{
 		case RMSProp:
-			RMSprop_with_weight_update(w_rms_next,w_grad_next,w_next,w_next,RMSPROP_MOMENTUM,LEARNING_RATE,out->rows*GPU->MPI_SIZE,MOMENTUM);
+			//RMSprop_with_weight_update(w_rms_next,w_grad_next,w_next,w_next,RMSPROP_MOMENTUM,LEARNING_RATE,out->rows*gpu->MPI_SIZE,MOMENTUM);
 			//RMSprop_with_weight_update(b_rms_next,b_grad_next,b_next,b_next,RMSPROP_MOMENTUM,LEARNING_RATE/100.0f,out->rows,MOMENTUM);
 			//scalarMul(b_grad_next, LEARNING_RATE/float(out->rows*GPU->MPI_SIZE) ,b_grad_next);
 			//sub(b_next,b_grad_next,b_next);
@@ -393,10 +382,10 @@ void Layer::weight_update()
 void Layer::limit_magnitude()
 {
 
-	square(w_next,w_grad_next);
-	Tensor *temp = ones(w_grad_next->cols,1);
-	Tensor *sums = GPU->dot(w_grad_next,temp);
-	renormalizeWeights(w_next,sums,L2);
+	//square(w_next,w_grad_next);
+	Tensor *temp = ones(1,1,w_grad_next->cols,1);
+	Tensor *sums = gpu->dot(w_grad_next,temp);
+	//renormalizeWeights(w_next,sums,L2);
 	cudaFree(temp->data);
 	cudaFree(sums->data);
 	free(temp);
