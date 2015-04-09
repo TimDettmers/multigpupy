@@ -45,16 +45,6 @@ typedef enum DataPropagationType_t
 } DataPropagationType_t;
 
 
-typedef enum WeightUpdateType_t
-{
-	NesterovRMSProp = 0,
-	NesterovMomentum = 1,
-	RMSProp = 2,
-	Momentum = 4,
-	NoMomentum = 8
-} WeightUpdateType_t;
-
-
 typedef enum ParallelismType_t
 {
 	None = 0,

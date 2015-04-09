@@ -12,6 +12,7 @@ import numpy.testing as t
 from batch_allocator import batch_allocator
 import time
 import util as u
+from layer import *
 
 def setup():
     pass
@@ -886,10 +887,25 @@ def test_reduce_functions():
     t.assert_equal(B.min(), A.min(), "min not equal")
     t.assert_array_almost_equal(B.sum(), A.sum(), 3, "sum not equal")
     
-     
+def test_linear():
+    A = np.float32(np.random.rand(17,83))
+    B = gpu.array(A)
+    C = gpu.linear(B)
     
+    t.assert_array_equal(C.tocpu(), A, "Copy/linear not working!")
+    C*=0
+    gpu.linear(B,C)
+    t.assert_array_equal(C.tocpu(), A, "Copy/linear not working!")
     
-       
+def test_forward():
+    net = Layer()
+    net.add(Layer(800, Logistic()))
+    net.add(Layer(10,Softmax()))
+    A = np.float32(np.random.rand(83,10))
+    B = gpu.array(A)
+    net.forward(B)    
+    while net.next: net = net.next    
+    t.assert_almost_equal(net.activation.tocpu().sum(1), np.ones((83,)), 5, "Layer.forward is broken")  
     
     
 if __name__ == '__main__':    

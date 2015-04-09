@@ -841,6 +841,31 @@ __global__ void kDropout_cached(float *A, float *dropout, float *out, int curren
 
 }
 
+__global__ void kWeightUpdate(float *RMS, float *grad, float RMS_multiplier, float learning_rate, int batch_size, int size, weightUpdate_t strategy)
+{
+	  const unsigned int numThreads = blockDim.x * gridDim.x;
+	  const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+	  float grad_value = 0.0f;
+	  float RMS_value = 0.0f;
+	  float rms_reciprocal = 1.0f - RMS_multiplier;
+
+	  switch(strategy)
+	  {
+		  case RMSProp:
+			  for (unsigned int i = idx;i < size; i += numThreads)
+			  {
+				  grad_value = fdividef(grad[i],(float)batch_size);
+				  RMS_value = (RMS_multiplier*RMS[i]) + (powf(grad_value,2.0f)*rms_reciprocal);
+
+				  grad[i] = learning_rate*fdividef(grad_value,(sqrtf(RMS_value)+1.0e-08f));
+				  RMS[i] = RMS_value;
+			  }
+			  break;
+	  }
+
+}
+
+
 __global__ void kRMSprop(float *RMS, float *grad, float RMS_multiplier, float learning_rate, int batch_size, int size)
 {
 	  const unsigned int numThreads = blockDim.x * gridDim.x;

@@ -326,6 +326,20 @@ void argmax(Tensor *A, Tensor *out)
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
 
+void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learning_rate, int batch_size, weightUpdate_t strategy)
+{
+
+	int blocks = (RMS->size/THREADS_PER_BLOCKS) + 1;
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kWeightUpdate<<<blocks,THREADS_PER_BLOCKS>>>(RMS->data, grad->data, RMS_multiplier, learning_rate, batch_size, RMS->size, strategy);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
 
 
 void synchronize(Tensor *A, Tensor *out, int myid, int copyid, cudaStream_t stream,Operation_t ops)

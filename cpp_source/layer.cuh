@@ -54,18 +54,12 @@ public:
 
 	bool isSynchronizing;
 
-	WeightUpdateType_t UPDATE_TYPE;
+	weightUpdate_t UPDATE_TYPE;
 
 	ParallelismType_t PARALLELISM;
 
 	virtual ~Layer();
-	Layer(int unitcount, int start_batch_size, Unittype_t unit, GPUpy *gpu);
-	Layer(int unitcount, Unittype_t unit);
-	Layer(int unitcount);
-
-	Layer(int unitcount, int start_batch_size, Unittype_t unit, Layer *prev, GPUpy *gpu);
-	Layer(int unitcount, Unittype_t unit, Layer *prev);
-	Layer(int unitcount, Layer *prev);
+	Layer();
 
 	virtual void forward();
 	virtual void forward(bool useDropout);
@@ -81,7 +75,7 @@ public:
 	virtual void limit_magnitude();
 
 	virtual void link_with_next_layer(Layer *next_layer);
-	virtual void init(int unitcount, int start_batch_size, Unittype_t unit, GPUpy *gpu);
+	virtual void init(int unitcount, int start_batch_size, Unittype_t unit, GPUpy *gpupy, Layer *prev);
 	virtual void set_hidden_dropout(float dropout);
 
 	virtual void dropout_decay();

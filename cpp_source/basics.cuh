@@ -50,6 +50,8 @@ float sum(Tensor *A);
 float max(Tensor *A);
 float min(Tensor *A);
 
+void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learning_rate, int batch_size, weightUpdate_t strategy);
+
 
 
 

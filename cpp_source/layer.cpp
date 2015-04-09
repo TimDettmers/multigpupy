@@ -8,16 +8,9 @@ using std::endl;
 using std::string;
 using std::vector;
 
-Layer::Layer(int unitcount, int start_batch_size, Unittype_t unit, GPUpy *gpu){ init(unitcount, start_batch_size,unit,gpu); }
-Layer::Layer(int unitcount, Unittype_t unit){ init(unitcount, 0,unit, NULL); }
-Layer::Layer(int unitcount){ init(unitcount, 0,Rectified_Linear, NULL); }
+Layer::Layer(){}
 
-Layer::Layer(int unitcount, int start_batch_size, Unittype_t unit, Layer *prev, GPUpy *gpu)
-{ init(unitcount, start_batch_size,unit,gpu); prev->link_with_next_layer(this); }
-Layer::Layer(int unitcount, Unittype_t unit, Layer *prev){ init(unitcount, 0,unit, NULL); prev->link_with_next_layer(this); }
-Layer::Layer(int unitcount, Layer *prev){ init(unitcount, 0,Rectified_Linear, NULL); prev->link_with_next_layer(this); }
-
-void Layer::init(int unitcount, int start_batch_size, Unittype_t unit, GPUpy *gpupy)
+void Layer::init(int unitcount, int start_batch_size, Unittype_t unit, GPUpy *gpupy, Layer *prev)
 {
 	next = NULL;
 	prev = NULL;
@@ -60,6 +53,8 @@ void Layer::init(int unitcount, int start_batch_size, Unittype_t unit, GPUpy *gp
 		bias_activations = NULL;
 		activation = NULL;
 	}
+
+	if(prev){ prev->link_with_next_layer(this);}
 
 }
 
@@ -253,9 +248,9 @@ void Layer::running_error()
 	switch(COST)
 	{
 		case Misclassification:
-			//result = argmax(out);
-			//eq = equal(result,target);
-			//sum_value = sum(eq);
+			result = argmax(out);
+			eq = applyFunc(result,target,gt_tensor);
+			sum_value = sum(eq);
 			RUNNING_ERROR += (out->rows  - sum_value);
 			RUNNING_SAMPLE_SIZE += out->rows;
 			break;
@@ -273,19 +268,13 @@ void Layer::running_error()
 void Layer::backward_errors()
 {
 	if(!target){ next->backward_errors(); }
-	if(target)
-	{
-		//if(out->cols != target->cols && !target_Tensor){ target_Tensor = zeros(1,1,BATCH_SIZE,out->cols); }
-		//if(out->cols != target->cols){ create_t_Tensor(target,target_Tensor); sub(out,target_Tensor,error); return; }
-		//else{ sub(activation,target,error);  return;}
-	}
+	if(target){ applyFunc(activation,target,error,0.0f,sub_tensor); return; }
 
 	if(UNIT_TYPE == Input){ backward_grads(); return; }
 
 	activation_gradient();
 	gpu->dotT(next->error, w_next,error);
-	//mul(error, out, error);
-
+	applyFunc(error,out,error,0.0f,mul_tensor);
 }
 
 void Layer::backward_grads()
@@ -361,20 +350,7 @@ void Layer::weight_update()
 
 	//next->weight_update();
 
-	switch(UPDATE_TYPE)
-	{
-		case RMSProp:
-			//RMSprop_with_weight_update(w_rms_next,w_grad_next,w_next,w_next,RMSPROP_MOMENTUM,LEARNING_RATE,out->rows*gpu->MPI_SIZE,MOMENTUM);
-			//RMSprop_with_weight_update(b_rms_next,b_grad_next,b_next,b_next,RMSPROP_MOMENTUM,LEARNING_RATE/100.0f,out->rows,MOMENTUM);
-			//scalarMul(b_grad_next, LEARNING_RATE/float(out->rows*GPU->MPI_SIZE) ,b_grad_next);
-			//sub(b_next,b_grad_next,b_next);
-
-			break;
-		default:
-			throw "Unknown update type!";
-			break;
-	}
-
+	weightUpdate(w_rms_next,w_grad_next,RMSPROP_MOMENTUM,LEARNING_RATE,out->rows, UPDATE_TYPE);
 	//limit_magnitude();
 
 }

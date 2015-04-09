@@ -195,7 +195,15 @@ def log(x1,out=None):
     
 def sqrt(x1,out=None):
     if out: lib.funcs.inp_pow(x1.pt,ct.c_float(0.5),out.pt);
-    else: return array(None, lib.funcs.ffpow(x1.pt, ct.c_float(0.5)))    
+    else: return array(None, lib.funcs.ffpow(x1.pt, ct.c_float(0.5))) 
+    
+def linear(x1,out=None):
+    if out: copy(x1,out)
+    else: return copy(x1,out)
+    
+def copy(x1,out=None):
+    if out: lib.funcs.inp_copy(x1.pt,out.pt);
+    else: return array(None, lib.funcs.fcopy(x1.pt))
     
 def logistic(x1,out=None):
     if out: lib.funcs.inp_logistic(x1.pt,out.pt);
@@ -238,14 +246,15 @@ def power(x1,power, out=None):
     else: return array(None, lib.funcs.ffpow(x1.pt, ct.c_float(power)))    
     
 def equal(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.funcs.inp_eq, lib.funcs.inp_scalar_eq, lib.funcs.inp_vec_eq, out)
+    if x2 == None: return False
+    elif out: apply_func(x1,x2, lib.funcs.inp_eq, lib.funcs.inp_scalar_eq, lib.funcs.inp_vec_eq, out)
     else: return apply_func(x1,x2, lib.funcs.feq, lib.funcs.fscalar_eq, lib.funcs.fvec_eq)
     
 def less(x1,x2,out=None):
     if out: apply_func(x1,x2, lib.funcs.inp_lt, lib.funcs.inp_scalar_lt, lib.funcs.inp_vec_lt, out)
     else: return apply_func(x1,x2, lib.funcs.flt, lib.funcs.fscalar_lt, lib.funcs.fvec_lt)
         
-def less_equal(x1,x2,out=None):
+def less_equal(x1,x2,out=None):    
     if out: apply_func(x1,x2, lib.funcs.inp_le, lib.funcs.inp_scalar_le, lib.funcs.inp_vec_le, out)
     else: return apply_func(x1,x2, lib.funcs.fle, lib.funcs.fscalar_le, lib.funcs.fvec_le)
         
@@ -257,8 +266,9 @@ def greater_equal(x1,x2,out=None):
     if out: apply_func(x1,x2, lib.funcs.inp_ge, lib.funcs.inp_scalar_ge, lib.funcs.inp_vec_ge, out)
     else: return apply_func(x1,x2, lib.funcs.fge, lib.funcs.fscalar_ge, lib.funcs.fvec_ge)
   
-def not_equal(x1,x2,out=None):
-    if out: apply_func(x1,x2, lib.funcs.inp_ne, lib.funcs.inp_scalar_ne, lib.funcs.inp_vec_ne, out)
+def not_equal(x1,x2,out=None):    
+    if x2 == None: return False
+    elif out: apply_func(x1,x2, lib.funcs.inp_ne, lib.funcs.inp_scalar_ne, lib.funcs.inp_vec_ne, out)
     else: return apply_func(x1,x2, lib.funcs.fne, lib.funcs.fscalar_ne, lib.funcs.fvec_ne)  
     
 def emptySlice():

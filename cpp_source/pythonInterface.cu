@@ -13,7 +13,11 @@
 
 extern "C"
 {
-	BatchAllocator *fBatchAllocator(){BatchAllocator *b = new BatchAllocator(); return b; }
+
+	Layer *fLayer(){ return new Layer(); }
+	void fLayer_init(Layer *mylayer, int unitcount, int batch_size, int unit_type, GPUpy *gpupy, Layer *prev){ mylayer->init(unitcount,batch_size,(Unittype_t)unit_type,gpupy,prev); }
+
+	BatchAllocator *fBatchAllocator(){ return new BatchAllocator(); }
 
 	void fallocateNextAsync(BatchAllocator *b, Tensor *A, float *cpu_buffer, Tensor *B, float *cpu_buffer_y){ b->allocateNextAsync(A,cpu_buffer,B,cpu_buffer_y); }
 	void freplaceCurrentBatch(BatchAllocator *b){ b->replaceCurrentBatch(); }
@@ -42,6 +46,9 @@ extern "C"
 	Tensor *fdiv(Tensor *A, Tensor *B){ return applyFunc(A,B,div_tensor); }
 	void inp_div(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,div_tensor); }
 	void ffree(Tensor *A){ A->freeTensor(); }
+
+	Tensor *fcopy(Tensor *A){ return applyFunc(A,NULL,0.0f,copy); }
+	void inp_copy(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,0.0f, copy); }
 
 	Tensor *fscalarAdd(Tensor *A, float a){ return applyFunc(A,NULL,a,add_scalar); }
 	void inp_scalarAdd(Tensor *A, float a, Tensor *out){ applyFunc(A,NULL,out,a,add_scalar); }

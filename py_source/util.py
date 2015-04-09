@@ -55,6 +55,9 @@ def softmax(X):
     max_row_values = np.matrix(np.max(X,axis=1)).T
     result = np.exp(X - max_row_values)
     sums = np.matrix(np.sum(result,axis=1))        
-    return result/sums
-             
-          
+    return result/sums      
+            
+def swap_pointer(x1, x2):
+    swap = x1.pt
+    x1.pt = x2.pt
+    x2.pt = swap      

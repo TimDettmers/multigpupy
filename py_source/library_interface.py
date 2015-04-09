@@ -152,10 +152,15 @@ funcs.flogistic_grad.restype = ct.POINTER(Tensor)
 funcs.inp_logistic_grad.restype = ct.c_void_p
 funcs.fReLU.restype = ct.POINTER(Tensor)
 funcs.inp_ReLU.restype = ct.c_void_p
+funcs.fcopy.restype = ct.POINTER(Tensor)
+funcs.inp_copy.restype = ct.c_void_p
 
 funcs.fsum.restype = ct.c_float
 funcs.ffmin.restype = ct.c_float
 funcs.ffmax.restype = ct.c_float
+
+funcs.fLayer.restype = ct.c_void_p
+funcs.fLayer_init.restype = ct.c_void_p
 
 class lib(object): funcs = funcs
 

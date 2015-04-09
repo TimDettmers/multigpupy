@@ -13,6 +13,11 @@ struct Slice
 	int col_stop;
 };
 
+enum weightUpdate_t
+{
+	RMSProp
+};
+
 enum Operation_t
 {
 	add_scalar,
@@ -82,6 +87,7 @@ __global__ void kDot8bit_shared(unsigned char *A, unsigned char *B, float *out, 
 __global__ void kArgmax(float* A, float* out, unsigned int height, unsigned int width);
 __global__ void kCreate_t_matrix(float *labels, float *out, int rows, int size);
 __global__ void kArange(float *out, int start, int rows, int cols, int size);
+__global__ void kWeightUpdate(float *RMS, float *grad, float RMS_multiplier, float learning_rate, int batch_size, int size, weightUpdate_t strategy);
 __global__ void kRMSprop(float *RMS, float *grad, float RMS_multiplier, float learning_rate, int batch_size, int size);
 __global__ void kRMSprop_with_momentum_update(float *RMS, float *grad, float *w, float *m, float RMS_multiplier, float learning_rate, int batch_size, int size, float momentum);
 __global__ void kRMSprop_with_momentum_weight_update(float *RMS, float *grad, float *w, float *m, float RMS_multiplier, float learning_rate, int batch_size, int size, float momentum);
