@@ -58,29 +58,29 @@ class Layer(object):
         self.activation_offsize = None         
         self.funcs = activation_function
         self.unitcount = unitcount
-        self.next = None
+        self.next_X = None
         self.prev = None
         self.id = 0
         self.target = None
         
     def add(self,next_layer):
-        if self.next:            
-            self.next.add(next_layer)
+        if self.next_X:            
+            self.next_X.add(next_layer)
             return
         
         if type(next_layer) is Layer:            
-            self.next = next_layer
+            self.next_X = next_layer
             next_layer.prev = self   
             next_layer.id = self.id +1
         else:
             self.funcs = next_layer
     
     def create_weights(self):
-        if self.next:
-            self.w_next = gpu.array(u.create_uniform_rdm_weight(self.unitcount,self.next.unitcount))
-            self.m_next = gpu.zeros((self.unitcount, self.next.unitcount))
-            self.w_grad_next = gpu.zeros((self.unitcount, self.next.unitcount))
-            if self.next: self.next.create_weights()
+        if self.next_X:
+            self.w_next = gpu.array(u.create_uniform_rdm_weight(self.unitcount,self.next_X.unitcount))
+            self.m_next = gpu.zeros((self.unitcount, self.next_X.unitcount))
+            self.w_grad_next = gpu.zeros((self.unitcount, self.next_X.unitcount))
+            if self.next_X: self.next_X.create_weights()
         
     def create_buffers(self, batch_size):
         self.activation = gpu.empty((batch_size,self.unitcount))
@@ -115,12 +115,12 @@ class Layer(object):
         if self.w_next==None: self.create_weights()
         if self.activation == None: self.create_buffers(batch_size)
         elif self.activation.shape[2] != batch_size: self.handle_offsize(batch_size)         
-        if self.next: self.next.handle_input_size(batch_size)
+        if self.next_X: self.next_X.handle_input_size(batch_size)
      
     @property
     def root(self):
         root = self
-        while root.next: root = root.next
+        while root.next_X: root = root.next_X
         return root    
         
     def forward(self, data=None, target=None,inTrainingMode=True):       
@@ -134,7 +134,7 @@ class Layer(object):
             gpu.dot(self.prev.out,self.prev.w_next,self.activation)             
             self.funcs.activation(self.activation, self.activation, self.out, inTrainingMode)  
             
-        if self.next: self.next.forward(None, None, inTrainingMode)
+        if self.next_X: self.next_X.forward(None, None, inTrainingMode)
         
     def predict(self, data):
         self.forward(data, None,False)    
@@ -142,7 +142,7 @@ class Layer(object):
         else: return self.root.out        
         
     def backward_errors(self):
-        if self.next: self.next.backward_errors()
+        if self.next_X: self.next_X.backward_errors()
         else: 
             gpu.sub(self.out,self.target,self.error)
             return
@@ -153,16 +153,16 @@ class Layer(object):
             return
         
         self.funcs.grad(self.activation,self.out)
-        gpu.dotT(self.next.error, self.w_next, self.error)
+        gpu.dotT(self.next_X.error, self.w_next, self.error)
         gpu.mul(self.error, self.out, self.error)
         
     def backward_grads(self):   
         if self.target: return
-        gpu.Tdot(self.activation, self.next.error, self.w_grad_next)
-        if self.next: self.next.backward_grads()
+        gpu.Tdot(self.activation, self.next_X.error, self.w_grad_next)
+        if self.next_X: self.next_X.backward_grads()
         
     def weight_update(self):
-        if self.next:
+        if self.next_X:
             lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(0.9),ct.c_float(0.001), self.out.shape[2])
             gpu.sub(self.w_next, self.w_grad_next, self.w_next)
         

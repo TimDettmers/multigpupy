@@ -69,18 +69,14 @@ class array(object):
         S.pt.contents.row_start = select_buffer[2][0]
         S.pt.contents.row_stop = select_buffer[2][1]
         S.pt.contents.col_start = select_buffer[3][0]
-        S.pt.contents.col_stop = select_buffer[3][1]     
-        
-        #print S.pt.contents.batch_start, S.pt.contents.batch_stop  
-        
+        S.pt.contents.col_stop = select_buffer[3][1]             
         return array(None, lib.funcs.fslice(self.pt,S.pt))
         pass
     
     
     def tocpu(self):
         data = np.empty(self.shape, dtype=np.float32)
-        lib.funcs.ftocpu(self.pt, data.ctypes.data_as(ct.POINTER(ct.c_float)))        
-        self.npArray = data        
+        lib.funcs.ftocpu(self.pt, data.ctypes.data_as(ct.POINTER(ct.c_float)))   
         if data.shape[0] == 1 and data.shape[1] == 1 and data.shape[2] == 1: data = data.reshape(data.shape[3])
         if data.shape[0] == 1 and data.shape[1] == 1: data = data.reshape(data.shape[2], data.shape[3])
         if data.shape[0] == 1 and data.shape[1] > 1: data = data.reshape(data.shape[1], data.shape[2], data.shape[3])

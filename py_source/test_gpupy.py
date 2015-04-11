@@ -792,31 +792,95 @@ def test_synchronizingAdd():
     t.assert_array_almost_equal(C.tocpu(), A*gpu.gpu_count(), 7, "Synchronizing add does not work!")
     
 def test_allocator_init():    
-    data = np.float32(np.random.rand(5333,83))
-    labels = np.float32(np.random.randint(0,10,(5333,)))
+    data = np.float32(np.random.rand(14,4))
+    #labels = np.float32(np.random.randint(0,10,(10,)))
+    labels = np.float32(np.random.rand(14,4))
     
-    batch_size = 128
-    alloc = batch_allocator(data, labels, 0.2, 0.0, batch_size)
-    for epoch in range(1):
-        for i in range(0,np.int32(np.ceil(data.shape[0]*0.8))-batch_size,batch_size):
-            batch = data[i:i+batch_size]
-            batch_y = u.create_t_matrix(labels[i:i+batch_size],10)
+    batch_size = 3
+    alloc = batch_allocator(data, labels, 0.3, 0.3, batch_size)
+    #print data
+    #print alloc.batches
+    #print alloc.sizes
+    for epoch in range(10):
+        for i in range(0,np.int32(np.round(data.shape[0]*0.4)),batch_size):
+            stop_idx = (np.int32(np.round(data.shape[0]*0.4)) if i+batch_size > np.int32(np.round(data.shape[0]*0.4)) else i+batch_size)
+            batch = data[i:stop_idx]
+            #batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            batch_y = labels[i:stop_idx]
+            alloc.allocate_next_batch()
+            alloc.replace_current_batch()
+            #print alloc.batch.tocpu().shape
+            t.assert_equal(alloc.batch.tocpu(), batch)
+            t.assert_equal(alloc.batch_y.tocpu(),batch_y )
+            
+        for i in alloc.train():
+            i*=batch_size
+            stop_idx = (np.int32(np.round(data.shape[0]*0.4)) if i+batch_size > np.int32(np.round(data.shape[0]*0.4)) else i+batch_size)
+            batch = data[i:stop_idx]
+            #batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            batch_y = labels[i:stop_idx]
             alloc.allocate_next_batch()
             alloc.replace_current_batch()
             t.assert_equal(alloc.batch.tocpu(), batch)
             t.assert_equal(alloc.batch_y.tocpu(),batch_y )
+           
+    print data
+    for epoch in range(1): 
+        '''
+            for i in range(np.int32(np.round(data.shape[0]*0.4)),np.int32(np.round(data.shape[0]*0.7)),batch_size):   
+                stop_idx = (np.int32(np.round(data.shape[0]*0.7)) if i+batch_size > np.int32(np.ceil(data.shape[0]*0.7)) else i+batch_size)
+                #print i,stop_idx
+                batch = data[i:stop_idx]  
+                print batch
+        '''     
+        alloc.set_type = 'cv'
+        for i in range(np.int32(np.ceil(data.shape[0]*0.4)),np.int32(np.ceil(data.shape[0]*0.7)),batch_size):   
+            stop_idx = (np.int32(np.ceil(data.shape[0]*0.7)) if i+batch_size > np.int32(np.ceil(data.shape[0]*0.7)) else i+batch_size)
+            #print i,stop_idx
+            batch = data[i:stop_idx]
+            #batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            batch_y = labels[i:stop_idx]
+            alloc.allocate_next_batch()
+            alloc.replace_current_batch()
+            C1 =  alloc.batch.tocpu()
+            C2 =  alloc.batch_y.tocpu()
+            if len(C1.shape) == 1: 
+                C1 = C1[np.newaxis,:]
+                C2 = C2[np.newaxis,:]
+            t.assert_equal(C1, batch)
+            t.assert_equal(C2,batch_y )
+            
+        for i in alloc.cv():
+            i*=batch_size     
+            stop_idx = (np.int32(np.ceil(data.shape[0]*0.7)) if i+batch_size > np.int32(np.ceil(data.shape[0]*0.7)) else i+batch_size)
+            batch = data[i:stop_idx]
+            #batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            batch_y = labels[i:stop_idx]
+            alloc.allocate_next_batch()
+            alloc.replace_current_batch()
+            C1 =  alloc.batch.tocpu()
+            C2 =  alloc.batch_y.tocpu()
+            if len(C1.shape) == 1: 
+                C1 = C1[np.newaxis,:]
+                C2 = C2[np.newaxis,:]
+            t.assert_equal(C1, batch)
+            t.assert_equal(C2,batch_y )
+    
         
     t0 = time.time()
-    '''
+    
     for epoch in range(10):
         for i in range(1 + (data.shape[0]/batch_size)):        
             alloc.allocate_next_batch()
             alloc.replace_current_batch()
-    '''
+    
     sec = time.time()-t0
-    GB = 10*data.shape[0]*data.shape[1]*4*(1024**-3)
-    #print GB/sec
-    #assert GB/sec > 0.75
+    GB = 10*data.shape[0]*data.shape[1]*4*(1024**-3) + (10*labels.shape[0]*10*4*(1024**-3))
+    print GB/sec
+    #assert GB/sec > 0.5 
+    #TODO: use pinned memory 
+    
+    
     
 def test_dropout():
     A = np.float32(np.random.rand(14,13,17,83))
@@ -900,7 +964,7 @@ def test_linear():
     C*=0
     gpu.linear(B,C)
     t.assert_array_equal(C.tocpu(), A, "Copy/linear not working!")
-    
+'''   
 def test_layer():
     net = Layer()
     net.add(Layer(800, Logistic()))
@@ -942,7 +1006,7 @@ def test_layer():
     print np.sum((C2-y)**2)    
     assert np.sum((C2-y)**2) < 500
     
-  
+'''  
     
     
 if __name__ == '__main__':    
