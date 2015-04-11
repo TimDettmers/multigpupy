@@ -818,14 +818,7 @@ def test_allocator_init():
             t.assert_equal(alloc.batch.tocpu(), batch)
             t.assert_equal(alloc.batch_y.tocpu(),batch_y )
            
-    for epoch in range(1): 
-        '''
-            for i in range(np.int32(np.round(data.shape[0]*0.4)),np.int32(np.round(data.shape[0]*0.7)),batch_size):   
-                stop_idx = (np.int32(np.round(data.shape[0]*0.7)) if i+batch_size > np.int32(np.ceil(data.shape[0]*0.7)) else i+batch_size)
-                #print i,stop_idx
-                batch = data[i:stop_idx]  
-                print batch
-        '''     
+    for epoch in range(10): 
         alloc.set_type = 'cv'
         for i in range(np.int32(np.round(data.shape[0]*0.4)),np.int32(np.round(data.shape[0]*0.7)),batch_size):   
             stop_idx = (np.int32(np.round(data.shape[0]*0.7)) if i+batch_size > np.int32(np.round(data.shape[0]*0.7)) else i+batch_size)
@@ -845,6 +838,121 @@ def test_allocator_init():
             
         for i in alloc.cv():                 
             stop_idx = (np.int32(np.round(data.shape[0]*0.7)) if i+batch_size > np.int32(np.round(data.shape[0]*0.7)) else i+batch_size)
+            batch = data[i:stop_idx]
+            batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            #batch_y = labels[i:stop_idx]
+            C1 =  alloc.batch.tocpu()
+            C2 =  alloc.batch_y.tocpu()
+            if len(C1.shape) == 1: 
+                C1 = C1[np.newaxis,:]
+                C2 = C2[np.newaxis,:]
+            t.assert_equal(C1, batch)
+            t.assert_equal(C2,batch_y )
+            
+    for epoch in range(10): 
+        alloc.set_type = 'test'
+        for i in range(np.int32(np.round(data.shape[0]*0.7)),np.int32(np.round(data.shape[0]*1.0)),batch_size):   
+            stop_idx = (np.int32(np.round(data.shape[0]*1.0)) if i+batch_size > np.int32(np.round(data.shape[0]*1.0)) else i+batch_size)
+            #print i,stop_idx
+            batch = data[i:stop_idx]
+            batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            #batch_y = labels[i:stop_idx]
+            alloc.allocate_next_batch()
+            alloc.replace_current_batch()
+            C1 =  alloc.batch.tocpu()
+            C2 =  alloc.batch_y.tocpu()
+            if len(C1.shape) == 1: 
+                C1 = C1[np.newaxis,:]
+                C2 = C2[np.newaxis,:]
+            t.assert_equal(C1, batch)
+            t.assert_equal(C2,batch_y )
+            
+        for i in alloc.test():                 
+            stop_idx = (np.int32(np.round(data.shape[0]*1.0)) if i+batch_size > np.int32(np.round(data.shape[0]*1.0)) else i+batch_size)
+            batch = data[i:stop_idx]
+            batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            #batch_y = labels[i:stop_idx]
+            C1 =  alloc.batch.tocpu()
+            C2 =  alloc.batch_y.tocpu()
+            if len(C1.shape) == 1: 
+                C1 = C1[np.newaxis,:]
+                C2 = C2[np.newaxis,:]
+            t.assert_equal(C1, batch)
+            t.assert_equal(C2,batch_y )
+            
+    for epoch in range(10):             
+        for i in alloc.test():                 
+            stop_idx = (np.int32(np.round(data.shape[0]*1.0)) if i+batch_size > np.int32(np.round(data.shape[0]*1.0)) else i+batch_size)
+            batch = data[i:stop_idx]
+            batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            #batch_y = labels[i:stop_idx]
+            C1 =  alloc.batch.tocpu()
+            C2 =  alloc.batch_y.tocpu()
+            if len(C1.shape) == 1: 
+                C1 = C1[np.newaxis,:]
+                C2 = C2[np.newaxis,:]
+            t.assert_equal(C1, batch)
+            t.assert_equal(C2,batch_y )
+            
+                
+        for i in alloc.train():                 
+            stop_idx = (np.int32(np.round(data.shape[0]*0.4)) if i+batch_size > np.int32(np.round(data.shape[0]*0.4)) else i+batch_size)
+            batch = data[i:stop_idx]
+            batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            #batch_y = labels[i:stop_idx]
+            C1 =  alloc.batch.tocpu()
+            C2 =  alloc.batch_y.tocpu()
+            if len(C1.shape) == 1: 
+                C1 = C1[np.newaxis,:]
+                C2 = C2[np.newaxis,:]
+            t.assert_equal(C1, batch)
+            t.assert_equal(C2,batch_y )
+            
+            
+        for i in alloc.train():                 
+            stop_idx = (np.int32(np.round(data.shape[0]*0.4)) if i+batch_size > np.int32(np.round(data.shape[0]*0.4)) else i+batch_size)
+            batch = data[i:stop_idx]
+            batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            #batch_y = labels[i:stop_idx]
+            C1 =  alloc.batch.tocpu()
+            C2 =  alloc.batch_y.tocpu()
+            if len(C1.shape) == 1: 
+                C1 = C1[np.newaxis,:]
+                C2 = C2[np.newaxis,:]
+            t.assert_equal(C1, batch)
+            t.assert_equal(C2,batch_y )
+            
+            
+        for i in alloc.cv():                 
+            stop_idx = (np.int32(np.round(data.shape[0]*0.7)) if i+batch_size > np.int32(np.round(data.shape[0]*0.7)) else i+batch_size)
+            batch = data[i:stop_idx]
+            batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            #batch_y = labels[i:stop_idx]
+            C1 =  alloc.batch.tocpu()
+            C2 =  alloc.batch_y.tocpu()
+            if len(C1.shape) == 1: 
+                C1 = C1[np.newaxis,:]
+                C2 = C2[np.newaxis,:]
+            t.assert_equal(C1, batch)
+            t.assert_equal(C2,batch_y )
+            
+            
+        for i in alloc.train():                 
+            stop_idx = (np.int32(np.round(data.shape[0]*0.4)) if i+batch_size > np.int32(np.round(data.shape[0]*0.4)) else i+batch_size)
+            batch = data[i:stop_idx]
+            batch_y = u.create_t_matrix(labels[i:stop_idx],10)
+            #batch_y = labels[i:stop_idx]
+            C1 =  alloc.batch.tocpu()
+            C2 =  alloc.batch_y.tocpu()
+            if len(C1.shape) == 1: 
+                C1 = C1[np.newaxis,:]
+                C2 = C2[np.newaxis,:]
+            t.assert_equal(C1, batch)
+            t.assert_equal(C2,batch_y )
+            
+            
+        for i in alloc.test():                 
+            stop_idx = (np.int32(np.round(data.shape[0]*1.0)) if i+batch_size > np.int32(np.round(data.shape[0]*1.0)) else i+batch_size)
             batch = data[i:stop_idx]
             batch_y = u.create_t_matrix(labels[i:stop_idx],10)
             #batch_y = labels[i:stop_idx]
