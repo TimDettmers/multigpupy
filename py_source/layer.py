@@ -89,16 +89,15 @@ class Layer(object):
         self.bias = gpu.empty((1,batch_size))
         
     def handle_offsize(self, batch_size):
-        print batch_size
         if self.activation_offsize == None:
             self.activation_offsize = gpu.empty((batch_size,self.unitcount))
             self.out_offsize = gpu.empty((batch_size,self.unitcount))
             self.error_offsize = gpu.empty((batch_size,self.unitcount))
             self.bias_offsize = gpu.empty((1,batch_size))
-            u.swap_pointer(self.activation, self.activation_offsize)
-            u.swap_pointer(self.out, self.out_offsize)
-            u.swap_pointer(self.error, self.error_offsize)
-            u.swap_pointer(self.bias, self.bias_offsize)            
+            u.swap_pointer_and_shape(self.activation, self.activation_offsize)
+            u.swap_pointer_and_shape(self.out, self.out_offsize)
+            u.swap_pointer_and_shape(self.error, self.error_offsize)
+            u.swap_pointer_and_shape(self.bias, self.bias_offsize)            
         elif self.activation_offsize.shape[2] != batch_size:
             del self.activation
             del self.out
@@ -106,10 +105,10 @@ class Layer(object):
             del self.bias
             self.create_buffers(batch_size)
         else:
-            u.swap_pointer(self.activation, self.activation_offsize)
-            u.swap_pointer(self.out, self.out_offsize)
-            u.swap_pointer(self.error, self.error_offsize)
-            u.swap_pointer(self.bias, self.bias_offsize)    
+            u.swap_pointer_and_shape(self.activation, self.activation_offsize)
+            u.swap_pointer_and_shape(self.out, self.out_offsize)
+            u.swap_pointer_and_shape(self.error, self.error_offsize)
+            u.swap_pointer_and_shape(self.bias, self.bias_offsize)    
     
     def handle_input_size(self, batch_size):
         if self.w_next==None: self.create_weights()
@@ -138,6 +137,8 @@ class Layer(object):
         
     def predict(self, data):
         self.forward(data, None,False)    
+        #print data.shape
+        #print self.root.out.shape
         if type(self.root.funcs) == Softmax: return gpu.argmax(self.root.out)
         else: return self.root.out        
         
