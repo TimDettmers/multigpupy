@@ -93,7 +93,7 @@ class array(object):
     @property
     def T(self): return array(None, lib.funcs.fT(self.pt))   
       
-    def __del__(self): lib.funcs.ffree(self.pt)
+    def __del__(self): pass#lib.funcs.ffree(self.pt)
     def __add__(self, other): return apply_func(self,other, lib.funcs.fadd, lib.funcs.fscalarAdd, lib.funcs.faddVectorToTensor)
     def __sub__(self, other): return apply_func(self,other, lib.funcs.fsub, lib.funcs.fscalarSub, lib.funcs.fsubVectorToTensor)
     def __mul__(self, other): return apply_func(self,other, lib.funcs.fmul, lib.funcs.fscalarMul, lib.funcs.fmulVectorToTensor)
@@ -281,7 +281,7 @@ def dotT(a,b,out=None):
     if out: lib.funcs.inp_dotT(p_gpupy, a.pt, b.pt, out.pt)
     else: return array(None, lib.funcs.fdotT(p_gpupy, a.pt,b.pt))
     
-def fsynchronizingAdd(x1, out=None): 
+def synchronizingAdd(x1, out=None): 
     if out: lib.funcs.inp_synchronizingAdd(p_gpupy, x1.pt, out.pt)
     return array(None, lib.funcs.fsynchronizingAdd(p_gpupy,x1.pt))  
 

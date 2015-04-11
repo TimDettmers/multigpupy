@@ -15,9 +15,17 @@ BatchAllocator::BatchAllocator()
 		streams_y.push_back(s_y);
 	}
 
+	int isEnabled = 0;
+	cudaDeviceCanAccessPeer(&isEnabled, 0,1);
+	if(isEnabled==0)
+		for(int gpu1 = 0; gpu1 < DEVICE_COUNT; gpu1++)
+			for(int gpu2 = 0; gpu2 < DEVICE_COUNT; gpu2++)
+				if(gpu1!=gpu2)
+				{
+					CUDA_CHECK_RETURN(cudaSetDevice(gpu1));
+					CUDA_CHECK_RETURN(cudaDeviceEnablePeerAccess(gpu2,0));
+				}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
-
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&DEVICE_COUNT));
 }
 
 
@@ -33,6 +41,8 @@ void BatchAllocator::allocateNextAsync(Tensor *batch, float *cpu_buffer, Tensor 
 
 void BatchAllocator::replaceCurrentBatch()
 {
+
+
 	for(int i = 0; i < DEVICE_COUNT; i++)
 	{
 		CUDA_CHECK_RETURN(cudaStreamSynchronize(streams[i]));

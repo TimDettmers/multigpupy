@@ -538,38 +538,7 @@ def test_not_equal():
     t.assert_array_equal(C4, np.not_equal(A1,0.51783), "scalar gpu.not_equal != np.not_equal")
     t.assert_array_equal((B1!=0.51783).tocpu(), A1!=0.51783, "scalar gpu != != np !=")
     
-def test_Slice():
-    '''
-    S = gpu.emptySlice()
-    assert S.batch.start == 0
-    assert S.batch.stop == np.iinfo(np.int32).max
-    assert S.map.start == 0
-    assert S.map.stop == np.iinfo(np.int32).max
-    assert S.row.start == 0
-    assert S.row.stop == np.iinfo(np.int32).max
-    assert S.col.start == 0
-    assert S.col.stop == np.iinfo(np.int32).max
-    
-    S.setSliceValues([slice(1,3),slice(3,6),slice(10,20)])
-    assert S.batch.start == 0
-    assert S.batch.stop == np.iinfo(np.int32).max
-    assert S.map.start == 1
-    assert S.map.stop == 3
-    assert S.row.start == 3
-    assert S.row.stop == 6
-    assert S.col.start == 10
-    assert S.col.stop == 20
-    
-    S.setSliceValues([slice(1,5)])
-    assert S.col.start == 1
-    assert S.col.stop == 5
-    
-    
-    S.setSliceValues([slice(None,None, None)])
-    assert S.col.start == 0
-    assert S.col.stop == np.iinfo(np.int32).max
-    '''
-    
+   
     
     
 def test_slicing():
@@ -781,18 +750,20 @@ def test_dot():
     gpu.Tdot(A4,B2,C)
     t.assert_array_almost_equal(C.tocpu(), np.dot(A3.T,B1), 5, "np.Tdot != gpu.dot 2 dimensions!")
     
+
 def test_synchronizingAdd():
     A = np.float32(np.random.rand(17,83))
-    B = gpu.array(A)    
-    C = gpu.fsynchronizingAdd(B)   
+    B = gpu.array(A)        
+    C = gpu.synchronizingAdd(B)   
     
     t.assert_array_almost_equal(C.tocpu(), A*gpu.gpu_count(), 7, "Synchronizing add does not work!")
     C*=0
-    gpu.fsynchronizingAdd(B,C)
+    gpu.synchronizingAdd(B,C)
     t.assert_array_almost_equal(C.tocpu(), A*gpu.gpu_count(), 7, "Synchronizing add does not work!")
-    
+
+        
 def test_allocator_init():    
-    data = np.float32(np.random.rand(5333,4))
+    data = np.float32(np.random.rand(5333,256))
     labels = np.float32(np.random.randint(0,10,(5333,)))
     #labels = np.float32(np.random.rand(5333,4))
     
@@ -850,7 +821,7 @@ def test_allocator_init():
             t.assert_equal(C2,batch_y )
             
     for epoch in range(10): 
-        alloc.set_type = 'test'
+        alloc.set_type = 'debug'
         for i in range(np.int32(np.round(data.shape[0]*0.7)),np.int32(np.round(data.shape[0]*1.0)),batch_size):   
             stop_idx = (np.int32(np.round(data.shape[0]*1.0)) if i+batch_size > np.int32(np.round(data.shape[0]*1.0)) else i+batch_size)
             #print i,stop_idx
@@ -968,17 +939,15 @@ def test_allocator_init():
     t0 = time.time()
     
     for epoch in range(10):
-        for i in range(1 + (data.shape[0]/batch_size)):        
-            alloc.allocate_next_batch()
-            alloc.replace_current_batch()
-    
+        for i in alloc.train():
+            pass        
+            
     sec = time.time()-t0
-    GB = 10*data.shape[0]*data.shape[1]*4*(1024**-3) + (10*labels.shape[0]*10*4*(1024**-3))
-    print GB/sec
-    #assert GB/sec > 0.5 
-    #TODO: use pinned memory 
+    GB = 10*data.shape[0]*data.shape[1]*4*(1024**-3)
     
-    
+    assert GB/sec > 1.75
+    #TODO: this should be closer to 8GB/s -> use pinned memory 
+   
     
 def test_dropout():
     A = np.float32(np.random.rand(14,13,17,83))
@@ -1062,37 +1031,44 @@ def test_linear():
     C*=0
     gpu.linear(B,C)
     t.assert_array_equal(C.tocpu(), A, "Copy/linear not working!")
-    
+
 
 def test_layer():
     net = Layer()
     net.add(Layer(800, Logistic()))
     net.add(Layer(10,Softmax()))
     
-    X = np.load('./mnist_mini_X.npy')
-    y = np.load('./mnist_mini_y.npy')
+    #X = np.load('./mnist_mini_X.npy')
+    #y = np.load('./mnist_mini_y.npy')
+    X = np.load('/home/tim/data/MNIST/train_X.npy')
+    y = np.load('/home/tim/data/MNIST/train_y.npy')
     
-    alloc = batch_allocator(X,y, 0.2,0.0,32)
-    
-    batch_size = 32
-    t0 = time.time()
-    for epoch in range(15):
+    alloc = batch_allocator(X,y, 1-0.8571429,0.0,128)    
+    for epoch in range(5):
+        t0 = time.time()    
         for i in alloc.train():   
             #net.forward(gpu.array(batch),gpu.array(batch_y))
             net.forward(alloc.batch,alloc.batch_y)
             net.backward_errors()
             net.backward_grads()
+            net.accumulate_get_error()
             net.weight_update()
+        print 'train epoch time: {0} secs'.format(time.time()-t0)
+        
+        t0 = time.time()    
+        for i in alloc.cv():
+            net.forward(alloc.batch,alloc.batch_y)
+            net.accumulate_get_error()
+        net.print_reset_error('Cv')
+        print 'cv error time: {0} secs'.format(time.time()-t0)
             
         #print net.w_next.tocpu().sum()
-        C2 = net.predict(gpu.array(X)).tocpu()
-        print np.sum((C2-y)**2)
-    print time.time()-t0
+        #print np.sum((C2-y)**2)
     
     #print np.sum((C2-y)**2)
     #print C2[0:20].T
     #print y[0:20].T
-     
+    assert False
     
     C2 = net.predict(gpu.array(X)).tocpu()
     print np.sum((C2-y)**2)    

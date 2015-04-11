@@ -10,7 +10,6 @@ from library_interface import lib
 import ctypes as ct
 import gpupy as gpu
 
-p_allocator = lib.funcs.fBatchAllocator()
 
 class batch_allocator(object):
     def __init__(self, data, labels, cv_percent, test_percent, batch_size):
@@ -18,6 +17,7 @@ class batch_allocator(object):
         elif labels.shape[0]==1 or labels.shape[1]==1: labels = u.create_t_matrix(labels)    
         self.size = labels.shape[0]
         self.shapes = [data.shape[1],labels.shape[1]]
+        self.p_allocator = lib.funcs.fBatchAllocator()
             
         shape = u.handle_shape(data.shape)  
         shape_label = u.handle_shape(labels.shape)
@@ -58,13 +58,7 @@ class batch_allocator(object):
         if self.test_percent == 0.0: n[1] = self.size-n[0]; n[2] = 1
         
         self.offbatch_rows = np.int32(n % self.batch_size)
-        self.end_idx = np.ceil(np.array([n[0], n[0]+n[1], n[0]+ n[1] + n[2]]))        
-        
-        #print n
-        #print self.end_idx
-        #print self.offbatch_rows
-        
-        
+        self.end_idx = np.ceil(np.array([n[0], n[0]+n[1], n[0]+ n[1] + n[2]]))           
         
     def deallocate_buffers(self):
         for i in range(len(self.offsize_X)):
@@ -104,7 +98,7 @@ class batch_allocator(object):
         return self
     
     def test(self): 
-        self.set_type = 'test'
+        self.set_type = 'debug'
         return self
     
     def __iter__(self): 
@@ -118,14 +112,14 @@ class batch_allocator(object):
         self.allocate_next_batch()    
         if self.set_type == 'train' and self.next_batch_idx == 0: raise StopIteration
         if self.set_type == 'cv' and self.next_batch_idx == self.end_idx[0]: raise StopIteration
-        if self.set_type == 'test' and self.next_batch_idx == self.end_idx[1]: raise StopIteration  
+        if self.set_type == 'debug' and self.next_batch_idx == self.end_idx[1]: raise StopIteration  
         return ret_idx
     
     def handle_copy_index(self):
         idx = self.next_batch_idx+self.batch_size
         i = 0
         if self.set_type == 'cv': i = 1
-        if self.set_type == 'test': i = 2
+        if self.set_type == 'debug': i = 2
         if idx > self.end_idx[i]:         
             if self.next_X.shape[2] == self.batch_size:
                 u.swap_pointer_and_shape(self.next_X, self.offsize_X[i])
@@ -144,21 +138,20 @@ class batch_allocator(object):
         if self.set_type == self.set_type_prev == 'cv':            
             if self.next_batch_idx >= self.end_idx[1]: self.next_batch_idx  = self.end_idx[0]
             
-        if self.set_type == self.set_type_prev == 'test':
+        if self.set_type == self.set_type_prev == 'debug':
             if self.next_batch_idx >= self.end_idx[2]: self.next_batch_idx  = self.end_idx[1]
             
         if self.set_type != self.set_type_prev:            
             i = 0
             if self.set_type_prev == 'cv': i = 1
-            if self.set_type_prev == 'test': i = 2
+            if self.set_type_prev == 'debug': i = 2
             if self.current.shape[2] != self.batch_size:   
                 u.swap_pointer_and_shape(self.current, self.offsize_X[i])
                 u.swap_pointer_and_shape(self.current_y, self.offsize_y[i])
             
             if self.set_type == 'train': self.next_batch_idx = self.next_batch_idx = 0; self.set_type_prev = 'train'
             if self.set_type == 'cv': self.next_batch_idx = self.end_idx[0]; self.set_type_prev = 'cv'
-            if self.set_type == 'test': self.next_batch_idx = self.end_idx[1]; self.set_type_prev = 'test' 
-            print self.set_type, self.next_batch_idx
+            if self.set_type == 'debug': self.next_batch_idx = self.end_idx[1]; self.set_type_prev = 'debug' 
         
     @property
     def batch(self): return self.current
@@ -169,10 +162,10 @@ class batch_allocator(object):
         batch = np.float32(np.asfortranarray(self.X[:,:,self.next_batch_idx:self.handle_copy_index(),:]))
         batch_y = np.float32(np.asfortranarray(self.y[:,:,self.next_batch_idx:self.handle_copy_index(),:]))
                 
-        lib.funcs.fallocateNextAsync(p_allocator, self.next_X.pt,batch.ctypes.data_as(ct.POINTER(ct.c_float)),self.next_y.pt,batch_y.ctypes.data_as(ct.POINTER(ct.c_float)))
+        lib.funcs.fallocateNextAsync(self.p_allocator, self.next_X.pt,batch.ctypes.data_as(ct.POINTER(ct.c_float)),self.next_y.pt,batch_y.ctypes.data_as(ct.POINTER(ct.c_float)))
         
     def replace_current_batch(self): 
-        lib.funcs.freplaceCurrentBatch(p_allocator)
+        lib.funcs.freplaceCurrentBatch(self.p_allocator)
         u.swap_pointer_and_shape(self.current,self.next_X )
         u.swap_pointer_and_shape(self.current_y,self.next_y)
         self.next_batch_idx +=self.batch_size

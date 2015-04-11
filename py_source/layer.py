@@ -62,6 +62,7 @@ class Layer(object):
         self.prev = None
         self.id = 0
         self.target = None
+        self.current_error = []
         
     def add(self,next_layer):
         if self.next_X:            
@@ -162,9 +163,28 @@ class Layer(object):
         gpu.Tdot(self.activation, self.next_X.error, self.w_grad_next)
         if self.next_X: self.next_X.backward_grads()
         
+    def accumulate_get_error(self):
+        predicted_labels = gpu.argmax(self.root.out) 
+        target_labels = gpu.argmax(self.root.target)
+        gpu.equal(predicted_labels, target_labels, target_labels)
+        error = target_labels.sum()/self.out.shape[2]
+        self.current_error.append(error) 
+        
+    def print_reset_error(self, error_name='Train'):
+        error = np.array(self.current_error).mean()
+        print '{1} error: {0}'.format(error,error_name)
+        del self.current_error
+        self.current_error = []
+        return error
+        
+        
     def weight_update(self):
         if self.next_X:
-            lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(0.9),ct.c_float(0.001), self.out.shape[2])
+            #print self.w_next.shape
+            #print self.w_grad_next.shape
+            #print self.m_next.shape
+            #print self.out.shape[2]
+            lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(0.9),ct.c_float(0.03), self.out.shape[2])
             gpu.sub(self.w_next, self.w_grad_next, self.w_next)
         
         

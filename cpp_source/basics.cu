@@ -335,7 +335,7 @@ void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learnin
 	for(int i = 0; i < gpus; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kWeightUpdate<<<blocks,THREADS_PER_BLOCKS>>>(RMS->data, grad->data, RMS_multiplier, learning_rate, batch_size, RMS->size, strategy);
+		kWeightUpdate<<<blocks,THREADS_PER_BLOCKS>>>(RMS->data_gpus[i], grad->data_gpus[i], RMS_multiplier, learning_rate, batch_size, RMS->size, strategy);
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
