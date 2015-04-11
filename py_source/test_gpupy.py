@@ -1038,27 +1038,27 @@ def test_layer():
     net.add(Layer(800, Logistic()))
     net.add(Layer(10,Softmax()))
     
-    #X = np.load('./mnist_mini_X.npy')
-    #y = np.load('./mnist_mini_y.npy')
-    X = np.load('/home/tim/data/MNIST/train_X.npy')
-    y = np.load('/home/tim/data/MNIST/train_y.npy')
+    X = np.load('./mnist_mini_X.npy')
+    y = np.load('./mnist_mini_y.npy')
+    #X = np.load('/home/tim/data/MNIST/train_X.npy')
+    #y = np.load('/home/tim/data/MNIST/train_y.npy')
     
     alloc = batch_allocator(X,y, 1-0.8571429,0.0,128)    
-    for epoch in range(5):
+    for epoch in range(15):
         t0 = time.time()    
         for i in alloc.train():   
             #net.forward(gpu.array(batch),gpu.array(batch_y))
             net.forward(alloc.batch,alloc.batch_y)
             net.backward_errors()
             net.backward_grads()
-            net.accumulate_get_error()
+            net.accumulate_error()
             net.weight_update()
         print 'train epoch time: {0} secs'.format(time.time()-t0)
         
         t0 = time.time()    
         for i in alloc.cv():
             net.forward(alloc.batch,alloc.batch_y)
-            net.accumulate_get_error()
+            net.accumulate_error()
         net.print_reset_error('Cv')
         print 'cv error time: {0} secs'.format(time.time()-t0)
             
@@ -1068,7 +1068,6 @@ def test_layer():
     #print np.sum((C2-y)**2)
     #print C2[0:20].T
     #print y[0:20].T
-    assert False
     
     C2 = net.predict(gpu.array(X)).tocpu()
     print np.sum((C2-y)**2)    

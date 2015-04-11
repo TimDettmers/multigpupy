@@ -130,7 +130,7 @@ def apply_func(x1, x2, func_matrix, func_scalar, func_vector = None, out=None):
     if is_scalar: 
         if out: func_scalar(x1.pt,ct.c_float(x2),out.pt)
         else: return array(None,func_scalar(x1.pt,ct.c_float(x2)))
-    elif any(is_vectors): 
+    elif any(is_vectors) and not all(is_vectors): 
         if is_vectors[0] and out: func_vector(x2.pt, x1.pt,out.pt)
         elif is_vectors[0]: return array(None,func_vector(x2.pt, x1.pt))
         elif is_vectors[1] and out: func_vector(x1.pt, x2.pt,out.pt)
