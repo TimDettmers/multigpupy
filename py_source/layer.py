@@ -63,7 +63,10 @@ class Layer(object):
         self.id = 0
         self.target = None
         self.current_error = []
-        self.config = {'learning_rate' : 0.03}        
+        self.current_SE = []
+        self.config = {'learning_rate' : 0.03,
+                       'momentum' : 0.9
+                       }        
         
     def add(self,next_layer):
         if self.next_layer:            
@@ -170,22 +173,22 @@ class Layer(object):
         gpu.equal(predicted_labels, target_labels, target_labels)
         error = 1.0-(target_labels.sum()/self.out.shape[2])
         self.current_error.append(error) 
+        self.current_SE.append(np.array(self.current_error).std()/len(self.current_error))
+        
         
     def print_reset_error(self, error_name='Train'):
         error = np.array(self.current_error).mean()
-        print '{1} error: {0}'.format(error,error_name)
+        print '{1} error: {0} ({2},{3})'.format(np.round(error,4),error_name, np.round(error-(self.current_SE[-1]*1.96),4), np.round(error+(self.current_SE[-1]*1.96),4))
         del self.current_error
+        del self.current_SE
         self.current_error = []
+        self.current_SE = []
         return error
         
         
     def weight_update(self):
-        if self.next_layer:
-            #print self.w_next.shape
-            #print self.w_grad_next.shape
-            #print self.m_next.shape
-            #print self.out.shape[2]            
-            lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(0.9),ct.c_float(self.config['learning_rate']), self.out.shape[2])
+        if self.next_layer:         
+            lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(self.config['momentum']),ct.c_float(self.config['learning_rate']), self.out.shape[2])
             gpu.sub(self.w_next, self.w_grad_next, self.w_next)
             self.next_layer.weight_update()
         

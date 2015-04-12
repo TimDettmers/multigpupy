@@ -48,6 +48,10 @@ class batch_allocator(object):
         
         self.set_batch_sizes()
         self.init_buffers()
+        
+        self.net = None
+        self.sample_size = None
+        self.relative_error = None
     
     def set_batch_sizes(self):
         n = np.zeros((3,))
@@ -89,16 +93,25 @@ class batch_allocator(object):
         
     
         
-    def train(self):     
+    def train(self, sample_size_or_error = None):
+        if sample_size_or_error:
+            if sample_size_or_error > 1: self.sample_size = sample_size_or_error
+            else: self.relative_error = sample_size_or_error     
         self.set_type = 'train'    
         return self   
     
-    def cv(self): 
+    def cv(self, sample_size_or_error = None): 
+        if sample_size_or_error:
+            if sample_size_or_error > 1: self.sample_size = sample_size_or_error
+            else: self.relative_error = sample_size_or_error
         self.set_type = 'cv'
         return self
     
-    def test(self): 
-        self.set_type = 'debug'
+    def test(self, sample_size_or_error = None): 
+        if sample_size_or_error:
+            if sample_size_or_error > 1: self.sample_size = sample_size_or_error
+            else: self.relative_error = sample_size_or_error
+        self.set_type = 'test'
         return self
     
     def __iter__(self):   
@@ -109,16 +122,39 @@ class batch_allocator(object):
         ret_idx = self.next_batch_idx
         self.replace_current_batch()  
         self.allocate_next_batch()    
-        if self.set_type == 'train' and self.next_batch_idx == 0: raise StopIteration
-        if self.set_type == 'cv' and self.next_batch_idx == self.end_idx[0]: raise StopIteration
-        if self.set_type == 'debug' and self.next_batch_idx == self.end_idx[1]: raise StopIteration  
+        if self.set_type == 'train':
+            if self.next_batch_idx == 0: raise StopIteration
+            if self.sample_size: 
+                if ret_idx/self.batch_size > self.sample_size:
+                    self.sample_size = None                        
+                    raise StopIteration
+        if self.set_type == 'cv':
+            if self.next_batch_idx == self.end_idx[0]: raise StopIteration  
+            if self.sample_size: 
+                if (self.end_idx[0]-ret_idx)/self.batch_size > self.sample_size: 
+                    self.sample_size = None                        
+                    raise StopIteration
+        if self.set_type == 'test':
+            if self.next_batch_idx == self.end_idx[1]: raise StopIteration     
+            if self.sample_size: 
+                if (self.end_idx[1]-ret_idx)/self.batch_size > self.sample_size: 
+                    self.sample_size = None                        
+                    raise StopIteration
+            
+        if self.net:
+            if self.relative_error:
+                if len(self.net.current_error) > 2:
+                    error = np.mean(np.array(self.net.current_error)) + 1e-10
+                    if self.net.current_SE[-1]/error < self.relative_error: 
+                        self.relative_error = None
+                        raise StopIteration
         return ret_idx
     
     def handle_copy_index(self):
         idx = self.next_batch_idx+self.batch_size
         i = 0
         if self.set_type == 'cv': i = 1
-        if self.set_type == 'debug': i = 2
+        if self.set_type == 'test': i = 2
         if idx > self.end_idx[i]:         
             if self.next_layer.shape[2] == self.batch_size:
                 u.swap_pointer_and_shape(self.next_layer, self.offsize_X[i])
@@ -137,20 +173,20 @@ class batch_allocator(object):
         if self.set_type == self.set_type_prev == 'cv':            
             if self.next_batch_idx >= self.end_idx[1]: self.next_batch_idx  = self.end_idx[0]
             
-        if self.set_type == self.set_type_prev == 'debug':
+        if self.set_type == self.set_type_prev == 'test':
             if self.next_batch_idx >= self.end_idx[2]: self.next_batch_idx  = self.end_idx[1]
             
         if self.set_type != self.set_type_prev:            
             i = 0
             if self.set_type_prev == 'cv': i = 1
-            if self.set_type_prev == 'debug': i = 2
+            if self.set_type_prev == 'test': i = 2
             if self.current.shape[2] != self.batch_size:   
                 u.swap_pointer_and_shape(self.current, self.offsize_X[i])
                 u.swap_pointer_and_shape(self.current_y, self.offsize_y[i])
             
             if self.set_type == 'train': self.next_batch_idx = self.next_batch_idx = 0; self.set_type_prev = 'train'
             if self.set_type == 'cv': self.next_batch_idx = self.end_idx[0]; self.set_type_prev = 'cv'
-            if self.set_type == 'debug': self.next_batch_idx = self.end_idx[1]; self.set_type_prev = 'debug' 
+            if self.set_type == 'test': self.next_batch_idx = self.end_idx[1]; self.set_type_prev = 'test' 
         
     @property
     def batch(self): return self.current

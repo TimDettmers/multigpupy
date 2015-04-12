@@ -821,7 +821,7 @@ def test_allocator_init():
             t.assert_equal(C2,batch_y )
             
     for epoch in range(10): 
-        alloc.set_type = 'debug'
+        alloc.set_type = 'test'
         for i in range(np.int32(np.round(data.shape[0]*0.7)),np.int32(np.round(data.shape[0]*1.0)),batch_size):   
             stop_idx = (np.int32(np.round(data.shape[0]*1.0)) if i+batch_size > np.int32(np.round(data.shape[0]*1.0)) else i+batch_size)
             #print i,stop_idx
