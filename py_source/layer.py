@@ -65,7 +65,9 @@ class Layer(object):
         self.current_error = []
         self.current_SE = []
         self.config = {'learning_rate' : 0.03,
-                       'momentum' : 0.9
+                       'momentum' : 0.9,
+                       'input_dropout': 0.2,
+                       'dropout' : 0.5
                        }        
         
     def add(self,next_layer):
@@ -195,6 +197,11 @@ class Layer(object):
         
     def set_config_value(self, key, value):
         self.config[key] = value
+        if key == 'dropout' and self.prev_layer: self.funcs.dropout = value
+        if key == 'input_dropout': 
+            self.funcs.dropout = value
+            return
+            
         if self.next_layer:
             self.next_layer.set_config_value(key, value)
         
