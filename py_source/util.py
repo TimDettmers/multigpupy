@@ -4,6 +4,9 @@ Created on Mar 24, 2015
 @author: tim
 '''
 import numpy as np
+import inspect
+import logging
+
 
 def handle_shape(shape):    
     assert len(shape)<=4, "GPUpy only supports up tp four dimensions!"
@@ -75,3 +78,12 @@ def create_uniform_rdm_weight(input_size,output_size):
     return np.float32(rdm.uniform(low=-4*np.sqrt(6./(input_size+output_size)),
                     high=4*np.sqrt(6./(input_size+output_size)),
                     size=(input_size,output_size)))
+    
+
+def get_current_function_name():
+    return inspect.stack()[1][3]
+
+def log_and_print(message):
+    logging.info(message)
+    print message
+

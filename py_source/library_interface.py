@@ -4,6 +4,8 @@ Created on Apr 2, 2015
 @author: tim
 '''
 import ctypes as ct
+import logging
+logging.basicConfig(filename='/home/tim/myapp.log',format='%(asctime)s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
 funcs = ct.cdll.LoadLibrary('./gpupylib.so')
 
 class Tensor(ct.Structure):

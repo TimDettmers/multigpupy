@@ -9,6 +9,7 @@ import util as u
 from library_interface import lib
 import ctypes as ct
 import gpupy as gpu
+import logging
 
 
 '''
@@ -64,27 +65,33 @@ class Layer(object):
         self.target = None
         self.current_error = []
         self.current_SE = []
+        self.error_epochs = []
+        self.confidence_interval_epochs = []
         self.config = {'learning_rate' : 0.03,
                        'momentum' : 0.9,
                        'input_dropout': 0.2,
                        'dropout' : 0.5
                        }        
+        self.logger = None
         
-    def add(self,next_layer):
-        if self.next_layer:            
-            self.next_layer.add(next_layer)
+    def add(self,next_layer, logger=None):  
+        if self.next_layer:    
+            self.next_layer.add(next_layer,self.logger)
             return
         
         if type(next_layer) is Layer:            
             self.next_layer = next_layer
-            next_layer.prev_layer = self   
+            next_layer.prev_layer = self
+            self.next_layer.logger = self.logger   
             next_layer.id = self.id +1
+            
         else:
             self.funcs = next_layer
     
     def create_weights(self):
         if self.next_layer:
             self.w_next = gpu.array(u.create_uniform_rdm_weight(self.unitcount,self.next_layer.unitcount))
+            self.b_next = gpu.zeros((1, self.next_layer.unitcount))
             self.m_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
             self.w_grad_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
             if self.next_layer: self.next_layer.create_weights()
@@ -93,10 +100,11 @@ class Layer(object):
         self.activation = gpu.empty((batch_size,self.unitcount))
         self.out = gpu.empty((batch_size,self.unitcount))
         self.error = gpu.empty((batch_size,self.unitcount))
-        self.bias = gpu.empty((1,batch_size))
+        self.bias = gpu.ones((1,batch_size))
         
     def handle_offsize(self, batch_size):
         if self.activation_offsize == None:
+            print 'swap'
             self.activation_offsize = gpu.empty((batch_size,self.unitcount))
             self.out_offsize = gpu.empty((batch_size,self.unitcount))
             self.error_offsize = gpu.empty((batch_size,self.unitcount))
@@ -106,6 +114,7 @@ class Layer(object):
             u.swap_pointer_and_shape(self.error, self.error_offsize)
             u.swap_pointer_and_shape(self.bias, self.bias_offsize)            
         elif self.activation_offsize.shape[2] != batch_size:
+            print 'swap2'
             del self.activation
             del self.out
             del self.error
@@ -143,11 +152,13 @@ class Layer(object):
         if self.next_layer: self.next_layer.forward(None, None, inTrainingMode)
         
     def predict(self, data):
-        self.forward(data, None,False)    
-        #print data.shape
-        #print self.root.out.shape
+        self.forward(data, None,False)   
         if type(self.root.funcs) == Softmax: return gpu.argmax(self.root.out)
-        else: return self.root.out        
+        else: return self.root.out 
+        
+    def backward(self):
+        self.backward_errors()
+        self.backward_grads()       
         
     def backward_errors(self):
         if self.next_layer: self.next_layer.backward_errors()
@@ -180,7 +191,11 @@ class Layer(object):
         
     def print_reset_error(self, error_name='Train'):
         error = np.array(self.current_error).mean()
-        print '{1} error: {0}\t ({2},{3})'.format(np.round(error,4),error_name, np.round(error-(self.current_SE[-1]*1.96),4), np.round(error+(self.current_SE[-1]*1.96),4))
+        CI_lower = error-(self.current_SE[-1]*1.96)
+        CI_upper = error+(self.current_SE[-1]*1.96)
+        self.error_epochs.append(error)
+        self.confidence_interval_epochs.append([CI_lower, CI_upper])
+        u.log_and_print('{1} error: {0}\t ({2},{3})'.format(np.round(error,4),error_name, np.round(CI_lower,4),np.round(CI_upper,4)))        
         del self.current_error
         del self.current_SE
         self.current_error = []

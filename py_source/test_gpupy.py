@@ -1042,9 +1042,11 @@ def test_layer():
     y = np.load('./mnist_mini_y.npy')
     #X = np.load('/home/tim/data/MNIST/train_X.npy')
     #y = np.load('/home/tim/data/MNIST/train_y.npy')
-    
-    alloc = batch_allocator(X,y, 1-0.8571429,0.0,128)    
-    for epoch in range(15):
+    print y.shape
+    alloc = batch_allocator(X,y, 0.2,0.0,32)   
+    net.set_config_value('dropout', 0.5)
+    net.set_config_value('input_dropout', 0.2) 
+    for epoch in range(25):
         t0 = time.time()    
         for i in alloc.train():   
             #net.forward(gpu.array(batch),gpu.array(batch_y))
@@ -1053,14 +1055,15 @@ def test_layer():
             net.backward_grads()
             net.accumulate_error()
             net.weight_update()
-        print 'train epoch time: {0} secs'.format(time.time()-t0)
+        net.print_reset_error()
+        #print 'train epoch time: {0} secs'.format(time.time()-t0)
         
         t0 = time.time()    
         for i in alloc.cv():
             net.forward(alloc.batch,alloc.batch_y)
             net.accumulate_error()
         net.print_reset_error('Cv')
-        print 'cv error time: {0} secs'.format(time.time()-t0)
+        #print 'cv error time: {0} secs'.format(time.time()-t0)
             
         #print net.w_next.tocpu().sum()
         #print np.sum((C2-y)**2)
