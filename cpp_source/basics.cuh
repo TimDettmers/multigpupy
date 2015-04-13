@@ -15,12 +15,16 @@
 
 Slice *emptySlice();
 Tensor *empty(int batches, int maps, int rows, int cols);
+Tensor *empty(int batches, int maps, int rows, int cols, int split_idx);
 float *empty_pinned(int batches, int maps, int rows, int cols,float *cpu_buffer);
 Tensor *zeros(int batches, int maps, int rows, int cols);
 Tensor *ones(int batches, int maps, int rows, int cols);
 Tensor *fill_with_number(Tensor *A, float number);
 
+int *get_split_shape(int batches, int maps, int rows, int cols,int split_axis,int gpuidx);
+
 void togpu(Tensor *out, float *cpu_buffer);
+void togpu(Tensor *out, float *cpu_buffer, int split_axis);
 
 Tensor *tocpu(Tensor *A, float *cpu_buffer);
 Tensor *T(Tensor *A);
@@ -52,8 +56,9 @@ float min(Tensor *A);
 
 void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learning_rate, int batch_size, weightUpdate_t strategy);
 
+void synchronizingStack(Tensor* A, Tensor *out);
 
-Tensor *split(Tensor *A, int axis);
+
 
 
 

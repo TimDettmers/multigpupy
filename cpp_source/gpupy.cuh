@@ -87,8 +87,9 @@ public:
 	void Tdot(Tensor *A, Tensor *B, Tensor *out);
 	void dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasOperation_t T2);
 	void enablePeerAccess();
-	Tensor *synchronizingAdd(Tensor *A);
-	void synchronizingAdd(Tensor *A, Tensor *out);
+	void disablePeerAccess();
+	Tensor *synchronize(Tensor *A, Operation_t strategy);
+	void synchronize(Tensor *A, Tensor *out, Operation_t strategy);
 
 	Tensor *dropout(Tensor *A, float dropout_rate);
 	void dropout(Tensor *A, Tensor *out, float dropout_rate);
@@ -97,7 +98,6 @@ private:
 	std::vector<curandGenerator_t> generators;
 	std::vector<cublasHandle_t> cublashandles;
 	std::vector<cudaStream_t> streams;
-	bool hasPeerAccess;
 
 };
 

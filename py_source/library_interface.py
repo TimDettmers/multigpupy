@@ -31,6 +31,7 @@ class _Slice(ct.Structure):
 funcs.femptySlice.restype = ct.POINTER(_Slice)
 
 funcs.fempty.restype = ct.POINTER(Tensor)
+funcs.fempty_split.restype = ct.POINTER(Tensor)
 funcs.fzeros.restype = ct.POINTER(Tensor)
 funcs.fones.restype = ct.POINTER(Tensor)
 funcs.ftocpu.restype = ct.POINTER(Tensor)
@@ -139,7 +140,9 @@ funcs.inp_dropout.restype = ct.c_void_p
 
 funcs.fsynchronizingAdd.restype = ct.POINTER(Tensor)
 funcs.inp_synchronizingAdd.restype = ct.c_void_p
-funcs.fGPUCount.restype = ct.c_int32
+
+funcs.inp_synchronizingStack.restype = ct.c_void_p
+funcs.ftogpu_split.restype = ct.c_void_p
 
 funcs.fBatchAllocator.restype = ct.c_void_p
 funcs.fallocateNextAsync.restype = ct.c_void_p
@@ -164,6 +167,14 @@ funcs.fLayer.restype = ct.c_void_p
 funcs.fLayer_init.restype = ct.c_void_p
 
 funcs.inp_RMSProp.restype = ct.c_void_p
+
+funcs.fGPUCount.restype = ct.c_int32
+funcs.fenablePeerAccess.restype = ct.c_void_p
+funcs.fdisablePeerAccess.restype = ct.c_void_p
+
+funcs.ffprint.restype = ct.c_void_p
+
+
 
 class lib(object): funcs = funcs
 

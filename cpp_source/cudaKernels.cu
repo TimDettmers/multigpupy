@@ -212,13 +212,19 @@ __global__ void hStackN(float **arrA, int general_size, float *out, int size_out
 
 }
 
-__global__ void vStackN(float **arrA, float *out, int rows, int cols)
+__global__ void vStackN(float **arrA, float *out, int full_rows, int block_rows, int block_off_rows)
 {
-  int size = rows*cols;
-  int offset = rows*cols*blockIdx.x;
+  int myblockidx = 0;
+  int myidx = 0;
 
-  for(unsigned int i = threadIdx.x; i < size; i+=blockDim.x)
-	  out[offset + i] = arrA[blockIdx.x][i];
+
+  for(int block_row_idx = threadIdx.x; block_row_idx < block_rows; block_row_idx +=blockDim.x)
+  {
+	  if(block_row_idx > full_rows){continue;}
+	  myblockidx =(block_rows*blockIdx.x)+block_row_idx;
+	  myidx = (full_rows*blockIdx.x)+(blockIdx.y*block_rows)+block_row_idx;
+	  out[myidx] = arrA[blockIdx.y][myblockidx];
+  }
 
 }
 
@@ -306,6 +312,7 @@ __global__ void kElementWise(float *A,float *B, float *out, int size, float flt,
 		  case ge_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] >= flt); break;
 		  case ne_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] != flt); break;
 		  case dropout_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = out[i] > flt ? A[i] : 0.0f; break;
+		  case print: for (unsigned int i = idx;i < size; i += numThreads) {printf("%f ",A[i]);} break;
 	}
 
 }

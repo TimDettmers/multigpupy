@@ -56,7 +56,8 @@ enum Operation_t
 	le_vec,
 	ne_vec,
 	copy,
-	dropout_tensor
+	dropout_tensor,
+	print
 };
 
 __global__ void kRdmNumbers(float *seed, int size, float *out);
@@ -74,7 +75,7 @@ __global__ void kTransposeTensor(float *A, float *out, int batches, int width, i
 __global__ void vStack(float *A, float *B, float *out, int size_out, int rows_a, int rows, int cols);
 __global__ void hStack(float *A, float *B, float *out, int size_out, int size_a);
 __global__ void hStackN(float **arrA, int general_size, float *out, int size_out, int matrices_count);
-__global__ void vStackN(float **arrA, float *out, int rows, int cols);
+__global__ void vStackN(float **arrA, float *out, int full_rows, int block_rows, int block_off_rows);
 __global__ void AddGradientsN(float **arrA, int size, int myrank, int matrix_count, float multiplier);
 __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int cols);
 __device__ void reduceToMax(float* sdata, unsigned int tid);

@@ -9,7 +9,6 @@ void GPUpy::init(int seed)
 	DEVICE_COUNT = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&DEVICE_COUNT));
 
-
 	for(int i = 0; i < DEVICE_COUNT; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
@@ -125,14 +124,26 @@ void GPUpy::enablePeerAccess()
 				CUDA_CHECK_RETURN(cudaDeviceEnablePeerAccess(gpu2,0));
 			}
 
-	hasPeerAccess = true;
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
 
-Tensor *GPUpy::synchronizingAdd(Tensor *A){ Tensor *out = empty(A->batches,A->maps,A->rows,A->cols); synchronizingAdd(A,out); return out; }
-void GPUpy::synchronizingAdd(Tensor *A, Tensor *out)
+void GPUpy::disablePeerAccess()
 {
-	if(!hasPeerAccess){ enablePeerAccess(); }
+	for(int gpu1 = 0; gpu1 < DEVICE_COUNT; gpu1++)
+		for(int gpu2 = 0; gpu2 < DEVICE_COUNT; gpu2++)
+			if(gpu1!=gpu2)
+			{
+				CUDA_CHECK_RETURN(cudaSetDevice(gpu1));
+				CUDA_CHECK_RETURN(cudaDeviceDisablePeerAccess(gpu2));
+			}
 
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
+Tensor *GPUpy::synchronize(Tensor *A, Operation_t strategy)
+{ Tensor *out = empty(A->batches,A->maps,A->rows,A->cols); synchronize(A,out,strategy); return out; }
+void GPUpy::synchronize(Tensor *A, Tensor *out, Operation_t strategy)
+{
 	int copyid = 0;
 	for(int offset = 1; offset < DEVICE_COUNT; offset++)
 	{
@@ -141,7 +152,7 @@ void GPUpy::synchronizingAdd(Tensor *A, Tensor *out)
 			copyid = myid + offset;
 			copyid = copyid >= DEVICE_COUNT ? copyid-DEVICE_COUNT : copyid;
 
-			synchronize(A,out,myid,copyid,streams[myid], add_tensor);
+			::synchronize(A,out,myid,copyid,streams[myid], strategy);
 
 		}
 		for(int myid = 0; myid < DEVICE_COUNT; myid++){ CUDA_CHECK_RETURN(cudaStreamSynchronize(streams[myid]));}

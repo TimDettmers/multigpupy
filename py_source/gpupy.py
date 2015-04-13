@@ -37,15 +37,15 @@ class Slice():
                      
 
 class array(object):
-    def __init__(self, npArray = None, mat_pointer = None):
+    def __init__(self, npArray = None, mat_pointer = None, split_idx=-1):
         self.shape = None
         self.dummy = False
                      
         if type(npArray) == type(np.array(1)):
             npArray = np.float32(npArray)
             shape = u.handle_shape(npArray.shape)
-            mat_pointer = lib.funcs.fempty(shape[0],shape[1],shape[2],shape[3])
-            lib.funcs.ftogpu(mat_pointer, npArray.ctypes.data_as(ct.POINTER(ct.c_float)))
+            mat_pointer = lib.funcs.fempty_split(shape[0],shape[1],shape[2],shape[3],split_idx)
+            lib.funcs.ftogpu_split(mat_pointer, npArray.ctypes.data_as(ct.POINTER(ct.c_float)),split_idx)
             self.shape = npArray.shape 
             
         if mat_pointer:             
@@ -159,9 +159,10 @@ def ones(shape):
     out = array(None, lib.funcs.fones(shape[0],shape[1],shape[2],shape[3]))
     return out
 
-def empty(shape):
+def empty(shape,split_idx=-1):
     shape = u.handle_shape(shape)
-    out = array(None, lib.funcs.fempty(shape[0],shape[1],ct.c_int32(shape[2]),shape[3]))
+    out = array(None, lib.funcs.fempty_split(shape[0],shape[1],ct.c_int32(shape[2]),shape[3],split_idx))
+    
     return out
 
 def add(x1,x2,out=None):
@@ -281,9 +282,21 @@ def dotT(a,b,out=None):
     if out: lib.funcs.inp_dotT(p_gpupy, a.pt, b.pt, out.pt)
     else: return array(None, lib.funcs.fdotT(p_gpupy, a.pt,b.pt))
     
-def synchronizingAdd(x1, out=None): 
+def synchronizingAdd(x1, out=None):    
     if out: lib.funcs.inp_synchronizingAdd(p_gpupy, x1.pt, out.pt)
-    return array(None, lib.funcs.fsynchronizingAdd(p_gpupy,x1.pt))  
+    return array(None, lib.funcs.fsynchronizingAdd(p_gpupy,x1.pt))
+
+def print_tensor(x1):
+    lib.funcs.ffprint(x1.pt)
+
+def synchronizingStack(x1, out=None):    
+    return lib.funcs.inp_synchronizingStack(x1.pt,out.pt)
+
+def enable_peer_access():
+    lib.funcs.fenablePeerAccess(p_gpupy)    
+    
+def disable_peer_access():
+    lib.funcs.fdisablePeerAccess(p_gpupy)  
 
 def dropout(x1,rate, out=None):
     if out: lib.funcs.inp_dropout(p_gpupy, x1.pt, out.pt, ct.c_float(rate))

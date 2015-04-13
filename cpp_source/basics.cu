@@ -1,4 +1,5 @@
 #include <basics.cuh>
+#include <assert.h>
 
 Slice *emptySlice()
 {
@@ -15,9 +16,31 @@ Slice *emptySlice()
 	return out;
 }
 
+int *get_split_shape(int batches, int maps, int rows, int cols,int split_axis,int gpuidx)
+{
+	int *ret = new int[4];
+	ret[0] = batches; ret[1] = maps; ret[2] = rows; ret[3] = cols;
+	if(split_axis==-1){ return ret; }
+
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	int size = ret[split_axis];
+	int split_size = 1+ (size/gpus);
+	assert(split_size >= gpus);
+	int split_offsize = size - ((gpus-1)*split_size);
+	if(split_offsize == 0) split_offsize = split_size;
+
+	if(split_size == gpus){split_offsize = 1; split_size = 1;}
+	if(gpuidx==gpus-1){ret[split_axis] = split_offsize; }
+	else{ret[split_axis] = split_size;}
+
+	return ret;
+
+}
 
 
-Tensor *empty(int batches, int maps, int rows, int cols)
+Tensor *empty(int batches, int maps, int rows, int cols){ return empty(batches, maps, rows, cols, -1); }
+Tensor *empty(int batches, int maps, int rows, int cols, int split_axis)
 {
 
 	Tensor *out = new Tensor();
@@ -30,7 +53,7 @@ Tensor *empty(int batches, int maps, int rows, int cols)
 	out->bytes = bytes;
 	out->size = size;
 	out->isCUDA = 1;
-	out->splitAxis = -1;
+	out->splitAxis = split_axis;
 
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
@@ -42,41 +65,15 @@ Tensor *empty(int batches, int maps, int rows, int cols)
 
 		if(i == 0){ out->data = gpu_data; }
 		out->data_gpus.push_back(gpu_data);
-		int *shape = new int[4];
-		shape[0] = out->batches;
-		shape[1] = out->maps;
-		shape[2] = out->rows;
-		shape[3] = out->cols;
+		int *shape = get_split_shape(out->batches,out->maps, out->rows,out->cols, split_axis, i);
 		out->shape_gpus.push_back(shape);
-		out->size_gpus.push_back(out->size);
-		out->bytes_gpus.push_back(out->bytes);
+		out->size_gpus.push_back(shape[0]*shape[1]*shape[2]*shape[3]);
+		out->bytes_gpus.push_back(shape[0]*shape[1]*shape[2]*shape[3]*sizeof(float));
 	}
 
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 
 	return out;
-}
-
-Tensor *split(Tensor *A, int axis)
-{
-	Tensor *out = new Tensor();
-	/*
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	int size = 0;
-	if(axis==0) size = A->batches;
-	if(axis==1) size = A->maps;
-	if(axis==2) size = A->rows;
-	if(axis==3) size = A->cols;
-
-
-	//int split_size = size/gpus;
-	//int split_offsize = size - ((gpus-1)*split_size);
-	*/
-
-
-	return out;
-
 }
 
 float *empty_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer)
@@ -210,16 +207,49 @@ Tensor *tocpu(Tensor *A, float *cpu_buffer)
 	return out;
 }
 
-void togpu(Tensor *out, float *cpu_buffer)
-{
 
+void togpu(Tensor *out, float *cpu_buffer){ togpu(out, cpu_buffer, -1); }
+void togpu(Tensor *out, float *cpu_buffer, int split_axis)
+{
 	Tensor *temp = empty(out->batches,out->maps,out->rows,out->cols);
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	for(int i = 0; i < gpus; i++){ CUDA_CHECK_RETURN(cudaMemcpy(out->data_gpus[i],cpu_buffer,out->bytes,cudaMemcpyDefault)); }
-	to_col_major(out,temp);
-	for(int i = 0; i < gpus; i++){ CUDA_CHECK_RETURN(cudaMemcpy(out->data_gpus[i],temp->data_gpus[i],out->bytes,cudaMemcpyDefault)); }
 
+	if(split_axis==2)
+	{
+		for(int i = 0; i < gpus; i++){ CUDA_CHECK_RETURN(cudaMemcpy(temp->data_gpus[i],cpu_buffer,temp->bytes_gpus[i],cudaMemcpyDefault)); }
+		Tensor *temp2 = to_col_major(temp);
+		Slice *S = emptySlice();
+		S->batch_stop = temp->batches;
+		S->map_stop = temp->maps;
+		S->col_stop = temp->cols;
+		S->row_stop = 0;
+		for(int i = 0; i < gpus; i++)
+		{
+			S->row_stop += out->shape_gpus[i][2];
+			CUDA_CHECK_RETURN(cudaSetDevice(i));
+			kSlice<<<dim3(temp2->shape_gpus[i][0], temp2->shape_gpus[i][1],1),dim3(32,32,1)>>>(temp2->data_gpus[i],out->data_gpus[i],
+					S->batch_start, S->batch_stop,
+					S->map_start, S->map_stop,
+					S->row_start, S->row_stop,
+					S->col_start, S->col_stop,
+					temp2->shape_gpus[i][2],temp2->shape_gpus[i][3],
+					out->shape_gpus[i][0],out->shape_gpus[i][1],
+					out->shape_gpus[i][3],out->shape_gpus[i][2]);
+			CUDA_CHECK_RETURN(cudaPeekAtLastError());
+
+			S->row_start += out->shape_gpus[i][2];
+		}
+		temp2->freeTensor();
+	}
+	if(split_axis == -1)
+	{
+		for(int i = 0; i < gpus; i++){ CUDA_CHECK_RETURN(cudaMemcpy(out->data_gpus[i],cpu_buffer,out->bytes_gpus[i],cudaMemcpyDefault)); }
+		to_col_major(out, temp);
+		for(int i = 0; i < gpus; i++){ CUDA_CHECK_RETURN(cudaMemcpy(out->data_gpus[i],temp->data_gpus[i],out->bytes_gpus[i],cudaMemcpyDefault)); }
+	}
+
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
 	temp->freeTensor();
 }
 
@@ -318,10 +348,12 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 			case sub_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], sub_vec); break;
 			case mul_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], mul_vec); break;
 			case div_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], div_vec); break;
+			case print: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, NULL,A->size_gpus[i], flt,print); break;
 
 			default: throw "Unsupported operation!";
 		}
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+		if(ops == print){ CUDA_CHECK_RETURN(cudaDeviceSynchronize());}
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
@@ -401,4 +433,33 @@ float min(Tensor *A)
 	thrust::device_ptr<float> ptr(A->data);
 	float res = -1.0f;
 	return thrust::reduce(ptr, ptr+A->size,res, thrust::minimum<float>());
+}
+
+void synchronizingStack(Tensor* A, Tensor *out)
+{
+	float **h_arrA = new float*[A->data_gpus.size()];
+	for (int i = 0; i < A->data_gpus.size(); i++)
+		h_arrA[i] = A->data_gpus[i];
+
+	float **d_arrA;
+	cudaMalloc((void**) &d_arrA, sizeof(float*)*A->data_gpus.size());
+	cudaMemcpy(d_arrA, h_arrA, sizeof(float*)*A->data_gpus.size(),cudaMemcpyDefault);
+
+	dim3 griddim(out->cols, A->data_gpus.size()) ;
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	int cumulative_size = 0;
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		cumulative_size += out->size_gpus[i];
+		vStackN<<<griddim,((out->rows/A->data_gpus.size()) > 512 ? 512 : (out->rows/A->data_gpus.size()))>>>(d_arrA, out->data_gpus[i], out->shape_gpus[i][3], A->shape_gpus[0][2], A->shape_gpus.back()[2]);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+
+
+
+	free(h_arrA);
+	cudaFree(d_arrA);
 }

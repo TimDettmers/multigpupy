@@ -27,6 +27,7 @@ extern "C"
 	GPUpy *fseeded_GPUpy(int seed){GPUpy *gpupy = new GPUpy(); gpupy->init((int) ((time(0) + (12345)) % 10000)); return gpupy; }
 	Slice *femptySlice(){ return emptySlice(); }
 	Tensor *fempty(int batches, int maps, int rows, int cols){ return empty(batches, maps, rows, cols); }
+	Tensor *fempty_split(int batches, int maps, int rows, int cols, int split_axis){ return empty(batches, maps, rows, cols, split_axis); }
 	Tensor *fzeros(int batches, int maps, int rows, int cols){ return zeros(batches, maps, rows, cols); }
 	Tensor *fones(int batches, int maps, int rows, int cols){ return ones(batches, maps, rows, cols); }
 	Tensor *ftocpu(Tensor *A, float *cpu_buffer){ return tocpu(A,cpu_buffer); }
@@ -46,6 +47,8 @@ extern "C"
 	Tensor *fdiv(Tensor *A, Tensor *B){ return applyFunc(A,B,div_tensor); }
 	void inp_div(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,div_tensor); }
 	void ffree(Tensor *A){ A->freeTensor(); }
+
+	void ffprint(Tensor *A){ applyFunc(A,NULL,NULL,0.0f,print); }
 
 	Tensor *fcopy(Tensor *A){ return applyFunc(A,NULL,0.0f,copy); }
 	void inp_copy(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,0.0f, copy); }
@@ -142,8 +145,12 @@ extern "C"
 	Tensor *fdropout(GPUpy *gpupy, Tensor *A, float dropout_rate){ return gpupy->dropout(A,dropout_rate); }
 	void inp_dropout(GPUpy *gpupy, Tensor *A, Tensor *out, float dropout_rate){ gpupy->dropout(A,out,dropout_rate); }
 
-	Tensor *fsynchronizingAdd(GPUpy *gpupy, Tensor *A){ return gpupy->synchronizingAdd(A); }
-	void inp_synchronizingAdd(GPUpy *gpupy, Tensor *A, Tensor *out){ gpupy->synchronizingAdd(A,out); }
+	Tensor *fsynchronizingAdd(GPUpy *gpupy, Tensor *A){ return gpupy->synchronize(A, add_tensor); }
+	void inp_synchronizingAdd(GPUpy *gpupy, Tensor *A, Tensor *out){ gpupy->synchronize(A,out, add_tensor); }
+
+	void inp_synchronizingStack(Tensor *A, Tensor *out){ synchronizingStack(A, out); }
+	//void inp_synchronizingStack(GPUpy *gpupy, Tensor *A, Tensor *out){ gpupy->synchronize(A,out, copy); }
+	void ftogpu_split(Tensor *out, float *cpu_buffer, int split_idx){ togpu(out,cpu_buffer, split_idx); }
 
 	float fsum(Tensor *A){ return sum(A);}
 	float ffmin(Tensor *A){ return min(A);}
@@ -153,5 +160,7 @@ extern "C"
 	{ weightUpdate(RMS, grad, RMS_multiplier, learning_rate, batch_size, RMSProp); }
 
 	int fGPUCount(GPUpy *gpupy){ return gpupy->DEVICE_COUNT; }
+	void fenablePeerAccess(GPUpy *gpupy){ gpupy->enablePeerAccess(); }
+	void fdisablePeerAccess(GPUpy *gpupy){ gpupy->disablePeerAccess(); }
 
 }

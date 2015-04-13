@@ -14,18 +14,6 @@ BatchAllocator::BatchAllocator()
 		CUDA_CHECK_RETURN(cudaStreamCreate(&s_y));
 		streams_y.push_back(s_y);
 	}
-
-	int isEnabled = 0;
-	cudaDeviceCanAccessPeer(&isEnabled, 0,1);
-	if(isEnabled==0)
-		for(int gpu1 = 0; gpu1 < DEVICE_COUNT; gpu1++)
-			for(int gpu2 = 0; gpu2 < DEVICE_COUNT; gpu2++)
-				if(gpu1!=gpu2)
-				{
-					CUDA_CHECK_RETURN(cudaSetDevice(gpu1));
-					CUDA_CHECK_RETURN(cudaDeviceEnablePeerAccess(gpu2,0));
-				}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
 
 

@@ -36,6 +36,7 @@ def test_rand_seed():
     t.assert_array_almost_equal(C1.tocpu(),C2.tocpu(),6,"Rand seed does not give unique results!")
     t.assert_(C1.tocpu().sum() > 1.0,"Array has too many zero values!")
     
+
 def test_uniform():
     rdmstate = rdm.RandomState(17)
     A = rdmstate.rand(83,17,7)
@@ -755,11 +756,13 @@ def test_dot():
 def test_synchronizingAdd():
     A = np.float32(np.random.rand(17,83))
     B = gpu.array(A)        
+    gpu.enable_peer_access()
     C = gpu.synchronizingAdd(B)   
     
     t.assert_array_almost_equal(C.tocpu(), A*gpu.gpu_count(), 7, "Synchronizing add does not work!")
     C*=0
     gpu.synchronizingAdd(B,C)
+    gpu.disable_peer_access()
     t.assert_array_almost_equal(C.tocpu(), A*gpu.gpu_count(), 7, "Synchronizing add does not work!")
 
         
@@ -1004,7 +1007,7 @@ def test_layer():
     y = np.load('./mnist_mini_y.npy')
     #X = np.load('/home/tim/data/MNIST/train_X.npy')
     #y = np.load('/home/tim/data/MNIST/train_y.npy')
-    print y.shape
+    
     alloc = batch_allocator(X,y, 0.2,0.0,32)   
     net.set_config_value('dropout', 0.5)
     net.set_config_value('input_dropout', 0.2) 
@@ -1012,7 +1015,7 @@ def test_layer():
         t0 = time.time()    
         for i in alloc.train():   
             #net.forward(gpu.array(batch),gpu.array(batch_y))
-            print i
+            
             net.forward(alloc.batch,alloc.batch_y)
             net.backward_errors()
             net.backward_grads()
@@ -1038,6 +1041,28 @@ def test_layer():
     C2 = net.predict(gpu.array(X)).tocpu()
     print np.sum((C2-y)**2)    
     assert np.sum((C2-y)**2) < 500
+    
+def split_stack_test():
+    gpu.enable_peer_access()    
+    for i in range(500):
+        dims = np.random.randint(5,50,(2,))
+        A1 = np.random.randn(dims[0],dims[1])
+        A2 = np.random.randn(dims[0],dims[1])
+        C1 = gpu.empty((dims[1],dims[1]))
+        C2 = gpu.zeros((dims[1],dims[1]))
+        B1 = gpu.array(A1,split_idx=2)
+        B2 = gpu.array(A2,split_idx=2)   
+        gpu.Tdot(B2,B1,C1)      
+        gpu.synchronizingAdd(C1,C2)
+        C = np.dot(A2.T,A1)
+        #print i
+        print dims
+        #the dot product is just inherently unstable
+        t.assert_almost_equal(C2.tocpu().sum()/100000, C.sum()/100000, 3,'split add dot product chain yields wrong result!')    
+        #print [C2.tocpu().sum()/10000,C.sum()/10000]
+    gpu.disable_peer_access()
+    
+    
 
 
     
