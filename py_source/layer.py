@@ -11,6 +11,7 @@ import ctypes as ct
 import gpupy as gpu
 import logging
 import os
+import cPickle as pickle
 
 
 '''
@@ -259,6 +260,43 @@ class Layer(object):
             
         if self.next_layer:
             self.next_layer.set_config_value(key, value)
+            
+    def save_config(self):
+        self.check_work_dir()
+        configs = []
+        layer = self
+        configs.append(layer.config)
+        while layer.next_layer:
+            layer = layer.next_layer
+            configs.append(layer.config)
+            
+        pickle.dump(configs, open(os.path.join(self.workdir,'parameters.config'),'w'))
+        return configs
+                    
+    def load_config(self):
+        self.check_work_dir()
+        if not os.path.exists(os.path.join(self.workdir, 'parameters.config')): 
+            logging.error('Cannot load config: No config exists!')
+            return
+        
+        configs = pickle.load(open(os.path.join(self.workdir, 'parameters.config'),'r'))
+        layer = self
+        layer.config = configs[0]
+        i=1
+        while layer.next_layer:
+            layer = layer.next_layer
+            layer.config = configs[i]
+            i+=1
+            
+        return configs
+        
+    def check_work_dir(self):        
+        if not self.workdir: 
+            logging.error('Need working directory to perform this action!')
+            return
+        
+            
+        
         
             
         
