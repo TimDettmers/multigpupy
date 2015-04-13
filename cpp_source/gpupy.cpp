@@ -41,7 +41,7 @@ void GPUpy::rand(Tensor *out)
 	for(int i = 0; i < DEVICE_COUNT; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		CURAND_CHECK_RETURN(curandGenerateUniform(generators[i], out->data_gpus[i],out->size));
+		CURAND_CHECK_RETURN(curandGenerateUniform(generators[i], out->data_gpus[i],out->size_gpus[i]));
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
@@ -53,7 +53,7 @@ void GPUpy::normal(float mean, float std, Tensor *out)
 	for(int i = 0; i < DEVICE_COUNT; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		CURAND_CHECK_RETURN(curandGenerateNormal(generators[i], out->data_gpus[i],out->size,mean,std));
+		CURAND_CHECK_RETURN(curandGenerateNormal(generators[i], out->data_gpus[i],out->size_gpus[i],mean,std));
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
@@ -71,26 +71,26 @@ void GPUpy::dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasO
 {
 	const float alpha = 1.0f;
 	const float beta = 0.0f;
-	int A_rows = A->rows, A_cols = A->cols, B_cols = B->cols;
-	if (T1 == CUBLAS_OP_T)
-	{
-		A_rows = A->cols;
-		A_cols = A->rows;
-	}
-	if (T2 == CUBLAS_OP_T)
-		B_cols = B->rows;
-
-	assert(A->maps == 1 && "Tensors dot product is not supported.");
-	assert(A->batches == 1 && "Tensors dot product is not supported.");
-
-
 	for(int i = 0; i < DEVICE_COUNT; i++)
 	{
+		int A_rows = A->shape_gpus[i][2], A_cols = A->shape_gpus[i][3], B_cols = B->shape_gpus[i][3];
+		if (T1 == CUBLAS_OP_T)
+		{
+			A_rows = A->shape_gpus[i][3];
+			A_cols = A->shape_gpus[i][2];
+		}
+		if (T2 == CUBLAS_OP_T)
+			B_cols = B->shape_gpus[i][2];
+
+		assert(A->shape_gpus[i][1] == 1 && "Tensors dot product is not supported.");
+		assert(A->shape_gpus[i][0] == 1 && "Tensors dot product is not supported.");
+
+
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
 
 		CUBLAS_CHECK_RETURN(cublasSgemm(cublashandles[i], T1, T2, A_rows, B_cols,
-				A_cols, &alpha, A->data_gpus[i], A->rows, B->data_gpus[i], B->rows, &beta,
-				out->data_gpus[i], out->rows));
+				A_cols, &alpha, A->data_gpus[i], A->shape_gpus[i][2], B->data_gpus[i], B->shape_gpus[i][2], &beta,
+				out->data_gpus[i], out->shape_gpus[i][2]));
 	}
 
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
