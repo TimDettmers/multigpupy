@@ -137,35 +137,36 @@ class Layer(object):
             self.b_next = gpu.zeros((1, self.next_layer.unitcount))
             self.m_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
             self.w_grad_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
+            self.b_grad_next = gpu.zeros((1, self.next_layer.unitcount))
             if self.next_layer: self.next_layer.create_weights()
         
     def create_buffers(self, batch_size):
         self.activation = gpu.empty((batch_size,self.unitcount))
         self.out = gpu.empty((batch_size,self.unitcount))
         self.error = gpu.empty((batch_size,self.unitcount))
-        self.bias = gpu.ones((1,batch_size))
+        self.bias_ones = gpu.ones((1,batch_size))
         
     def handle_offsize(self, batch_size):
         if self.activation_offsize == None:
             self.activation_offsize = gpu.empty((batch_size,self.unitcount))
             self.out_offsize = gpu.empty((batch_size,self.unitcount))
             self.error_offsize = gpu.empty((batch_size,self.unitcount))
-            self.bias_offsize = gpu.empty((1,batch_size))
+            self.bias_ones_offsize = gpu.empty((1,batch_size))
             u.swap_pointer_and_shape(self.activation, self.activation_offsize)
             u.swap_pointer_and_shape(self.out, self.out_offsize)
             u.swap_pointer_and_shape(self.error, self.error_offsize)
-            u.swap_pointer_and_shape(self.bias, self.bias_offsize)            
+            u.swap_pointer_and_shape(self.bias_ones, self.bias_ones_offsize)            
         elif self.activation_offsize.shape[2] != batch_size:
             del self.activation
             del self.out
             del self.error
-            del self.bias
+            del self.bias_ones
             self.create_buffers(batch_size)
         else:
             u.swap_pointer_and_shape(self.activation, self.activation_offsize)
             u.swap_pointer_and_shape(self.out, self.out_offsize)
             u.swap_pointer_and_shape(self.error, self.error_offsize)
-            u.swap_pointer_and_shape(self.bias, self.bias_offsize)    
+            u.swap_pointer_and_shape(self.bias_ones, self.bias_ones_offsize)    
     
     def handle_input_size(self, batch_size):
         if self.w_next==None: self.create_weights()
@@ -187,7 +188,8 @@ class Layer(object):
             self.root.target = target
             self.funcs.activation(data, self.activation, self.out, inTrainingMode)
         else:
-            gpu.dot(self.prev_layer.out,self.prev_layer.w_next,self.activation)             
+            gpu.dot(self.prev_layer.out,self.prev_layer.w_next,self.activation)          
+            gpu.add(self.activation, self.prev_layer.b_next, self.activation)   
             self.funcs.activation(self.activation, self.activation, self.out, inTrainingMode)  
             
         if self.next_layer: self.next_layer.forward(None, None, inTrainingMode)
@@ -207,7 +209,6 @@ class Layer(object):
             gpu.sub(self.out,self.target,self.error)
             return
         
-        
         if type(self.funcs) is Input: 
             self.backward_grads() 
             return
@@ -219,6 +220,7 @@ class Layer(object):
     def backward_grads(self):   
         if self.target: return
         gpu.Tdot(self.activation, self.next_layer.error, self.w_grad_next)
+        gpu.dot(self.bias_ones, self.next_layer.error, self.b_grad_next)
         if self.next_layer: self.next_layer.backward_grads()
         
     def accumulate_error(self):
