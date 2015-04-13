@@ -118,6 +118,7 @@ def test_add():
     C1 = gpu.array(A)
     C2 = gpu.array(B)
     C = gpu.add(C1,C2)  
+
     out = gpu.empty(C.shape)      
     gpu.add(C1, C2, out)
     t.assert_array_almost_equal(C.tocpu(), A+B, 7, "Add not equal to numpy add!")
@@ -993,7 +994,7 @@ def test_linear():
     gpu.linear(B,C)
     t.assert_array_equal(C.tocpu(), A, "Copy/linear not working!")
 
-'''
+
 def test_layer():
     net = Layer()
     net.add(Layer(800, Logistic()))
@@ -1037,7 +1038,6 @@ def test_layer():
     C2 = net.predict(gpu.array(X)).tocpu()
     print np.sum((C2-y)**2)    
     assert np.sum((C2-y)**2) < 500
-'''
 
 
     

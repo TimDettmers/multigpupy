@@ -53,6 +53,8 @@ float min(Tensor *A);
 void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learning_rate, int batch_size, weightUpdate_t strategy);
 
 
+Tensor *split(Tensor *A, int axis);
+
 
 
 #endif /* BASICS_CUH_ */

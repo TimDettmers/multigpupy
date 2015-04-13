@@ -30,6 +30,7 @@ Tensor *empty(int batches, int maps, int rows, int cols)
 	out->bytes = bytes;
 	out->size = size;
 	out->isCUDA = 1;
+	out->splitAxis = -1;
 
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
@@ -41,11 +42,41 @@ Tensor *empty(int batches, int maps, int rows, int cols)
 
 		if(i == 0){ out->data = gpu_data; }
 		out->data_gpus.push_back(gpu_data);
+		int *shape = new int[4];
+		shape[0] = out->batches;
+		shape[1] = out->maps;
+		shape[2] = out->rows;
+		shape[3] = out->cols;
+		out->shape_gpus.push_back(shape);
+		out->size_gpus.push_back(out->size);
+		out->bytes_gpus.push_back(out->bytes);
 	}
 
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 
 	return out;
+}
+
+Tensor *split(Tensor *A, int axis)
+{
+	Tensor *out = new Tensor();
+	/*
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	int size = 0;
+	if(axis==0) size = A->batches;
+	if(axis==1) size = A->maps;
+	if(axis==2) size = A->rows;
+	if(axis==3) size = A->cols;
+
+
+	//int split_size = size/gpus;
+	//int split_offsize = size - ((gpus-1)*split_size);
+	*/
+
+
+	return out;
+
 }
 
 float *empty_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer)
@@ -64,6 +95,7 @@ float *empty_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer
 	out->bytes = bytes;
 	out->size = size;
 	out->isCUDA = 1;
+	out->splitAxis = -1;
 	out->data = pinned_data;
 
 	return pinned_data;
@@ -126,7 +158,7 @@ void T(Tensor *A, Tensor *out,  int rows, int cols)
 	for(int i = 0; i < gpus; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kTransposeTensor<<< grid, threads >>>(A->data_gpus[i], out->data_gpus[i], A->batches, rows, cols);
+		kTransposeTensor<<< grid, threads >>>(A->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], rows, cols);
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
@@ -169,6 +201,7 @@ Tensor *tocpu(Tensor *A, float *cpu_buffer)
 	out->size = temp->size;
 	out->data = cpu_buffer;
 	out->isCUDA = 0;
+	out->splitAxis = -1;
 
 	CUDA_CHECK_RETURN(cudaFree(temp->data));
 	delete temp;
@@ -206,19 +239,19 @@ Tensor *applySliceFunc(Tensor *A, Slice *S)
 
 void applySliceFunc(Tensor *A, Slice *S, Tensor *out)
 {
-	int block_size = (A->rows*A->cols/THREADS_PER_BLOCKS) + 1;
-	dim3 grid(block_size, A->maps,A->batches);
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
 	for(int i = 0; i < gpus; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kSlice<<<dim3(A->batches, A->maps,1),dim3(32,32,1)>>>(A->data_gpus[i],out->data_gpus[i],
+		kSlice<<<dim3(A->shape_gpus[i][0], A->shape_gpus[i][1],1),dim3(32,32,1)>>>(A->data_gpus[i],out->data_gpus[i],
 				S->batch_start, S->batch_stop,
 				S->map_start, S->map_stop,
 				S->row_start, S->row_stop,
 				S->col_start, S->col_stop,
-				A->rows,A->cols,out->batches,out->maps,out->cols,out->rows);
+				A->shape_gpus[i][2],A->shape_gpus[i][3],
+				out->shape_gpus[i][0],out->shape_gpus[i][1],
+				out->shape_gpus[i][3],out->shape_gpus[i][2]);
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 
@@ -239,52 +272,52 @@ Tensor *applyFunc(Tensor *A, Tensor *B, float flt, Operation_t ops)
 void applyFunc(Tensor *A, Tensor *B, Tensor *out, Operation_t ops){ applyFunc(A,B,out,0.0f,ops); }
 void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 {
-	int block_size = (A->rows*A->cols/THREADS_PER_BLOCKS) + 1;
-	dim3 grid(block_size, A->maps,A->batches);
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
 	for(int i = 0; i < gpus; i++)
 	{
+		int block_size = (A->shape_gpus[i][2]*A->shape_gpus[i][3]/THREADS_PER_BLOCKS) + 1;
+		dim3 grid(block_size, A->shape_gpus[i][1],A->shape_gpus[i][0]);
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
 		switch(ops)
 		{
-			case copy: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, copy); break;
-			case add_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, add_scalar); break;
-			case mul_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, mul_scalar); break;
-			case add_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size, flt, add_tensor); break;
-			case sub_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size, flt, sub_tensor); break;
-			case mul_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size, flt, mul_tensor); break;
-			case div_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size, flt, div_tensor); break;
-			case abs_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, abs_tensor); break;
-			case log_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, log_tensor); break;
-			case exp_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, exp_tensor); break;
-			case pow_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, pow_tensor); break;
-			case logistic: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, logistic); break;
-			case logistic_grad: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, logistic_grad); break;
-			case rectified_linear: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size, flt, rectified_linear); break;
-			case eq_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size, flt,eq_tensor); break;
-			case lt_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size, flt,lt_tensor); break;
-			case gt_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size, flt,gt_tensor); break;
-			case ge_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size, flt,ge_tensor); break;
-			case le_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size, flt,le_tensor); break;
-			case ne_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size, flt,ne_tensor); break;
-			case eq_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size, flt,eq_scalar); break;
-			case lt_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size, flt,lt_scalar); break;
-			case gt_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size, flt,gt_scalar); break;
-			case ge_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size, flt,ge_scalar); break;
-			case le_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size, flt,le_scalar); break;
-			case ne_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size, flt,ne_scalar); break;
-			case dropout_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size, flt,dropout_tensor); break;
-			case eq_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols, eq_vec); break;
-			case lt_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols, lt_vec); break;
-			case gt_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols, gt_vec); break;
-			case le_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols, le_vec); break;
-			case ge_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols, ge_vec); break;
-			case ne_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols, ne_vec); break;
-			case add_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols, add_vec); break;
-			case sub_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols, sub_vec); break;
-			case mul_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols, mul_vec); break;
-			case div_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->batches, A->rows, A->rows*A->cols, div_vec); break;
+			case copy: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size_gpus[i], flt, copy); break;
+			case add_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size_gpus[i], flt, add_scalar); break;
+			case mul_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size_gpus[i], flt, mul_scalar); break;
+			case add_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size_gpus[i], flt, add_tensor); break;
+			case sub_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size_gpus[i], flt, sub_tensor); break;
+			case mul_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size_gpus[i], flt, mul_tensor); break;
+			case div_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->size_gpus[i], flt, div_tensor); break;
+			case abs_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size_gpus[i], flt, abs_tensor); break;
+			case log_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size_gpus[i], flt, log_tensor); break;
+			case exp_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size_gpus[i], flt, exp_tensor); break;
+			case pow_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size_gpus[i], flt, pow_tensor); break;
+			case logistic: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size_gpus[i], flt, logistic); break;
+			case logistic_grad: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size_gpus[i], flt, logistic_grad); break;
+			case rectified_linear: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i], A->size_gpus[i], flt, rectified_linear); break;
+			case eq_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size_gpus[i], flt,eq_tensor); break;
+			case lt_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size_gpus[i], flt,lt_tensor); break;
+			case gt_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size_gpus[i], flt,gt_tensor); break;
+			case ge_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size_gpus[i], flt,ge_tensor); break;
+			case le_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size_gpus[i], flt,le_tensor); break;
+			case ne_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size_gpus[i], flt,ne_tensor); break;
+			case eq_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size_gpus[i], flt,eq_scalar); break;
+			case lt_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size_gpus[i], flt,lt_scalar); break;
+			case gt_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size_gpus[i], flt,gt_scalar); break;
+			case ge_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size_gpus[i], flt,ge_scalar); break;
+			case le_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size_gpus[i], flt,le_scalar); break;
+			case ne_scalar: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size_gpus[i], flt,ne_scalar); break;
+			case dropout_tensor: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size_gpus[i], flt,dropout_tensor); break;
+			case eq_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], eq_vec); break;
+			case lt_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], lt_vec); break;
+			case gt_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], gt_vec); break;
+			case le_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], le_vec); break;
+			case ge_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], ge_vec); break;
+			case ne_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], ne_vec); break;
+			case add_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], add_vec); break;
+			case sub_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], sub_vec); break;
+			case mul_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], mul_vec); break;
+			case div_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], div_vec); break;
 
 			default: throw "Unsupported operation!";
 		}
@@ -304,7 +337,7 @@ void softmax(Tensor *A, Tensor *out)
 	for(int i = 0; i < gpus; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kSoftMax<<<grids,threads >>>(A->data_gpus[i], out->data_gpus[i], A->rows, A->cols);
+		kSoftMax<<<grids,threads >>>(A->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][2], A->shape_gpus[i][3]);
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
@@ -320,7 +353,7 @@ void argmax(Tensor *A, Tensor *out)
 	for(int i = 0; i < gpus; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kArgmax<<<grids,threads >>>(A->data_gpus[i], out->data_gpus[i], A->rows, A->cols);
+		kArgmax<<<grids,threads >>>(A->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][2], A->shape_gpus[i][3]);
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
@@ -344,9 +377,9 @@ void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learnin
 
 void synchronize(Tensor *A, Tensor *out, int myid, int copyid, cudaStream_t stream,Operation_t ops)
 {
-	int block_size = (A->rows*A->cols/THREADS_PER_BLOCKS) + 1;
+	int block_size = (A->shape_gpus[myid][2]*A->shape_gpus[myid][3]/THREADS_PER_BLOCKS) + 1;
 	CUDA_CHECK_RETURN(cudaSetDevice(myid));
-	kElementWise<<<block_size,THREADS_PER_BLOCKS,0,stream>>>(A->data_gpus[myid],A->data_gpus[copyid],out->data_gpus[myid],A->size,0.0f,ops);
+	kElementWise<<<block_size,THREADS_PER_BLOCKS,0,stream>>>(A->data_gpus[myid],A->data_gpus[copyid],out->data_gpus[myid],A->size_gpus[myid],0.0f,ops);
 	CUDA_CHECK_RETURN(cudaPeekAtLastError());
 }
 

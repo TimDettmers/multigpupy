@@ -46,6 +46,7 @@
 #define TILE_SIZE (32)
 #define DOT_REPS (4)
 
+
 class Tensor
 {
 public:
@@ -53,11 +54,16 @@ public:
 	  int maps;
 	  int rows;
 	  int cols;
-	  size_t bytes;
 	  int size;
+	  size_t bytes;
 	  float *data;
 	  int isCUDA;
+	  int splitAxis;
+	  std::vector<int*> shape_gpus;
+	  std::vector<int> size_gpus;
+	  std::vector<size_t> bytes_gpus;
 	  std::vector<float*> data_gpus;
+
 	  void freeTensor();
 };
 
