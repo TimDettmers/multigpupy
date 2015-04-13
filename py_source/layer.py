@@ -67,12 +67,13 @@ class Layer(object):
         self.target = None
         self.current_error = []
         self.current_SE = []
-        self.error_epochs = []
-        self.confidence_interval_epochs = []
+        self.error_epochs = {}
+        self.confidence_interval_epochs = {}
         self.config = {'learning_rate' : 0.03,
                        'momentum' : 0.9,
                        'input_dropout': self.funcs.dropout,
-                       'dropout' : self.funcs.dropout
+                       'dropout' : self.funcs.dropout,
+                       'learning_rate_decay' : 0.999
                        }        
         self.logger = None
         
@@ -80,10 +81,11 @@ class Layer(object):
         self.network_name = network_name
         
         self.init_work_dir()
+        self.epoch = 0
         
     def log(self, msg, print_msg = True, level = logging.INFO):
         logging.log(level, msg)
-        if print_msg: print msg   
+        if print_msg: print msg
         
     def log_network(self):
         if not self.workdir: return
@@ -234,10 +236,13 @@ class Layer(object):
         
     def print_reset_error(self, error_name='Train'):
         error = np.array(self.current_error).mean()
+        if error_name not in self.error_epochs:
+            self.error_epochs[error_name] = []
+            self.confidence_interval_epochs[error_name] = []
         CI_lower = error-(self.current_SE[-1]*1.96)
-        CI_upper = error+(self.current_SE[-1]*1.96)
-        self.error_epochs.append(error)
-        self.confidence_interval_epochs.append([CI_lower, CI_upper])
+        CI_upper = error+(self.current_SE[-1]*1.96)        
+        self.error_epochs[error_name].append(error)
+        self.confidence_interval_epochs[error_name].append([CI_lower, CI_upper])
         u.log_and_print('{1} error: {0}\t ({2},{3})'.format(np.round(error,4),error_name, np.round(CI_lower,4),np.round(CI_upper,4)))        
         del self.current_error
         del self.current_SE
@@ -250,11 +255,14 @@ class Layer(object):
         if self.next_layer:         
             lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(self.config['momentum']),ct.c_float(self.config['learning_rate']), self.out.shape[2])
             gpu.sub(self.w_next, self.w_grad_next, self.w_next)
-            self.next_layer.weight_update()
+            self.next_layer.weight_update()         
         
+    def end_epoch(self):
+        self.set_config_value('learning_rate', 0.0, 'learning_rate_decay', lambda a,b: a*b)        
         
-    def set_config_value(self, key, value):
-        self.config[key] = value
+    def set_config_value(self, key, value, key2=None, func=None):
+        if func and key2: self.config[key] = func(self.config[key], self.config[key2])
+        else: self.config[key] = value
         if key == 'dropout' and self.prev_layer: self.funcs.dropout = value
         if key == 'input_dropout': 
             self.funcs.dropout = value
