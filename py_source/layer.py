@@ -10,6 +10,7 @@ from library_interface import lib
 import ctypes as ct
 import gpupy as gpu
 import logging
+import os
 
 
 '''
@@ -52,7 +53,7 @@ class Softmax(ActivationFunc):
         self.gpu_func(previous_output, my_output); 
 
 class Layer(object):
-    def __init__(self, unitcount=0, activation_function=Input()):
+    def __init__(self, unitcount=0, activation_function=Input(), workdir = None, network_name = 'neural_net'):
         self.p_layer = lib.funcs.fLayer()
         self.w_next = None
         self.activation = None
@@ -69,10 +70,50 @@ class Layer(object):
         self.confidence_interval_epochs = []
         self.config = {'learning_rate' : 0.03,
                        'momentum' : 0.9,
-                       'input_dropout': 0.2,
-                       'dropout' : 0.5
+                       'input_dropout': self.funcs.dropout,
+                       'dropout' : self.funcs.dropout
                        }        
         self.logger = None
+        
+        self.workdir = workdir
+        self.network_name = network_name
+        
+        self.init_work_dir()
+        
+    def log(self, msg, print_msg = True, level = logging.INFO):
+        logging.log(level, msg)
+        if print_msg: print msg   
+        
+    def log_network(self):
+        if not self.workdir: return
+        i=0
+        layer = self
+        self.log('\n',False)
+        self.log('---------------------------------------', False)
+        self.log('            ' + self.network_name, False)
+        self.log('---------------------------------------', False)
+        self.log('\n',False)
+        while True:
+            self.log('Layer {0}'.format(i), False)
+            self.log('---------------------------------------', False)
+            for key in self.config:
+                if key == 'dropout' and type(layer.funcs) is Input: continue
+                if key == 'input_dropout' and type(layer.funcs) is not Input: continue
+                self.log('{0}: {1}'.format(key, layer.config[key]), False)
+            self.log('{0}: {1}'.format('unitcount',layer.unitcount), False)
+            self.log('{0}: {1}'.format('activation function',layer.funcs.__class__.__name__), False)
+            self.log('\n',False)
+            i+=1
+            if layer.next_layer: layer = layer.next_layer
+            else: break
+    
+    def init_work_dir(self):
+        if self.workdir:
+            if not os.path.exists(self.workdir): os.mkdir(self.workdir)
+            logging.basicConfig(filename=os.path.join(self.workdir,self.network_name+'_log'),format='%(asctime)s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
+            
+            pass
+        
         
     def add(self,next_layer, logger=None):  
         if self.next_layer:    
@@ -89,6 +130,7 @@ class Layer(object):
             self.funcs = next_layer
     
     def create_weights(self):
+        self.log_network()
         if self.next_layer:
             self.w_next = gpu.array(u.create_uniform_rdm_weight(self.unitcount,self.next_layer.unitcount))
             self.b_next = gpu.zeros((1, self.next_layer.unitcount))
