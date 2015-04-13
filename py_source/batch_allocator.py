@@ -52,6 +52,7 @@ class batch_allocator(object):
         self.net = None
         self.sample_size = None
         self.relative_error = None
+        self.start_batching = True
     
     def set_batch_sizes(self):
         n = np.zeros((3,))
@@ -62,7 +63,8 @@ class batch_allocator(object):
         if self.test_percent == 0.0: n[1] = self.size-n[0]; n[2] = 1
         
         self.offbatch_rows = np.int32(n % self.batch_size)
-        self.end_idx = np.ceil(np.array([n[0], n[0]+n[1], n[0]+ n[1] + n[2]]))           
+        self.end_idx = np.ceil(np.array([n[0], n[0]+n[1], n[0]+ n[1] + n[2]]))     
+        self.batch_count = np.ceil(np.array([n[0],n[1],n[2]])/self.batch_size)      
         
     def deallocate_buffers(self):
         for i in range(len(self.offsize_X)):
@@ -97,7 +99,8 @@ class batch_allocator(object):
         if sample_size_or_error:
             if sample_size_or_error > 1: self.sample_size = sample_size_or_error
             else: self.relative_error = sample_size_or_error     
-        self.set_type = 'train'    
+        self.set_type = 'train'     
+        self.start_batching = True
         return self   
     
     def cv(self, sample_size_or_error = None): 
@@ -105,53 +108,60 @@ class batch_allocator(object):
             if sample_size_or_error > 1: self.sample_size = sample_size_or_error
             else: self.relative_error = sample_size_or_error
         self.set_type = 'cv'
+        self.start_batching = True  
         return self
     
     def test(self, sample_size_or_error = None): 
         if sample_size_or_error:
             if sample_size_or_error > 1: self.sample_size = sample_size_or_error
             else: self.relative_error = sample_size_or_error
-        self.set_type = 'test'
+        self.set_type = 'test'  
+        self.start_batching = True
         return self
     
     def __iter__(self):   
-        self.allocate_next_batch()
         return self
     
-    def next(self):
-        ret_idx = self.next_batch_idx
-        self.replace_current_batch()  
-        self.allocate_next_batch()    
-        if self.set_type == 'train':
+    def next(self):     
+        
+        if self.set_type == 'train' and not self.start_batching:
             if self.next_batch_idx == 0: raise StopIteration
             if self.sample_size: 
-                if ret_idx/self.batch_size > self.sample_size:
+                if self.next_batch_idx  /self.batch_size > self.sample_size:
                     self.sample_size = None                   
                     self.next_batch_idx = 0     
                     raise StopIteration
-        if self.set_type == 'cv':
+        if self.set_type == 'cv' and not self.start_batching:
             if self.next_batch_idx == self.end_idx[0]: raise StopIteration  
             if self.sample_size: 
-                if (self.end_idx[0]-ret_idx)/self.batch_size > self.sample_size: 
+                if (self.end_idx[0]-self.next_batch_idx  )/self.batch_size > self.sample_size: 
                     self.sample_size = None
                     self.next_batch_idx = self.end_idx[0]                        
                     raise StopIteration
-        if self.set_type == 'test':
+        if self.set_type == 'test' and not self.start_batching:
             if self.next_batch_idx == self.end_idx[1]: raise StopIteration     
             if self.sample_size: 
-                if (self.end_idx[1]-ret_idx)/self.batch_size > self.sample_size: 
+                if (self.end_idx[1]-self.next_batch_idx  )/self.batch_size > self.sample_size: 
                     self.sample_size = None
                     self.next_batch_idx = self.end_idx[1]                        
-                    raise StopIteration
+                    raise StopIteration   
             
         if self.net:
             if self.relative_error:
                 if len(self.net.current_error) > 2:
                     error = np.mean(np.array(self.net.current_error))
                     if error > 0:
-                        if self.net.current_SE[-1]/error < self.relative_error: 
+                        if 1.96*self.net.current_SE[-1]/(error) < self.relative_error: 
                             self.relative_error = None
                             raise StopIteration
+                        
+        if self.start_batching:            
+            self.allocate_next_batch()
+            self.start_batching = False 
+            
+        ret_idx = self.next_batch_idx  
+        self.replace_current_batch()  
+        self.allocate_next_batch() 
         
         return ret_idx
     

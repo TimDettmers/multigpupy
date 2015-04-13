@@ -104,7 +104,6 @@ class Layer(object):
         
     def handle_offsize(self, batch_size):
         if self.activation_offsize == None:
-            print 'swap'
             self.activation_offsize = gpu.empty((batch_size,self.unitcount))
             self.out_offsize = gpu.empty((batch_size,self.unitcount))
             self.error_offsize = gpu.empty((batch_size,self.unitcount))
@@ -114,7 +113,6 @@ class Layer(object):
             u.swap_pointer_and_shape(self.error, self.error_offsize)
             u.swap_pointer_and_shape(self.bias, self.bias_offsize)            
         elif self.activation_offsize.shape[2] != batch_size:
-            print 'swap2'
             del self.activation
             del self.out
             del self.error
