@@ -73,7 +73,8 @@ class Layer(object):
                        'momentum' : 0.9,
                        'input_dropout': self.funcs.dropout,
                        'dropout' : self.funcs.dropout,
-                       'learning_rate_decay' : 0.999
+                       'learning_rate_decay' : 0.999,
+                       'parallelism' : 'data'
                        }        
         self.logger = None
         

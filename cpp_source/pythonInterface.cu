@@ -29,6 +29,7 @@ extern "C"
 	Tensor *fempty(int batches, int maps, int rows, int cols){ return empty(batches, maps, rows, cols); }
 	Tensor *fempty_split(int batches, int maps, int rows, int cols, int split_axis){ return empty(batches, maps, rows, cols, split_axis); }
 	Tensor *fzeros(int batches, int maps, int rows, int cols){ return zeros(batches, maps, rows, cols); }
+	Tensor *fzeros_split(int batches, int maps, int rows, int cols, int split_axis){ return zeros(batches, maps, rows, cols, split_axis); }
 	Tensor *fones(int batches, int maps, int rows, int cols){ return ones(batches, maps, rows, cols); }
 	Tensor *ftocpu(Tensor *A, float *cpu_buffer){ return tocpu(A,cpu_buffer); }
 	Tensor *fT(Tensor *A){ return T(A); }

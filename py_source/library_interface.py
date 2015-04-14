@@ -33,6 +33,7 @@ funcs.femptySlice.restype = ct.POINTER(_Slice)
 funcs.fempty.restype = ct.POINTER(Tensor)
 funcs.fempty_split.restype = ct.POINTER(Tensor)
 funcs.fzeros.restype = ct.POINTER(Tensor)
+funcs.fzeros_split.restype = ct.POINTER(Tensor)
 funcs.fones.restype = ct.POINTER(Tensor)
 funcs.ftocpu.restype = ct.POINTER(Tensor)
 funcs.ftogpu.restype = ct.c_void_p

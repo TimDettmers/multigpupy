@@ -648,7 +648,7 @@ __global__ void kArgmax(float* A, float* out, unsigned int rows, unsigned int co
 }
 
 //for column major data
-__global__ void kSlice(float *A, float *out, int b1, int b2, int m1, int m2, int r1, int r2, int c1, int c2,  int rows, int cols, int batches_slice, int maps_slice, int cols_slice, int rows_slice)
+__global__ void kSlice(float *A, float *out, int b1, int b2, int m1, int m2, int r1, int r2, int c1, int c2,  int rows, int cols, int batches_slice, int maps_slice, int cols_slice, int rows_slice, int is_forward_slice)
 {
 	int mapOffset = rows*cols;
 	int batchOffset = mapOffset*gridDim.y;
@@ -675,14 +675,15 @@ __global__ void kSlice(float *A, float *out, int b1, int b2, int m1, int m2, int
 				colidx_slice = ((col-c1)*rows_slice) + mapidx_slice;
 				for(int row = threadIdx.x+r1; row < r2; row+=blockDim.x)
 				{
-					out[colidx_slice + (row-r1)] = A[colidx + (row < 0 ? (rows + row) : row)];
+					if(is_forward_slice == 1)
+						out[colidx_slice + (row-r1)] = A[colidx + (row < 0 ? (rows + row) : row)];
+					else
+						out[colidx + (row < 0 ? (rows + row) : row)] = A[colidx_slice + (row-r1)];
 				}
 
 			}
 		}
 	}
-
-
 }
 
 //for column major data

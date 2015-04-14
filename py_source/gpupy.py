@@ -148,9 +148,9 @@ def is_vector(x):
         if dim > 1: not_one_count+=1
     return (False if not_one_count > 1 else True)
 
-def zeros(shape):
+def zeros(shape, split_idx=-1):
     shape = u.handle_shape(shape)
-    out = array(None, lib.funcs.fzeros(shape[0],shape[1],shape[2],shape[3]))
+    out = array(None, lib.funcs.fzeros_split(shape[0],shape[1],shape[2],shape[3], split_idx))
     return out
 
 

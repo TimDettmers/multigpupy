@@ -1011,7 +1011,7 @@ def test_layer():
     alloc = batch_allocator(X,y, 0.2,0.0,32)   
     net.set_config_value('dropout', 0.5)
     net.set_config_value('input_dropout', 0.2) 
-    for epoch in range(25):
+    for epoch in range(5):
         t0 = time.time()    
         for i in alloc.train():   
             #net.forward(gpu.array(batch),gpu.array(batch_y))

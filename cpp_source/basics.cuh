@@ -18,6 +18,7 @@ Tensor *empty(int batches, int maps, int rows, int cols);
 Tensor *empty(int batches, int maps, int rows, int cols, int split_idx);
 float *empty_pinned(int batches, int maps, int rows, int cols,float *cpu_buffer);
 Tensor *zeros(int batches, int maps, int rows, int cols);
+Tensor *zeros(int batches, int maps, int rows, int cols, int split_axis);
 Tensor *ones(int batches, int maps, int rows, int cols);
 Tensor *fill_with_number(Tensor *A, float number);
 
