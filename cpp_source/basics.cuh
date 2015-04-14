@@ -59,6 +59,8 @@ void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learnin
 
 void synchronizingStack(Tensor* A, Tensor *out);
 
+void slice_or_stack_axis(Tensor *A, Tensor *out);
+
 
 
 

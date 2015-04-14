@@ -121,6 +121,7 @@ funcs.fscalar_ne.restype = ct.POINTER(Tensor)
 funcs.inp_scalar_ne.restype = ct.c_void_p
 
 funcs.fslice.restype = ct.POINTER(Tensor)
+funcs.inp_slice_or_stack_axis.restype = ct.c_void_p
 
 funcs.frand.restype = ct.POINTER(Tensor)
 funcs.frandn.restype = ct.POINTER(Tensor)

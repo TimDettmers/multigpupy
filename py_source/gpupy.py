@@ -310,6 +310,9 @@ def argmax(x1,out=None):
     if out: lib.funcs.inp_argmax(x1.pt, out.pt)
     return array(None, lib.funcs.fargmax(x1.pt))  
 
+def slice_or_stack_axis(A, out):
+    lib.funcs.inp_slice_or_stack_axis(A.pt, out.pt)
+
 def sum(x1): return lib.funcs.fsum(x1.pt)
 def min(x1): return lib.funcs.ffmin(x1.pt)
 def max(x1): return lib.funcs.ffmax(x1.pt)

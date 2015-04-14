@@ -31,9 +31,9 @@ int *get_split_shape(int batches, int maps, int rows, int cols,int split_axis,in
 	int split_size = 1+ (size/gpus);
 	assert(split_size >= gpus);
 	int split_offsize = size - ((gpus-1)*split_size);
-	if(split_offsize == 0) split_offsize = split_size;
+	if(size % gpus == 0)split_offsize =split_size;
 
-	if(split_size == gpus){split_offsize = 1; split_size = 1;}
+	if(size == gpus){split_offsize = 1; split_size = 1;}
 	if(gpuidx==gpus-1){ret[split_axis] = split_offsize; }
 	else{ret[split_axis] = split_size;}
 
@@ -80,6 +80,95 @@ Tensor *empty(int batches, int maps, int rows, int cols, int split_axis)
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 
 	return out;
+}
+
+
+
+void slice_or_stack_axis(Tensor *A, Tensor *out)
+{
+	//only row slice supported right now
+	assert((out->splitAxis == -1 && A->splitAxis == 2) ||
+			(out->splitAxis == 2 && A->splitAxis == -1));
+	int forward_split = out->splitAxis == 2;
+	Slice *S = emptySlice();
+	S->batch_stop = A->batches;
+	S->map_stop = A->maps;
+	S->col_stop = A->cols;
+	S->row_stop = 0;
+
+	int gpus = 0;
+	int idx = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		if(forward_split == 0){ S->row_stop = 0; S->row_start = 0;}
+		for(int j = 0; j < (forward_split == 1 ? 1 : gpus); j++)
+		{
+			if(forward_split == 0) idx = j;
+			else idx = i;
+			S->row_stop += out->splitAxis == 2 ? out->shape_gpus[i][2] : A->shape_gpus[idx][2];
+			CUDA_CHECK_RETURN(cudaSetDevice(i));
+			//this is a complete mess, an evil monster, but will do for now
+			if(forward_split == 1)
+			kSlice<<<dim3(A->shape_gpus[idx][0], A->shape_gpus[i][1],1),dim3(32,32,1)>>>(A->data_gpus[idx],out->data_gpus[i],
+					S->batch_start, S->batch_stop,
+					S->map_start, S->map_stop,
+					S->row_start, S->row_stop,
+					S->col_start, S->col_stop,
+					A->shape_gpus[i][2],A->shape_gpus[i][3],
+					out->shape_gpus[i][0],out->shape_gpus[i][1],
+					out->shape_gpus[i][3],out->shape_gpus[i][2], forward_split);
+			else
+				kSlice<<<dim3(out->shape_gpus[i][0], out->shape_gpus[i][1],1),dim3(32,32,1)>>>(A->data_gpus[idx],out->data_gpus[i],
+							S->batch_start, S->batch_stop,
+							S->map_start, S->map_stop,
+							S->row_start, S->row_stop,
+							S->col_start, S->col_stop,
+							out->shape_gpus[i][2],out->shape_gpus[i][3],
+							A->shape_gpus[idx][0],A->shape_gpus[idx][1],
+							A->shape_gpus[idx][3],A->shape_gpus[idx][2], forward_split);
+			CUDA_CHECK_RETURN(cudaPeekAtLastError());
+
+			S->row_start += out->splitAxis == 2 ? out->shape_gpus[i][2] : A->shape_gpus[idx][2];
+		}
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
+void stack_axis(Tensor *A, Tensor *out)
+{
+	//only row slice supported right now
+	assert((out->splitAxis == -1 && A->splitAxis == 2));
+	Slice *S = emptySlice();
+	S->batch_stop = out->batches;
+	S->map_stop = out->maps;
+	S->col_stop = out->cols;
+	S->row_stop = 0;
+
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		 S->row_stop = 0;
+		 S->row_start = 0;
+		for(int j = 0; j < gpus; j++)
+		{
+			S->row_stop += A->shape_gpus[j][2];
+			CUDA_CHECK_RETURN(cudaSetDevice(i));
+			kSlice<<<dim3(A->shape_gpus[j][0], A->shape_gpus[j][1],1),dim3(32,32,1)>>>(A->data_gpus[j],out->data_gpus[i],
+					S->batch_start, S->batch_stop,
+					S->map_start, S->map_stop,
+					S->row_start, S->row_stop,
+					S->col_start, S->col_stop,
+					A->shape_gpus[j][2],A->shape_gpus[j][3],
+					out->shape_gpus[i][0],out->shape_gpus[i][1],
+					out->shape_gpus[i][3],out->shape_gpus[i][2], 0);
+			CUDA_CHECK_RETURN(cudaPeekAtLastError());
+
+			S->row_start += out->splitAxis == 2 ? out->shape_gpus[i][2] : A->shape_gpus[i][2];
+		}
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
 
 float *empty_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer)
@@ -355,7 +444,7 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 			case sub_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], sub_vec); break;
 			case mul_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], mul_vec); break;
 			case div_vec: kVectorWise<<<grid,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], A->shape_gpus[i][2], A->shape_gpus[i][3]*A->shape_gpus[i][2], div_vec); break;
-			case print: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, NULL,A->size_gpus[i], flt,print); break;
+			case print: kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, NULL,A->size_gpus[i], flt,print); printf("\n"); break;
 
 			default: throw "Unsupported operation!";
 		}

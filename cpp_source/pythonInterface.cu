@@ -164,4 +164,6 @@ extern "C"
 	void fenablePeerAccess(GPUpy *gpupy){ gpupy->enablePeerAccess(); }
 	void fdisablePeerAccess(GPUpy *gpupy){ gpupy->disablePeerAccess(); }
 
+	void inp_slice_or_stack_axis(Tensor *A, Tensor *out){ return slice_or_stack_axis(A, out); }
+
 }

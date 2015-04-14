@@ -1011,7 +1011,7 @@ def test_layer():
     alloc = batch_allocator(X,y, 0.2,0.0,32)   
     net.set_config_value('dropout', 0.5)
     net.set_config_value('input_dropout', 0.2) 
-    for epoch in range(5):
+    for epoch in range(15):
         t0 = time.time()    
         for i in alloc.train():   
             #net.forward(gpu.array(batch),gpu.array(batch_y))
@@ -1041,29 +1041,47 @@ def test_layer():
     C2 = net.predict(gpu.array(X)).tocpu()
     print np.sum((C2-y)**2)    
     assert np.sum((C2-y)**2) < 500
-    
-def split_stack_test():
-    gpu.enable_peer_access()    
+
+'''
+def split_add_test():
+    gpu.enable_peer_access()
     for i in range(500):
         dims = np.random.randint(5,50,(2,))
-        A1 = np.random.randn(dims[0],dims[1])
-        A2 = np.random.randn(dims[0],dims[1])
+        A1 = np.random.rand(dims[0],dims[1])
+        A2 = np.random.rand(dims[0],dims[1])
         C1 = gpu.empty((dims[1],dims[1]))
-        C2 = gpu.zeros((dims[1],dims[1]))
+        C2 = gpu.zeros((dims[1],dims[1]))                
         B1 = gpu.array(A1,split_idx=2)
         B2 = gpu.array(A2,split_idx=2)   
         gpu.Tdot(B2,B1,C1)      
         gpu.synchronizingAdd(C1,C2)
         C = np.dot(A2.T,A1)
-        #print i
+        D = np.ones_like(C)*0.5
+        print i
         print dims
         #the dot product is just inherently unstable
-        t.assert_almost_equal(C2.tocpu().sum()/100000, C.sum()/100000, 3,'split add dot product chain yields wrong result!')    
+        print np.max(((C-C2.tocpu())**2)/C.size)
+        t.assert_array_less(((C-C2.tocpu())**2)/C.size, D, 'split add dot product chain yields wrong result!')    
         #print [C2.tocpu().sum()/10000,C.sum()/10000]
+'''
+    
+def test_slice_or_stack_axis():
+    gpu.enable_peer_access()
+    for i in range(500):
+        dims = np.random.randint(5,50,(2,))
+        A = np.random.rand(dims[0],dims[1])
+        B1 = gpu.array(A)
+        B2 = gpu.zeros((dims[0],dims[1]),2)
+        gpu.slice_or_stack_axis(B1, B2)
+        
+        C = gpu.zeros((dims[0],dims[1]))
+        gpu.slice_or_stack_axis(B2, C)
+        t.assert_array_almost_equal(C.tocpu(), A, 3, "slice and stack row not working!")
     gpu.disable_peer_access()
+    #assert False
     
     
-
+    
 
     
     

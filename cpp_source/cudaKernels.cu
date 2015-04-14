@@ -312,7 +312,7 @@ __global__ void kElementWise(float *A,float *B, float *out, int size, float flt,
 		  case ge_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] >= flt); break;
 		  case ne_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] != flt); break;
 		  case dropout_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = out[i] > flt ? A[i] : 0.0f; break;
-		  case print: for (unsigned int i = idx;i < size; i += numThreads) {printf("%f ",A[i]);} break;
+		  case print: for (unsigned int i = idx;i < size; i += numThreads) printf("%f ",A[i]); break;
 	}
 
 }
