@@ -1042,31 +1042,33 @@ def test_layer():
     print np.sum((C2-y)**2)    
     assert np.sum((C2-y)**2) < 500
 
-'''
+
 def split_add_test():
     gpu.enable_peer_access()
     for i in range(500):
-        dims = np.random.randint(5,50,(2,))
+        dims = np.random.randint(2,5,(2,))
         A1 = np.random.rand(dims[0],dims[1])
         A2 = np.random.rand(dims[0],dims[1])
         C1 = gpu.empty((dims[1],dims[1]))
         C2 = gpu.zeros((dims[1],dims[1]))                
         B1 = gpu.array(A1,split_idx=2)
-        B2 = gpu.array(A2,split_idx=2)   
+        B2 = gpu.array(A2,split_idx=2)
         gpu.Tdot(B2,B1,C1)      
-        gpu.synchronizingAdd(C1,C2)
+        gpu.synchronizingAdd(C1,C2)        
+        
         C = np.dot(A2.T,A1)
-        D = np.ones_like(C)*0.5
+        D = np.ones_like(C)*0.05
         print i
         print dims
         #the dot product is just inherently unstable
         print np.max(((C-C2.tocpu())**2)/C.size)
+        #print C
+        #print C2.tocpu()
         t.assert_array_less(((C-C2.tocpu())**2)/C.size, D, 'split add dot product chain yields wrong result!')    
         #print [C2.tocpu().sum()/10000,C.sum()/10000]
-'''
-    
+
+
 def test_slice_or_stack_axis():
-    gpu.enable_peer_access()
     for i in range(500):
         dims = np.random.randint(5,50,(2,))
         A = np.random.rand(dims[0],dims[1])
@@ -1080,7 +1082,7 @@ def test_slice_or_stack_axis():
     gpu.disable_peer_access()
     #assert False
     
-    
+  
     
 
     

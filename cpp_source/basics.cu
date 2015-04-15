@@ -31,7 +31,11 @@ int *get_split_shape(int batches, int maps, int rows, int cols,int split_axis,in
 	int split_size = 1+ (size/gpus);
 	assert(split_size >= gpus);
 	int split_offsize = size - ((gpus-1)*split_size);
-	if(size % gpus == 0)split_offsize =split_size;
+	if(size % gpus == 0)
+	{
+		split_size -=1;
+		split_offsize =split_size;
+	}
 
 	if(size == gpus){split_offsize = 1; split_size = 1;}
 	if(gpuidx==gpus-1){ret[split_axis] = split_offsize; }
