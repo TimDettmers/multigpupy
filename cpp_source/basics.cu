@@ -19,6 +19,11 @@ Slice *emptySlice()
 	return out;
 }
 
+Tensor *empty_like(Tensor *A)
+{
+	return empty(A->batches, A->maps, A->rows, A->cols, A->splitAxis);
+}
+
 int *get_split_shape(int batches, int maps, int rows, int cols,int split_axis,int gpuidx)
 {
 	int *ret = new int[4];
@@ -263,7 +268,7 @@ void T(Tensor *A, Tensor *out,  int rows, int cols)
 
 Tensor *to_col_major(Tensor *A)
 {
-  Tensor *out = empty(A->batches,A->maps,A->rows,A->cols);
+  Tensor *out = empty_like(A);
   T(A, out, A->cols,A->rows);
 
   return out;
@@ -276,7 +281,7 @@ void to_col_major(Tensor *A, Tensor *out)
 
 Tensor *to_row_major(Tensor *A)
 {
-	Tensor *out = empty(A->batches,A->maps,A->rows,A->cols);
+	Tensor *out = empty_like(A);
 	T(A, out, A->rows,A->cols);
 
   return out;
@@ -289,7 +294,7 @@ Tensor *tocpu(Tensor *A, float *cpu_buffer)
 	Tensor *temp = to_row_major(A);
 	Tensor *out = new Tensor();
 
-	CUDA_CHECK_RETURN(cudaMemcpy(cpu_buffer,temp->data,temp->bytes,cudaMemcpyDefault));
+	CUDA_CHECK_RETURN(cudaMemcpy(cpu_buffer,temp->data_gpus[0],temp->bytes_gpus[0],cudaMemcpyDefault));
 	out->batches = temp->batches;
 	out->maps = temp->maps;
 	out->rows = temp->rows;
@@ -305,6 +310,33 @@ Tensor *tocpu(Tensor *A, float *cpu_buffer)
 
 
 	return out;
+}
+
+
+void print_slice(Slice *S)
+{
+	cout << "batch: " << S->batch_start << " to " << S->batch_stop << endl;
+	cout << "map: " << S->map_start << " to " << S->map_stop << endl;
+	cout << "row: " << S->row_start << " to " << S->row_stop << endl;
+	cout << "col: " << S->col_start << " to " << S->col_stop << endl;
+}
+
+void print_shape(int *shape)
+{
+	cout << shape[0] << "x" << shape[1] << "x" << shape[2]<< "x" << shape[3] << endl;
+}
+
+void print_free_memory()
+{
+	size_t total, free;
+	cudaMemGetInfo(&free,&total);
+	cout << "Free GB: " << ((double)free)/1024./1024./1024. << endl;
+}
+
+void print_tensor_shape(Tensor *A)
+{
+	for(int i = 0; i < A->data_gpus.size(); i++)
+		print_shape(A->shape_gpus[i]);
 }
 
 
@@ -326,8 +358,12 @@ void togpu(Tensor *out, float *cpu_buffer, int split_axis)
 		S->row_stop = 0;
 		for(int i = 0; i < gpus; i++)
 		{
+
 			S->row_stop += out->shape_gpus[i][2];
 			CUDA_CHECK_RETURN(cudaSetDevice(i));
+			//print_shape(temp2->shape_gpus[i]);
+			//cout << temp2->size_gpus[i] << endl;
+			//cout << temp2->bytes_gpus[i] << endl;
 			kSlice<<<dim3(temp2->shape_gpus[i][0], temp2->shape_gpus[i][1],1),dim3(32,32,1)>>>(temp2->data_gpus[i],out->data_gpus[i],
 					S->batch_start, S->batch_stop,
 					S->map_start, S->map_stop,
@@ -338,15 +374,21 @@ void togpu(Tensor *out, float *cpu_buffer, int split_axis)
 					out->shape_gpus[i][3],out->shape_gpus[i][2], 1);
 			CUDA_CHECK_RETURN(cudaPeekAtLastError());
 
+
+
 			S->row_start += out->shape_gpus[i][2];
 		}
 		temp2->freeTensor();
 	}
-	if(split_axis == -1)
+	else if (split_axis == -1)
 	{
 		for(int i = 0; i < gpus; i++){ CUDA_CHECK_RETURN(cudaMemcpy(out->data_gpus[i],cpu_buffer,out->bytes_gpus[i],cudaMemcpyDefault)); }
 		to_col_major(out, temp);
 		for(int i = 0; i < gpus; i++){ CUDA_CHECK_RETURN(cudaMemcpy(out->data_gpus[i],temp->data_gpus[i],out->bytes_gpus[i],cudaMemcpyDefault)); }
+	}
+	else
+	{
+		throw 'uden!';
 	}
 
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
@@ -393,7 +435,7 @@ void applySliceFunc(Tensor *A, Slice *S, Tensor *out)
 Tensor *applyFunc(Tensor *A, Tensor *B, Operation_t ops){ return applyFunc(A,B,0.0f,ops); }
 Tensor *applyFunc(Tensor *A, Tensor *B, float flt, Operation_t ops)
 {
-	Tensor *out = empty(A->batches,A->maps,A->rows,A->cols);
+	Tensor *out = empty_like(A);
 	applyFunc(A, B, out, flt, ops);
 
 	return out;
@@ -459,7 +501,7 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 }
 
 
-Tensor *softmax(Tensor *A){ Tensor *out = empty(A->batches,A->maps,A->rows,A->cols); softmax(A,out); return out; }
+Tensor *softmax(Tensor *A){ Tensor *out = empty_like(A); softmax(A,out); return out; }
 void softmax(Tensor *A, Tensor *out)
 {
 	dim3 grids(A->batches, A->maps);
@@ -509,11 +551,36 @@ void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learnin
 
 void synchronize(Tensor *A, Tensor *out, int myid, int copyid, cudaStream_t stream,Operation_t ops)
 {
+	//print_shape(A->shape_gpus[myid]);
+	//print_shape(out->shape_gpus[myid]);
+	//print_shape(A->shape_gpus[copyid]);
+	//print_shape(out->shape_gpus[copyid]);
 	int block_size = (A->shape_gpus[myid][2]*A->shape_gpus[myid][3]/THREADS_PER_BLOCKS) + 1;
 	CUDA_CHECK_RETURN(cudaSetDevice(myid));
 	kElementWise<<<block_size,THREADS_PER_BLOCKS,0,stream>>>(A->data_gpus[myid],A->data_gpus[copyid],out->data_gpus[myid],A->size_gpus[myid],0.0f,ops);
 	//TODO: add vstack method with backward slice
 	CUDA_CHECK_RETURN(cudaPeekAtLastError());
+}
+
+void synchronizedAdd(Tensor *A, Tensor *out)
+{
+
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		int block_size = (A->shape_gpus[i][2]*A->shape_gpus[i][3]/THREADS_PER_BLOCKS) + 1;
+		for(int j = 0; j < gpus; j++)
+		{
+			if (i==j) continue;
+			CUDA_CHECK_RETURN(cudaSetDevice(i));
+			kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i],A->data_gpus[j],out->data_gpus[i],A->size_gpus[i],0.0f,add_tensor);
+			CUDA_CHECK_RETURN(cudaPeekAtLastError());
+		}
+		cudaDeviceSynchronize();
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+
 }
 
 float sum(Tensor *A)

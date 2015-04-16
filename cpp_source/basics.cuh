@@ -14,6 +14,7 @@
 
 
 Slice *emptySlice();
+Tensor *empty_like(Tensor *A);
 Tensor *empty(int batches, int maps, int rows, int cols);
 Tensor *empty(int batches, int maps, int rows, int cols, int split_idx);
 float *empty_pinned(int batches, int maps, int rows, int cols,float *cpu_buffer);
@@ -26,6 +27,11 @@ int *get_split_shape(int batches, int maps, int rows, int cols,int split_axis,in
 
 void togpu(Tensor *out, float *cpu_buffer);
 void togpu(Tensor *out, float *cpu_buffer, int split_axis);
+
+void print_slice(Slice *S);
+void print_shape(int *shape);
+void print_free_memory();
+void print_tensor_shape(Tensor *A);
 
 Tensor *tocpu(Tensor *A, float *cpu_buffer);
 Tensor *T(Tensor *A);
@@ -45,6 +51,7 @@ void applyFunc(Tensor *A, Tensor *B, Tensor *out, Operation_t ops);
 void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops);
 
 void synchronize(Tensor *A, Tensor *out, int myid, int copyid, cudaStream_t stream,Operation_t ops);
+void synchronizedAdd(Tensor *A, Tensor *out);
 
 Tensor *applySliceFunc(Tensor *A, Slice *S);
 void applySliceFunc(Tensor *A, Slice *S, Tensor *out);

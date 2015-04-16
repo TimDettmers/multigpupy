@@ -53,6 +53,8 @@ class batch_allocator(object):
         self.sample_size = None
         self.relative_error = None
         self.start_batching = True
+        
+        self.batch_buffers = {}
     
     def set_batch_sizes(self):
         n = np.zeros((3,))
@@ -204,9 +206,13 @@ class batch_allocator(object):
             if self.set_type == 'test': self.next_batch_idx = self.end_idx[1]; self.set_type_prev = 'test' 
         
     @property
-    def batch(self): return self.current
+    def batch(self):
+        if self.batch_buffers: return self.batch_buffers[str(self.current.shape)+'X'] 
+        return self.current
     @property
-    def batch_y(self): return self.current_y
+    def batch_y(self):
+        if self.batch_buffers: return self.batch_buffers[str(self.current_y.shape)+'y'] 
+        return self.current_y
     def allocate_next_batch(self):    
         self.handle_next_batch_id()    
         batch = np.float32(np.asfortranarray(self.X[:,:,self.next_batch_idx:self.handle_copy_index(),:]))
@@ -218,6 +224,18 @@ class batch_allocator(object):
         u.swap_pointer_and_shape(self.current,self.next_X )
         u.swap_pointer_and_shape(self.current_y,self.next_y)
         self.next_batch_idx +=self.batch_size
+        
+        if self.net:
+            if self.net.config['parallelism'] == 'data':
+                if str(self.current.shape) not in self.batch_buffers:
+                    shape = self.current.shape_tensor
+                    self.batch_buffers[str(self.current.shape) + 'X'] = gpu.empty(shape, 2)
+                    shape = self.current_y.shape_tensor                    
+                    self.batch_buffers[str(self.current.shape) + 'y'] = gpu.empty(shape, 2)
+                if not self.batch_buffers: self.batch_buffers = [None, None]
+                gpu.slice_or_stack_axis(self.current, self.batch_buffers[str(self.current.shape) + 'X'])
+                gpu.slice_or_stack_axis(self.current_y, self.batch_buffers[str(self.current.shape) + 'y'])
+                
         
         
         

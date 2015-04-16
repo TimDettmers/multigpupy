@@ -44,6 +44,7 @@ class array(object):
         if type(npArray) == type(np.array(1)):
             npArray = np.float32(npArray)
             shape = u.handle_shape(npArray.shape)
+            
             mat_pointer = lib.funcs.fempty_split(shape[0],shape[1],shape[2],shape[3],split_idx)
             lib.funcs.ftogpu_split(mat_pointer, npArray.ctypes.data_as(ct.POINTER(ct.c_float)),split_idx)
             self.shape = npArray.shape 
@@ -94,7 +95,7 @@ class array(object):
     def T(self): return array(None, lib.funcs.fT(self.pt))   
       
     def __del__(self): pass#lib.funcs.ffree(self.pt)
-    def __add__(self, other): return apply_func(self,other, lib.funcs.fadd, lib.funcs.fscalarAdd, lib.funcs.faddVectorToTensor)
+    def __add__(self, other): return add(self, other)
     def __sub__(self, other): return apply_func(self,other, lib.funcs.fsub, lib.funcs.fscalarSub, lib.funcs.fsubVectorToTensor)
     def __mul__(self, other): return apply_func(self,other, lib.funcs.fmul, lib.funcs.fscalarMul, lib.funcs.fmulVectorToTensor)
     def __div__(self, other): return apply_func(self,other, lib.funcs.fdiv, lib.funcs.fscalarDiv, lib.funcs.fdivVectorToTensor)
@@ -162,7 +163,6 @@ def ones(shape):
 def empty(shape,split_idx=-1):
     shape = u.handle_shape(shape)
     out = array(None, lib.funcs.fempty_split(shape[0],shape[1],ct.c_int32(shape[2]),shape[3],split_idx))
-    
     return out
 
 def add(x1,x2,out=None):
@@ -281,10 +281,6 @@ def Tdot(a,b,out=None):
 def dotT(a,b,out=None):
     if out: lib.funcs.inp_dotT(p_gpupy, a.pt, b.pt, out.pt)
     else: return array(None, lib.funcs.fdotT(p_gpupy, a.pt,b.pt))
-    
-def synchronizingAdd(x1, out=None):    
-    if out: lib.funcs.inp_synchronizingAdd(p_gpupy, x1.pt, out.pt)
-    return array(None, lib.funcs.fsynchronizingAdd(p_gpupy,x1.pt))
 
 def print_tensor(x1):
     lib.funcs.ffprint(x1.pt)
@@ -312,6 +308,14 @@ def argmax(x1,out=None):
 
 def slice_or_stack_axis(A, out):
     lib.funcs.inp_slice_or_stack_axis(A.pt, out.pt)
+    
+def sync(source, target1, target2=None, target3=None, target4=None):
+    if target2 and target3: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, target3.pt)
+    elif target2: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, None)
+    else: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, None, None)
+    
+def sync_streams():
+    lib.funcs.fsynchronize_streams(p_gpupy)
 
 def sum(x1): return lib.funcs.fsum(x1.pt)
 def min(x1): return lib.funcs.ffmin(x1.pt)

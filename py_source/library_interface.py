@@ -140,8 +140,6 @@ funcs.inp_dotT.restype = ct.c_void_p
 funcs.fdropout.restype = ct.POINTER(Tensor)
 funcs.inp_dropout.restype = ct.c_void_p
 
-funcs.fsynchronizingAdd.restype = ct.POINTER(Tensor)
-funcs.inp_synchronizingAdd.restype = ct.c_void_p
 
 funcs.inp_synchronizingStack.restype = ct.c_void_p
 funcs.ftogpu_split.restype = ct.c_void_p
@@ -175,6 +173,9 @@ funcs.fenablePeerAccess.restype = ct.c_void_p
 funcs.fdisablePeerAccess.restype = ct.c_void_p
 
 funcs.ffprint.restype = ct.c_void_p
+
+funcs.fsync.restype = ct.c_void_p
+funcs.fsynchronize_streams.restype = ct.c_void_p
 
 
 

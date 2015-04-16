@@ -2,6 +2,9 @@
 #include <basics.cuh>
 #include <cudaKernels.cuh>
 
+using std::cout;
+using std::endl;
+
 GPUpy::GPUpy(){}
 
 void GPUpy::init(int seed)
@@ -23,9 +26,15 @@ void GPUpy::init(int seed)
 		CUBLAS_CHECK_RETURN(cublasCreate_v2(&handle));
 		cublashandles.push_back(handle);
 
-		cudaStream_t s;
-		CUDA_CHECK_RETURN(cudaStreamCreate(&s));
-		streams.push_back(s);
+
+		std::vector<cudaStream_t> vec;
+		for(int j = 0; j < DEVICE_COUNT; j++)
+		{
+			cudaStream_t s;
+			CUDA_CHECK_RETURN(cudaStreamCreate(&s));
+			vec.push_back(s);
+		}
+		stream_vectors.push_back(vec);
 	}
 
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
@@ -140,23 +149,46 @@ void GPUpy::disablePeerAccess()
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
 
-Tensor *GPUpy::synchronize(Tensor *A, Operation_t strategy)
-{ Tensor *out = empty(A->batches,A->maps,A->rows,A->cols); synchronize(A,out,strategy); return out; }
-void GPUpy::synchronize(Tensor *A, Tensor *out, Operation_t strategy)
+void GPUpy::async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3)
 {
-	int copyid = 0;
-	for(int offset = 1; offset < DEVICE_COUNT; offset++)
+	std::vector<Tensor*> out;
+	out.push_back(A);
+	if(out1) out.push_back(out1);
+	if(out2) out.push_back(out2);
+	if(out3) out.push_back(out3);
+	int idx = 0;
+
+	//left-right transfer across PCIe switches
+	//this is the fastest transfer method for multi-GPU setups on non-specialized hardware
+	//this transfer is made exactly like the matrix cross product where left and right transfers are left and right arrows
+	for(int transfer_round = 1; transfer_round < DEVICE_COUNT; transfer_round++)
 	{
-		for(int myid = 0; myid < DEVICE_COUNT; myid++)
+		//right transfer
+		for(int right_idx = 0; right_idx < DEVICE_COUNT-transfer_round; right_idx++)
+			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[right_idx+transfer_round]->data_gpus[right_idx+transfer_round], A->data_gpus[right_idx],A->bytes_gpus[right_idx],cudaMemcpyDefault, stream_vectors[right_idx][right_idx+transfer_round]));
+
+		//left transfer
+		for(int left_idx = transfer_round; left_idx < DEVICE_COUNT; left_idx++)
 		{
-			copyid = myid + offset;
-			copyid = copyid >= DEVICE_COUNT ? copyid-DEVICE_COUNT : copyid;
-
-			::synchronize(A,out,myid,copyid,streams[myid], strategy);
-
+			idx = (DEVICE_COUNT)-transfer_round;
+			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDefault, stream_vectors[left_idx][idx]));
 		}
-		for(int myid = 0; myid < DEVICE_COUNT; myid++){ CUDA_CHECK_RETURN(cudaStreamSynchronize(streams[myid]));}
 	}
 
+
+
+
+
+
+
 }
+
+void GPUpy::synchronize_streams()
+{
+	for(int i = 0; i < DEVICE_COUNT; i++)
+		for(int j = 0; j < DEVICE_COUNT; j++)
+			CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[i][j]));
+
+}
+
 

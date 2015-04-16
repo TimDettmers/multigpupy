@@ -723,48 +723,37 @@ def test_slicing():
     t.assert_array_equal(C, A[:15,:15,:15,:15], "np[:15,:15,:15,:15] != gpu[:15,:15,:15,:15]")   
     
 def test_dot():
-    A1 = np.float32(np.random.rand(17,83))
-    B1 = np.float32(np.random.rand(83,13)) 
-    A2 = gpu.array(A1)
-    B2 = gpu.array(B1)
-    C = gpu.dot(A2,B2)
-    t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B1), 5, "np.dot != gpu.dot 2 dimensions!")
+    for i in range(100):        
+        dims = np.random.randint(5,250,(3,))
+        A1 = np.float32(np.random.rand(dims[0],dims[1]))
+        B1 = np.float32(np.random.rand(dims[1],dims[2])) 
+        A2 = gpu.array(A1)
+        B2 = gpu.array(B1)
+        C = gpu.dot(A2,B2)
+        t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B1), 3, "np.dot != gpu.dot 2 dimensions!")
+        
+        C*=0.0
+        gpu.dot(A2,B2,C)
+        t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B1), 3, "np.dot != gpu.dot 2 dimensions!")
+        
+        
+        A3 = np.float32(np.random.rand(dims[1],dims[0]))
+        B3 = np.float32(np.random.rand(dims[2],dims[1]))
+        A4 = gpu.array(A3) 
+        B4 = gpu.array(B3)
+        
+        gpu.dotT(A2,B4,C)
+        t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B3.T), 3, "np.dotT != gpu.dot 2 dimensions!")  
+        C*=0.0  
+        gpu.dotT(A2,B4,C)
+        t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B3.T), 3, "np.dotT != gpu.dot 2 dimensions!")
+        
+        gpu.Tdot(A4,B2,C)
+        t.assert_array_almost_equal(C.tocpu(), np.dot(A3.T,B1), 3, "np.Tdot != gpu.dot 2 dimensions!")  
+        C*=0.0  
+        gpu.Tdot(A4,B2,C)
+        t.assert_array_almost_equal(C.tocpu(), np.dot(A3.T,B1), 3, "np.Tdot != gpu.dot 2 dimensions!")
     
-    C*=0.0
-    gpu.dot(A2,B2,C)
-    t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B1), 5, "np.dot != gpu.dot 2 dimensions!")
-    
-    
-    A3 = np.float32(np.random.rand(83,17))
-    B3 = np.float32(np.random.rand(13,83))
-    A4 = gpu.array(A3) 
-    B4 = gpu.array(B3)
-    
-    gpu.dotT(A2,B4,C)
-    t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B3.T), 5, "np.dotT != gpu.dot 2 dimensions!")  
-    C*=0.0  
-    gpu.dotT(A2,B4,C)
-    t.assert_array_almost_equal(C.tocpu(), np.dot(A1,B3.T), 5, "np.dotT != gpu.dot 2 dimensions!")
-    
-    gpu.Tdot(A4,B2,C)
-    t.assert_array_almost_equal(C.tocpu(), np.dot(A3.T,B1), 5, "np.Tdot != gpu.dot 2 dimensions!")  
-    C*=0.0  
-    gpu.Tdot(A4,B2,C)
-    t.assert_array_almost_equal(C.tocpu(), np.dot(A3.T,B1), 5, "np.Tdot != gpu.dot 2 dimensions!")
-    
-
-def test_synchronizingAdd():
-    A = np.float32(np.random.rand(17,83))
-    B = gpu.array(A)        
-    gpu.enable_peer_access()
-    C = gpu.synchronizingAdd(B)   
-    
-    t.assert_array_almost_equal(C.tocpu(), A*gpu.gpu_count(), 7, "Synchronizing add does not work!")
-    C*=0
-    gpu.synchronizingAdd(B,C)
-    gpu.disable_peer_access()
-    t.assert_array_almost_equal(C.tocpu(), A*gpu.gpu_count(), 7, "Synchronizing add does not work!")
-
         
 def test_allocator_init():    
     data = np.float32(np.random.rand(5333,256))
@@ -1042,31 +1031,82 @@ def test_layer():
     print np.sum((C2-y)**2)    
     assert np.sum((C2-y)**2) < 500
 
-
-def split_add_test():
+def test_sync():
     gpu.enable_peer_access()
     for i in range(500):
-        dims = np.random.randint(2,5,(2,))
+        dims = np.random.randint(5,100,(2,))
+        if dims[0] % 2 == 1: dims[0]+=1  
+        A1 = np.float32(np.random.rand(dims[0],dims[1])) 
+        B1 = gpu.array(A1,split_idx=2)    
+        B2 = gpu.zeros((dims[0]/2,dims[1]))
+        C1 = gpu.zeros((dims[0]/2,dims[1]))
+        gpu.sync(B1,B2)
+        gpu.sync_streams()
+        gpu.add(B1,B2,C1)
+        #print i
+       
+        C =  A1[0:dims[0]/2] + A1[dims[0]/2:]
+        t.assert_almost_equal(C,C1.tocpu(),4,'split sync with add not working')
+    
+    dims = [512,256]
+    A1 = np.float32(np.random.rand(dims[0],dims[1])) 
+    B1 = gpu.array(A1,split_idx=2)    
+    B2 = gpu.zeros((dims[0]/2,dims[1]))
+    C1 = gpu.zeros((dims[0]/2,dims[1]))
+    t0 = time.time()
+    for i in range(1000):
+        gpu.sync(B1,B2)
+        gpu.sync_streams()
+        gpu.add(B1,B2,C1)
+    GB = 1000*4*dims[0]*dims[1]*1024**-3
+    secs = time.time()-t0  
+    t.assert_(GB/secs > 3.0, "transfer rate below 3 GB/s!")
+    
+    
+    gpu.disable_peer_access()
+
+
+'''
+
+def split_add_test():
+    
+    gpu.enable_peer_access()
+    count = 0
+    for i in range(100):
+        dims = np.random.randint(5,100,(2,))         
         A1 = np.random.rand(dims[0],dims[1])
         A2 = np.random.rand(dims[0],dims[1])
-        C1 = gpu.empty((dims[1],dims[1]))
-        C2 = gpu.zeros((dims[1],dims[1]))                
-        B1 = gpu.array(A1,split_idx=2)
+        C1 = gpu.empty((dims[1],dims[1]))    
+        C2 = gpu.empty((dims[1],dims[1]))      
+         
+        B1 = gpu.array(A1,split_idx=2)        
         B2 = gpu.array(A2,split_idx=2)
-        gpu.Tdot(B2,B1,C1)      
-        gpu.synchronizingAdd(C1,C2)        
-        
+           
+        gpu.Tdot(B2,B1,C1)    
+        gpu.synchronizingAdd(C1,C2)       
         C = np.dot(A2.T,A1)
         D = np.ones_like(C)*0.05
         print i
         print dims
         #the dot product is just inherently unstable
-        print np.max(((C-C2.tocpu())**2)/C.size)
+        errors = np.sqrt(((C-C2.tocpu())**2))
+        #print np.sort(errors.flatten())[::-1][0:50]
         #print C
         #print C2.tocpu()
-        t.assert_array_less(((C-C2.tocpu())**2)/C.size, D, 'split add dot product chain yields wrong result!')    
+        #print np.sort(errors.flatten())[::-1][0:10]
+        #print np.int32(np.less(D,errors)).sum()
+        #count += np.int32(np.less(D,errors)).sum() > 0
+        #print np.less(errors,D)
+        print C[0,0:5]
+        print C2.tocpu()[0,0:5]
+        print np.sort(np.sqrt(((C-C2.tocpu())**2)).flatten())[::-1][0:5]
+        print np.sqrt(((C-C2.tocpu())**2))[0,0:5]
+        print '----------'
+        t.assert_array_almost_equal(C2.tocpu(), C, 4,'split add dot product chain yields wrong result!')    
         #print [C2.tocpu().sum()/10000,C.sum()/10000]
-
+    print count
+    
+    
 
 def test_slice_or_stack_axis():
     for i in range(500):
@@ -1079,13 +1119,37 @@ def test_slice_or_stack_axis():
         C = gpu.zeros((dims[0],dims[1]))
         gpu.slice_or_stack_axis(B2, C)
         t.assert_array_almost_equal(C.tocpu(), A, 3, "slice and stack row not working!")
-    gpu.disable_peer_access()
     #assert False
+'''   
+'''  
+def test_batch_allocator_parallelism():
+    net = Layer()
+    data = np.float32(np.random.rand(5333,2))
+    labels = np.float32(np.random.randint(0,10,(5333,)))
     
-  
-    
-
-    
+    batch_size = 128
+    alloc = batch_allocator(data, labels, 0.3, 0.3, batch_size)
+    alloc.net = net
+    for i in alloc.train():        
+        A = alloc.current
+        C1 = gpu.empty(alloc.current.shape)        
+        B2 = gpu.empty((A.shape_tensor[3], A.shape_tensor[3]))
+        B3 = gpu.zeros((A.shape_tensor[3], A.shape_tensor[3]))
+        
+        gpu.slice_or_stack_axis(alloc.batch, C1)    
+        t.assert_array_equal(C1.tocpu(), A.tocpu(), "stack allocator data parallelism not working!")
+        
+        B1 = A.tocpu()        
+        gpu.Tdot(alloc.batch,A,B2)
+        gpu.print_tensor(B2)
+        gpu.synchronizingAdd(B2,B3)
+        C2 = np.dot(B1.T,B1)
+        t.assert_array_equal(C2, B3.tocpu(), "synch add data parallelism not working!")
+       
+        
+        
+    gpu.disable_peer_access()
+'''
     
 if __name__ == '__main__':    
     nose.run()
