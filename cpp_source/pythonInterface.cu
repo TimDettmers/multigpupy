@@ -166,4 +166,8 @@ extern "C"
 
 	float fprint_free_memory(){ return print_free_memory();}
 
+	int fis_synchronizing(GPUpy *gpupy){ return gpupy->IS_SYNCHRONIZING; }
+	int fcurrent_sync_idx(GPUpy *gpupy){ return gpupy->CURRENT_SYNC_IDX; }
+	void freset_sync_idx(GPUpy *gpupy){ gpupy->CURRENT_SYNC_IDX = 0; }
+
 }

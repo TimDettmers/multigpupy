@@ -12,6 +12,7 @@ import gpupy as gpu
 import logging
 import os
 import cPickle as pickle
+import multiprocessing as mp
 
 
 '''
@@ -53,6 +54,37 @@ class Softmax(ActivationFunc):
     def activation(self, previous_output, my_activation, my_output, useDropout): 
         self.gpu_func(previous_output, my_output); 
 
+'''
+class GradientSynchronizer(Thread):
+    def __init__(self):
+        super(GradientSynchronizer, self).__init__()
+        self.daemon = True
+        self.cancelled = False          
+        self.todo = []    
+        self.idx = 0
+        self.synchronizing = False
+        
+        pass
+                
+    def run(self):     
+        while not self.cancel(): 
+            if len(self.todo) > 0:
+                self.synchronizing = True
+                gpu.sync(self.todo[0][0], self.todo[0][1])
+                gpu.sync_streams()
+                self.todo.pop(0)
+                self.idx +=1
+                
+            sleep(0.001)
+                    
+    def cancel(self):
+        """End this timer thread"""        
+        return self.cancelled
+    
+    
+g = GradientSynchronizer()
+'''
+
 class Layer(object):
     def __init__(self, unitcount=0, activation_function=Input(), workdir = None, network_name = 'neural_net'):
         self.p_layer = lib.funcs.fLayer()
@@ -84,6 +116,8 @@ class Layer(object):
         
         self.init_work_dir()
         self.epoch = 0
+        
+        self.sync_process = None
         
     def log(self, msg, print_msg = True, level = logging.INFO):
         logging.log(level, msg)
@@ -188,20 +222,29 @@ class Layer(object):
         while root.next_layer: root = root.next_layer
         return root    
         
-    def forward(self, data=None, target=None,inTrainingMode=True):       
+    def forward(self, data=None, target=None,inTrainingMode=True):              
         if data is not None:
             shape = u.handle_shape(data.shape)
             self.unitcount = shape[3] 
             self.handle_input_size(shape[2])           
             self.root.target = target
             self.funcs.activation(data, self.activation, self.out, inTrainingMode)
+            if inTrainingMode: self.handle_parallelism()
         else:
+            if inTrainingMode: self.handle_parallelism() 
             gpu.dot(self.prev_layer.out,self.prev_layer.w_next,self.activation)          
             gpu.add(self.activation, self.prev_layer.b_next, self.activation)   
             self.funcs.activation(self.activation, self.activation, self.out, inTrainingMode)  
             
         if self.next_layer: self.next_layer.forward(None, None, inTrainingMode)
-        
+    
+    def handle_parallelism(self):
+        if self.config['parallelism'] == 'data' and self.next_layer: 
+            gpu.sync_streams()
+            self.next_layer.backward_grads()        
+            gpu.add(self.w_grad_next, self.w_next_sync, self.w_grad_next)
+            self.weight_update()
+    
     def predict(self, data):
         self.forward(data, None,False)   
         if type(self.root.funcs) == Softmax: return gpu.argmax(self.root.out)
@@ -210,11 +253,7 @@ class Layer(object):
     def backward(self):
         self.backward_errors()
         self.backward_grads()  
-        
-        gpu.sync(self.w_grad_next,self.w_next_sync)
-        gpu.sync_streams()
-        gpu.add(self.w_grad_next, self.w_next_sync, self.w_grad_next)    
-        
+              
     def backward_errors(self):
         if self.next_layer: self.next_layer.backward_errors()
         else: 
@@ -227,11 +266,17 @@ class Layer(object):
         gpu.dotT(self.next_layer.error, self.w_next, self.error)
         gpu.mul(self.error, self.out, self.error)
         
-    def backward_grads(self):   
+    def backward_grads(self):
         if self.target: return
         gpu.Tdot(self.activation, self.next_layer.error, self.w_grad_next)
+        
+        
+        if self.config['parallelism'] == 'data': 
+            #print 'sync: {0}'.format(self.id)
+            gpu.sync(self.w_grad_next, self.w_next_sync)        
+        if self.next_layer and self.config['parallelism'] != 'data': self.next_layer.backward_grads()        
+        
         gpu.Tdot(self.bias_ones, self.next_layer.error, self.b_grad_next)
-        if self.next_layer: self.next_layer.backward_grads()
         
     def accumulate_error(self):
         predicted_labels = gpu.argmax(self.root.out) 
@@ -263,7 +308,8 @@ class Layer(object):
         if self.next_layer:         
             lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(self.config['momentum']),ct.c_float(self.config['learning_rate']), self.out.shape[2])
             gpu.sub(self.w_next, self.w_grad_next, self.w_next)
-            self.next_layer.weight_update()         
+            if self.config['parallelism'] != 'data':
+                self.next_layer.weight_update()         
         
     def end_epoch(self):
         self.set_config_value('learning_rate', 0.0, 'learning_rate_decay', lambda a,b: a*b)     
@@ -316,7 +362,9 @@ class Layer(object):
             
         
         
-            
+def sync_gradient(p_w_next, p_w_next_sync1,p_w_next_sync2=None,p_w_next_sync3=None):   
+    if gpu.is_synchronizing() == 1: gpu.sync_streams()
+    lib.funcs.fsync(gpu.p_gpupy, p_w_next, p_w_next_sync1, p_w_next_sync2, p_w_next_sync3)          
         
         
         

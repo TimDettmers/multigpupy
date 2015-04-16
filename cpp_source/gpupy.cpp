@@ -39,6 +39,9 @@ void GPUpy::init(int seed)
 
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 
+	CURRENT_SYNC_IDX = 0;
+	IS_SYNCHRONIZING = 0;
+
 }
 
 
@@ -166,6 +169,7 @@ void GPUpy::async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3)
 	//left-right transfer across PCIe switches
 	//this is the fastest transfer method for multi-GPU setups on non-specialized hardware
 	//this transfer is made exactly like the matrix cross product where left and right transfers are left and right arrows
+	IS_SYNCHRONIZING = 1;
 	for(int transfer_round = 1; transfer_round < DEVICE_COUNT; transfer_round++)
 	{
 		//right transfer
@@ -186,6 +190,8 @@ void GPUpy::synchronize_streams()
 	for(int i = 0; i < DEVICE_COUNT; i++)
 		for(int j = 0; j < DEVICE_COUNT; j++)
 			CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[i][j]));
+
+	CURRENT_SYNC_IDX +=1;
 
 }
 

@@ -320,3 +320,7 @@ def max(x1): return lib.funcs.ffmax(x1.pt)
 
 def print_free_memory():
     return lib.funcs.fprint_free_memory()
+
+def is_synchronizing(): return lib.funcs.fis_synchronizing()
+def current_sync_idx(): return lib.funcs.fcurrent_sync_idx()
+def reset_sync_idx(): lib.funcs.freset_sync_idx()

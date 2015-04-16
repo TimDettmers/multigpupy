@@ -68,6 +68,8 @@ class GPUpy
 public:
 	GPUpy();
 	int DEVICE_COUNT;
+	int CURRENT_SYNC_IDX;
+	int IS_SYNCHRONIZING;
 
 	Tensor *rand(int batchsize, int mapsize, int rows, int cols);
 	void rand(Tensor *out);

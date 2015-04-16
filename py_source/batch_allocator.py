@@ -239,24 +239,6 @@ class batch_allocator(object):
                 gpu.slice_or_stack_axis(self.current, self.batch_buffers[str(self.current.shape) + 'X'])
                 gpu.slice_or_stack_axis(self.current_y, self.batch_buffers[str(self.current_y.shape) + 'y'])
                 
-                '''
-                A = self.current_y
-                B = gpu.empty(self.current_y.shape)
-                gpu.slice_or_stack_axis(self.batch_buffers[str(self.current_y.shape) + 'y'], B)
-                if ((A.tocpu()-B.tocpu())**2).sum() > 0:
-                    print ((A.tocpu()-B.tocpu())**2).sum()                   
-                
-                del B
-                
-                A = self.current
-                B = gpu.empty(self.current.shape)
-                gpu.slice_or_stack_axis(self.batch_buffers[str(self.current.shape) + 'X'], B)
-                if ((A.tocpu()-B.tocpu())**2).sum() > 0:
-                    print ((A.tocpu()-B.tocpu())**2).sum()                   
-                
-                del B
-                '''
-                
                 #gpu.print_free_memory()
                 
         
