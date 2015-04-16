@@ -73,7 +73,7 @@ class Layer(object):
                        'momentum' : 0.9,
                        'input_dropout': self.funcs.dropout,
                        'dropout' : self.funcs.dropout,
-                       'learning_rate_decay' : 0.999,
+                       'learning_rate_decay' : 1.0,
                        'parallelism' : 'data'
                        }        
         self.logger = None
@@ -144,17 +144,20 @@ class Layer(object):
             if self.next_layer: self.next_layer.create_weights()
         
     def create_buffers(self, batch_size):
-        self.activation = gpu.empty((batch_size,self.unitcount))
-        self.out = gpu.empty((batch_size,self.unitcount))
-        self.error = gpu.empty((batch_size,self.unitcount))
-        self.bias_ones = gpu.ones((1,batch_size))
+        split_axis = (2 if self.config['parallelism'] == 'data' else -1)
+        self.activation = gpu.empty((batch_size,self.unitcount),split_axis)
+        self.out = gpu.empty((batch_size,self.unitcount),split_axis)
+        self.error = gpu.empty((batch_size,self.unitcount),split_axis)
+        self.bias_ones = gpu.zeros((batch_size,1),split_axis)+1
+        #self.bias_ones = gpu.array(np.ones((1,batch_size)),3)
         
     def handle_offsize(self, batch_size):
         if self.activation_offsize == None:
-            self.activation_offsize = gpu.empty((batch_size,self.unitcount))
-            self.out_offsize = gpu.empty((batch_size,self.unitcount))
-            self.error_offsize = gpu.empty((batch_size,self.unitcount))
-            self.bias_ones_offsize = gpu.empty((1,batch_size))
+            split_axis = (2 if self.config['parallelism'] == 'data' else -1)
+            self.activation_offsize = gpu.empty((batch_size,self.unitcount),split_axis)
+            self.out_offsize = gpu.empty((batch_size,self.unitcount),split_axis)
+            self.error_offsize = gpu.empty((batch_size,self.unitcount),split_axis)
+            self.bias_ones_offsize = gpu.zeros((batch_size,1),split_axis)+1
             u.swap_pointer_and_shape(self.activation, self.activation_offsize)
             u.swap_pointer_and_shape(self.out, self.out_offsize)
             u.swap_pointer_and_shape(self.error, self.error_offsize)
@@ -213,7 +216,7 @@ class Layer(object):
             return
         
         if type(self.funcs) is Input: 
-            self.backward_grads() 
+            self.backward_grads()
             return
         
         self.funcs.grad(self.activation,self.out)
@@ -223,7 +226,7 @@ class Layer(object):
     def backward_grads(self):   
         if self.target: return
         gpu.Tdot(self.activation, self.next_layer.error, self.w_grad_next)
-        gpu.dot(self.bias_ones, self.next_layer.error, self.b_grad_next)
+        #gpu.Tdot(self.bias_ones, self.next_layer.error, self.b_grad_next)
         if self.next_layer: self.next_layer.backward_grads()
         
     def accumulate_error(self):
