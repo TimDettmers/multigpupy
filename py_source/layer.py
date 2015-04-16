@@ -215,9 +215,7 @@ class Layer(object):
             gpu.sub(self.out,self.target,self.error)
             return
         
-        if type(self.funcs) is Input: 
-            self.backward_grads()
-            return
+        if type(self.funcs) is Input: return
         
         self.funcs.grad(self.activation,self.out)
         gpu.dotT(self.next_layer.error, self.w_next, self.error)
@@ -226,7 +224,7 @@ class Layer(object):
     def backward_grads(self):   
         if self.target: return
         gpu.Tdot(self.activation, self.next_layer.error, self.w_grad_next)
-        #gpu.Tdot(self.bias_ones, self.next_layer.error, self.b_grad_next)
+        gpu.Tdot(self.bias_ones, self.next_layer.error, self.b_grad_next)
         if self.next_layer: self.next_layer.backward_grads()
         
     def accumulate_error(self):
@@ -262,7 +260,7 @@ class Layer(object):
             self.next_layer.weight_update()         
         
     def end_epoch(self):
-        self.set_config_value('learning_rate', 0.0, 'learning_rate_decay', lambda a,b: a*b)        
+        self.set_config_value('learning_rate', 0.0, 'learning_rate_decay', lambda a,b: a*b)     
         
     def set_config_value(self, key, value, key2=None, func=None):
         if func and key2: self.config[key] = func(self.config[key], self.config[key2])
@@ -273,7 +271,7 @@ class Layer(object):
             return
             
         if self.next_layer:
-            self.next_layer.set_config_value(key, value)
+            self.next_layer.set_config_value(key, value, key2, func)
             
     def save_config(self):
         self.check_work_dir()
