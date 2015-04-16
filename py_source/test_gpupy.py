@@ -1061,50 +1061,39 @@ def test_sync():
     GB = 1000*4*dims[0]*dims[1]*1024**-3
     secs = time.time()-t0  
     t.assert_(GB/secs > 3.0, "transfer rate below 3 GB/s!")
-    
-    
-    gpu.disable_peer_access()
 
 
-'''
+
 
 def split_add_test():
-    
-    gpu.enable_peer_access()
-    count = 0
     for i in range(100):
         dims = np.random.randint(5,100,(2,))         
-        A1 = np.random.rand(dims[0],dims[1])
-        A2 = np.random.rand(dims[0],dims[1])
+        A1 = np.float32(np.random.rand(dims[0],dims[1]))
+        A2 = np.float32(np.random.rand(dims[0],dims[1]))
         C1 = gpu.empty((dims[1],dims[1]))    
         C2 = gpu.empty((dims[1],dims[1]))      
+        C3 = gpu.empty((dims[1],dims[1]))
          
         B1 = gpu.array(A1,split_idx=2)        
         B2 = gpu.array(A2,split_idx=2)
            
         gpu.Tdot(B2,B1,C1)    
-        gpu.synchronizingAdd(C1,C2)       
+        gpu.sync(C1,C2)               
         C = np.dot(A2.T,A1)
-        D = np.ones_like(C)*0.05
+        gpu.add(C1,C2,C3)
         print i
         print dims
         #the dot product is just inherently unstable
-        errors = np.sqrt(((C-C2.tocpu())**2))
-        #print np.sort(errors.flatten())[::-1][0:50]
-        #print C
-        #print C2.tocpu()
-        #print np.sort(errors.flatten())[::-1][0:10]
-        #print np.int32(np.less(D,errors)).sum()
-        #count += np.int32(np.less(D,errors)).sum() > 0
-        #print np.less(errors,D)
-        print C[0,0:5]
-        print C2.tocpu()[0,0:5]
-        print np.sort(np.sqrt(((C-C2.tocpu())**2)).flatten())[::-1][0:5]
-        print np.sqrt(((C-C2.tocpu())**2))[0,0:5]
-        print '----------'
-        t.assert_array_almost_equal(C2.tocpu(), C, 4,'split add dot product chain yields wrong result!')    
+        gpu.sync_streams()
+        #errors = np.sqrt(((C-C3.tocpu())**2))
+        #print C[0,0:5]
+        #print C3.tocpu()[0,0:5]
+        #print np.sort(np.sqrt(((C-C3.tocpu())**2)).flatten())[::-1][0:5]
+        #print np.sqrt(((C-C3.tocpu())**2))[0,0:5]
+        #print '----------'
+        t.assert_array_almost_equal(C3.tocpu(), C, 4,'split add dot product chain yields wrong result!')    
         #print [C2.tocpu().sum()/10000,C.sum()/10000]
-    print count
+    
     
     
 
@@ -1120,36 +1109,40 @@ def test_slice_or_stack_axis():
         gpu.slice_or_stack_axis(B2, C)
         t.assert_array_almost_equal(C.tocpu(), A, 3, "slice and stack row not working!")
     #assert False
-'''   
-'''  
+
 def test_batch_allocator_parallelism():
     net = Layer()
-    data = np.float32(np.random.rand(5333,2))
+    data = np.float32(np.random.rand(5333,333))
     labels = np.float32(np.random.randint(0,10,(5333,)))
     
     batch_size = 128
     alloc = batch_allocator(data, labels, 0.3, 0.3, batch_size)
     alloc.net = net
-    for i in alloc.train():        
+    for i in alloc.train():     
         A = alloc.current
+        if A.shape[2] < gpu.gpu_count() or A.shape[2] % 2 != 0: continue   
         C1 = gpu.empty(alloc.current.shape)        
-        B2 = gpu.empty((A.shape_tensor[3], A.shape_tensor[3]))
-        B3 = gpu.zeros((A.shape_tensor[3], A.shape_tensor[3]))
+        B2 = gpu.empty((A.shape[3], A.shape[3]))
+        B3 = gpu.zeros((A.shape[3], A.shape[3]))
+        B4 = gpu.zeros((A.shape[3], A.shape[3]))
         
         gpu.slice_or_stack_axis(alloc.batch, C1)    
         t.assert_array_equal(C1.tocpu(), A.tocpu(), "stack allocator data parallelism not working!")
         
-        B1 = A.tocpu()        
-        gpu.Tdot(alloc.batch,A,B2)
-        gpu.print_tensor(B2)
-        gpu.synchronizingAdd(B2,B3)
-        C2 = np.dot(B1.T,B1)
-        t.assert_array_equal(C2, B3.tocpu(), "synch add data parallelism not working!")
+        B1 = A.tocpu()                
+        gpu.Tdot(alloc.batch,alloc.batch,B2)        
+        gpu.sync(B2,B3)
+        gpu.sync_streams()
+        gpu.add(B2,B3,B4)
+        C2 = np.dot(B1.T,B1)  
+        print A.shape
+        print gpu.gpu_count()
+        t.assert_array_almost_equal(C2, B4.tocpu(),3, "synch add data parallelism not working!")
        
         
         
     gpu.disable_peer_access()
-'''
+
     
 if __name__ == '__main__':    
     nose.run()

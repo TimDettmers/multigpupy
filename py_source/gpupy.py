@@ -285,9 +285,6 @@ def dotT(a,b,out=None):
 def print_tensor(x1):
     lib.funcs.ffprint(x1.pt)
 
-def synchronizingStack(x1, out=None):    
-    return lib.funcs.inp_synchronizingStack(x1.pt,out.pt)
-
 def enable_peer_access():
     lib.funcs.fenablePeerAccess(p_gpupy)    
     

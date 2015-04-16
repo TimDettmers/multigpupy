@@ -140,8 +140,6 @@ funcs.inp_dotT.restype = ct.c_void_p
 funcs.fdropout.restype = ct.POINTER(Tensor)
 funcs.inp_dropout.restype = ct.c_void_p
 
-
-funcs.inp_synchronizingStack.restype = ct.c_void_p
 funcs.ftogpu_split.restype = ct.c_void_p
 
 funcs.fBatchAllocator.restype = ct.c_void_p

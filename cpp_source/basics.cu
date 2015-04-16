@@ -549,40 +549,6 @@ void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learnin
 }
 
 
-void synchronize(Tensor *A, Tensor *out, int myid, int copyid, cudaStream_t stream,Operation_t ops)
-{
-	//print_shape(A->shape_gpus[myid]);
-	//print_shape(out->shape_gpus[myid]);
-	//print_shape(A->shape_gpus[copyid]);
-	//print_shape(out->shape_gpus[copyid]);
-	int block_size = (A->shape_gpus[myid][2]*A->shape_gpus[myid][3]/THREADS_PER_BLOCKS) + 1;
-	CUDA_CHECK_RETURN(cudaSetDevice(myid));
-	kElementWise<<<block_size,THREADS_PER_BLOCKS,0,stream>>>(A->data_gpus[myid],A->data_gpus[copyid],out->data_gpus[myid],A->size_gpus[myid],0.0f,ops);
-	//TODO: add vstack method with backward slice
-	CUDA_CHECK_RETURN(cudaPeekAtLastError());
-}
-
-void synchronizedAdd(Tensor *A, Tensor *out)
-{
-
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	for(int i = 0; i < gpus; i++)
-	{
-		int block_size = (A->shape_gpus[i][2]*A->shape_gpus[i][3]/THREADS_PER_BLOCKS) + 1;
-		for(int j = 0; j < gpus; j++)
-		{
-			if (i==j) continue;
-			CUDA_CHECK_RETURN(cudaSetDevice(i));
-			kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i],A->data_gpus[j],out->data_gpus[i],A->size_gpus[i],0.0f,add_tensor);
-			CUDA_CHECK_RETURN(cudaPeekAtLastError());
-		}
-		cudaDeviceSynchronize();
-	}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
-
-}
-
 float sum(Tensor *A)
 {
 	thrust::device_ptr<float> ptr(A->data);
@@ -603,31 +569,4 @@ float min(Tensor *A)
 	return thrust::reduce(ptr, ptr+A->size,res, thrust::minimum<float>());
 }
 
-void synchronizingStack(Tensor* A, Tensor *out)
-{
-	float **h_arrA = new float*[A->data_gpus.size()];
-	for (int i = 0; i < A->data_gpus.size(); i++)
-		h_arrA[i] = A->data_gpus[i];
 
-	float **d_arrA;
-	cudaMalloc((void**) &d_arrA, sizeof(float*)*A->data_gpus.size());
-	cudaMemcpy(d_arrA, h_arrA, sizeof(float*)*A->data_gpus.size(),cudaMemcpyDefault);
-
-	dim3 griddim(out->cols, A->data_gpus.size()) ;
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	int cumulative_size = 0;
-	for(int i = 0; i < gpus; i++)
-	{
-		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		cumulative_size += out->size_gpus[i];
-		vStackN<<<griddim,((out->rows/A->data_gpus.size()) > 512 ? 512 : (out->rows/A->data_gpus.size()))>>>(d_arrA, out->data_gpus[i], out->shape_gpus[i][3], A->shape_gpus[0][2], A->shape_gpus.back()[2]);
-		CUDA_CHECK_RETURN(cudaPeekAtLastError());
-	}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
-
-
-
-	free(h_arrA);
-	cudaFree(d_arrA);
-}

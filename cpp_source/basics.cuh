@@ -50,21 +50,14 @@ Tensor *applyFunc(Tensor *A, Tensor *B, float flt, Operation_t ops);
 void applyFunc(Tensor *A, Tensor *B, Tensor *out, Operation_t ops);
 void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops);
 
-void synchronize(Tensor *A, Tensor *out, int myid, int copyid, cudaStream_t stream,Operation_t ops);
-void synchronizedAdd(Tensor *A, Tensor *out);
-
 Tensor *applySliceFunc(Tensor *A, Slice *S);
 void applySliceFunc(Tensor *A, Slice *S, Tensor *out);
-int sliceDimHelper(int dim, int start, int stop);
-void rearrageSlice(Slice *S, Tensor *A);
 
 float sum(Tensor *A);
 float max(Tensor *A);
 float min(Tensor *A);
 
 void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learning_rate, int batch_size, weightUpdate_t strategy);
-
-void synchronizingStack(Tensor* A, Tensor *out);
 
 void slice_or_stack_axis(Tensor *A, Tensor *out);
 

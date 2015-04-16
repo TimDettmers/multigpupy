@@ -81,17 +81,22 @@ void GPUpy::dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasO
 	const float beta = 0.0f;
 	for(int i = 0; i < DEVICE_COUNT; i++)
 	{
-		int A_rows = A->shape_gpus[i][2], A_cols = A->shape_gpus[i][3], B_cols = B->shape_gpus[i][3];
+		int A_rows = A->shape_gpus[i][2], A_cols = A->shape_gpus[i][3], B_rows = B->shape_gpus[i][2], B_cols = B->shape_gpus[i][3];
 		if (T1 == CUBLAS_OP_T)
 		{
 			A_rows = A->shape_gpus[i][3];
 			A_cols = A->shape_gpus[i][2];
 		}
 		if (T2 == CUBLAS_OP_T)
+		{
+			B_rows = B->shape_gpus[i][3];
 			B_cols = B->shape_gpus[i][2];
+		}
 
 		assert(A->shape_gpus[i][1] == 1 && "Tensors dot product is not supported.");
 		assert(A->shape_gpus[i][0] == 1 && "Tensors dot product is not supported.");
+
+		assert(A_cols == B_rows);
 
 
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
@@ -174,13 +179,6 @@ void GPUpy::async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3)
 			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDefault, stream_vectors[left_idx][idx]));
 		}
 	}
-
-
-
-
-
-
-
 }
 
 void GPUpy::synchronize_streams()
