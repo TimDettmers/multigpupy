@@ -53,6 +53,7 @@ class batch_allocator(object):
         self.sample_size = None
         self.relative_error = None
         self.start_batching = True
+        self.peer_access_enabled = False
         
         self.batch_buffers = {}
     
@@ -227,14 +228,36 @@ class batch_allocator(object):
         
         if self.net:
             if self.net.config['parallelism'] == 'data':
+                if not self.peer_access_enabled: 
+                    gpu.enable_peer_access()              
+                    self.peer_access_enabled = True  
                 if str(self.current.shape) not in self.batch_buffers:
-                    shape = self.current.shape_tensor
+                    shape = self.current.shape
                     self.batch_buffers[str(self.current.shape) + 'X'] = gpu.empty(shape, 2)
-                    shape = self.current_y.shape_tensor                    
-                    self.batch_buffers[str(self.current.shape) + 'y'] = gpu.empty(shape, 2)
-                if not self.batch_buffers: self.batch_buffers = [None, None]
+                    shape = self.current_y.shape                    
+                    self.batch_buffers[str(self.current_y.shape) + 'y'] = gpu.empty(shape, 2)
                 gpu.slice_or_stack_axis(self.current, self.batch_buffers[str(self.current.shape) + 'X'])
-                gpu.slice_or_stack_axis(self.current_y, self.batch_buffers[str(self.current.shape) + 'y'])
+                gpu.slice_or_stack_axis(self.current_y, self.batch_buffers[str(self.current_y.shape) + 'y'])
+                
+                '''
+                A = self.current_y
+                B = gpu.empty(self.current_y.shape)
+                gpu.slice_or_stack_axis(self.batch_buffers[str(self.current_y.shape) + 'y'], B)
+                if ((A.tocpu()-B.tocpu())**2).sum() > 0:
+                    print ((A.tocpu()-B.tocpu())**2).sum()                   
+                
+                del B
+                
+                A = self.current
+                B = gpu.empty(self.current.shape)
+                gpu.slice_or_stack_axis(self.batch_buffers[str(self.current.shape) + 'X'], B)
+                if ((A.tocpu()-B.tocpu())**2).sum() > 0:
+                    print ((A.tocpu()-B.tocpu())**2).sum()                   
+                
+                del B
+                '''
+                
+                #gpu.print_free_memory()
                 
         
         

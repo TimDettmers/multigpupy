@@ -176,7 +176,7 @@ void GPUpy::async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3)
 		for(int left_idx = transfer_round; left_idx < DEVICE_COUNT; left_idx++)
 		{
 			idx = (DEVICE_COUNT)-transfer_round;
-			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDefault, stream_vectors[left_idx][idx]));
+			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDefault, stream_vectors[left_idx][left_idx-transfer_round]));
 		}
 	}
 }

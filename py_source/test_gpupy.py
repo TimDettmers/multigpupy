@@ -1119,6 +1119,7 @@ def test_batch_allocator_parallelism():
     batch_size = 128
     alloc = batch_allocator(data, labels, 0.3, 0.3, batch_size)
     alloc.net = net
+    alloc.peer_access_enabled = True
     for i in alloc.train():     
         A = alloc.current
         if A.shape[2] < gpu.gpu_count() or A.shape[2] % 2 != 0: continue   

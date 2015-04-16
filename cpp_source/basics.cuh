@@ -30,7 +30,7 @@ void togpu(Tensor *out, float *cpu_buffer, int split_axis);
 
 void print_slice(Slice *S);
 void print_shape(int *shape);
-void print_free_memory();
+float print_free_memory();
 void print_tensor_shape(Tensor *A);
 
 Tensor *tocpu(Tensor *A, float *cpu_buffer);

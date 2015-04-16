@@ -175,6 +175,8 @@ funcs.ffprint.restype = ct.c_void_p
 funcs.fsync.restype = ct.c_void_p
 funcs.fsynchronize_streams.restype = ct.c_void_p
 
+funcs.fprint_free_memory.restype = ct.c_float
+
 
 
 class lib(object): funcs = funcs

@@ -95,6 +95,7 @@ Tensor *empty(int batches, int maps, int rows, int cols, int split_axis)
 
 void slice_or_stack_axis(Tensor *A, Tensor *out)
 {
+
 	//only row slice supported right now
 	assert((out->splitAxis == -1 && A->splitAxis == 2) ||
 			(out->splitAxis == 2 && A->splitAxis == -1));
@@ -235,6 +236,66 @@ Tensor *fill_with_number(Tensor *A, float fill_value)
 Tensor *T(Tensor *A)
 {
 	Tensor *out = empty(A->batches,A->maps,A->cols,A->rows);
+	T(A,out, 2,3);
+	out->rows = A->cols;
+	out->cols = A->rows;
+	return out;
+}
+
+
+void T(Tensor *A, Tensor *out,  int rows_idx, int cols_idx)
+{
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		int rows = A->shape_gpus[i][rows_idx];
+		int cols= A->shape_gpus[i][cols_idx];
+
+		// setup execution parameters
+		int grid_x = rows / COPY_BLOCK_SIZE;
+		if (rows  % COPY_BLOCK_SIZE)
+			grid_x++;
+
+		int grid_y = cols / COPY_BLOCK_SIZE;
+		if (cols % COPY_BLOCK_SIZE)
+			grid_y++;
+
+		dim3 grid(grid_x, grid_y, A->maps);
+		dim3 threads(COPY_BLOCK_SIZE, COPY_BLOCK_SIZE, 1);
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kTransposeTensor<<< grid, threads >>>(A->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], rows, cols);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
+Tensor *to_col_major(Tensor *A)
+{
+  Tensor *out = empty_like(A);
+  T(A, out, 3,2);
+
+  return out;
+}
+
+void to_col_major(Tensor *A, Tensor *out)
+{
+	T(A, out, 3,2);
+}
+
+Tensor *to_row_major(Tensor *A)
+{
+	Tensor *out = empty_like(A);
+	T(A, out, 2,3);
+
+  return out;
+}
+
+
+/*
+Tensor *T(Tensor *A)
+{
+	Tensor *out = empty(A->batches,A->maps,A->cols,A->rows);
 	T(A,out, A->rows,A->cols);
 	out->rows = A->cols;
 	out->cols = A->rows;
@@ -286,6 +347,7 @@ Tensor *to_row_major(Tensor *A)
 
   return out;
 }
+*/
 
 
 
@@ -326,11 +388,14 @@ void print_shape(int *shape)
 	cout << shape[0] << "x" << shape[1] << "x" << shape[2]<< "x" << shape[3] << endl;
 }
 
-void print_free_memory()
+float print_free_memory()
 {
 	size_t total, free;
 	cudaMemGetInfo(&free,&total);
-	cout << "Free GB: " << ((double)free)/1024./1024./1024. << endl;
+
+	cout << "Free GB: " << ((float)free)/1024./1024./1024. << endl;
+
+	return ((float)free)/1024./1024./1024.;
 }
 
 void print_tensor_shape(Tensor *A)
@@ -388,7 +453,7 @@ void togpu(Tensor *out, float *cpu_buffer, int split_axis)
 	}
 	else
 	{
-		throw 'uden!';
+		throw "uden!";
 	}
 
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
@@ -517,7 +582,7 @@ void softmax(Tensor *A, Tensor *out)
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
 
-Tensor *argmax(Tensor *A){ Tensor *out = empty(A->batches,A->maps,A->rows,1); argmax(A,out); return out; }
+Tensor *argmax(Tensor *A){ Tensor *out = empty(A->batches,A->maps,A->rows,1, A->splitAxis); argmax(A,out); return out; }
 void argmax(Tensor *A, Tensor *out)
 {
 	dim3 grids(A->batches, A->maps);
@@ -551,8 +616,28 @@ void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learnin
 
 float sum(Tensor *A)
 {
-	thrust::device_ptr<float> ptr(A->data);
-	return thrust::reduce(ptr, ptr+A->size);
+	float sum = 0;
+	if(A->splitAxis == -1)
+	{
+
+		thrust::device_ptr<float> ptr(A->data);
+		sum = thrust::reduce(ptr, ptr+A->size);
+	}
+	else
+	{
+		int gpus = 0;
+		CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+		for(int i = 0; i < gpus; i++)
+		{
+			CUDA_CHECK_RETURN(cudaSetDevice(i));
+			thrust::device_ptr<float> ptr(A->data_gpus[i]);
+			sum += thrust::reduce(ptr, ptr+A->size_gpus[i]);
+			CUDA_CHECK_RETURN(cudaPeekAtLastError());
+		}
+		CUDA_CHECK_RETURN(cudaSetDevice(0));
+	}
+
+	return sum;
 }
 
 float max(Tensor *A)

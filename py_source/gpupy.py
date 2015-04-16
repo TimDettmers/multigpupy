@@ -94,7 +94,7 @@ class array(object):
     @property
     def T(self): return array(None, lib.funcs.fT(self.pt))   
       
-    def __del__(self): pass#lib.funcs.ffree(self.pt)
+    def __del__(self): lib.funcs.ffree(self.pt)
     def __add__(self, other): return add(self, other)
     def __sub__(self, other): return apply_func(self,other, lib.funcs.fsub, lib.funcs.fscalarSub, lib.funcs.fsubVectorToTensor)
     def __mul__(self, other): return apply_func(self,other, lib.funcs.fmul, lib.funcs.fscalarMul, lib.funcs.fmulVectorToTensor)
@@ -162,7 +162,7 @@ def ones(shape):
 
 def empty(shape,split_idx=-1):
     shape = u.handle_shape(shape)
-    out = array(None, lib.funcs.fempty_split(shape[0],shape[1],ct.c_int32(shape[2]),shape[3],split_idx))
+    out = array(None, lib.funcs.fempty_split(shape[0],shape[1],ct.c_int32(shape[2]),ct.c_int32(shape[3]),split_idx))
     return out
 
 def add(x1,x2,out=None):
@@ -317,3 +317,6 @@ def sync_streams():
 def sum(x1): return lib.funcs.fsum(x1.pt)
 def min(x1): return lib.funcs.ffmin(x1.pt)
 def max(x1): return lib.funcs.ffmax(x1.pt)
+
+def print_free_memory():
+    return lib.funcs.fprint_free_memory()

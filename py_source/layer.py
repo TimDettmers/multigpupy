@@ -57,6 +57,7 @@ class Layer(object):
     def __init__(self, unitcount=0, activation_function=Input(), workdir = None, network_name = 'neural_net'):
         self.p_layer = lib.funcs.fLayer()
         self.w_next = None
+        self.w_next_sync = None
         self.activation = None
         self.activation_offsize = None         
         self.funcs = activation_function
@@ -137,6 +138,7 @@ class Layer(object):
         self.log_network()
         if self.next_layer:
             self.w_next = gpu.array(u.create_uniform_rdm_weight(self.unitcount,self.next_layer.unitcount))
+            self.w_next_sync = gpu.empty((self.unitcount,self.next_layer.unitcount))
             self.b_next = gpu.zeros((1, self.next_layer.unitcount))
             self.m_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
             self.w_grad_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
@@ -207,7 +209,11 @@ class Layer(object):
         
     def backward(self):
         self.backward_errors()
-        self.backward_grads()       
+        self.backward_grads()  
+        
+        gpu.sync(self.w_grad_next,self.w_next_sync)
+        gpu.sync_streams()
+        gpu.add(self.w_grad_next, self.w_next_sync, self.w_grad_next)    
         
     def backward_errors(self):
         if self.next_layer: self.next_layer.backward_errors()
