@@ -49,10 +49,15 @@ Tensor *to_col_major(Tensor *A);
 void to_col_major(Tensor *A, Tensor *out);
 Tensor *to_row_major(Tensor *A);
 
-Tensor *applyFunc(Tensor *A, Tensor *B, Operation_t ops);
-Tensor *applyFunc(Tensor *A, Tensor *B, float flt, Operation_t ops);
-void applyFunc(Tensor *A, Tensor *B, Tensor *out, Operation_t ops);
-void applyFunc(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops);
+Tensor *vectorWise(Tensor *A, Tensor *B, Operation_t ops);
+Tensor *vectorWise(Tensor *A, Tensor *B, float flt, Operation_t ops);
+void vectorWise(Tensor *A, Tensor *B, Tensor *out, Operation_t ops);
+void vectorWise(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops);
+
+Tensor *elementWise(Tensor *A, Tensor *B, Operation_t ops);
+Tensor *elementWise(Tensor *A, Tensor *B, float flt, Operation_t ops);
+void elementWise(Tensor *A, Tensor *B, Tensor *out, Operation_t ops);
+void elementWise(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops);
 
 Tensor *applySliceFunc(Tensor *A, Slice *S);
 void applySliceFunc(Tensor *A, Slice *S, Tensor *out);
@@ -60,10 +65,6 @@ void applySliceFunc(Tensor *A, Slice *S, Tensor *out);
 float sum(Tensor *A);
 float max(Tensor *A);
 float min(Tensor *A);
-
-
-template <int T> void foo();
-Tensor *udenkek(int a);
 
 void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learning_rate, int batch_size, weightUpdate_t strategy);
 

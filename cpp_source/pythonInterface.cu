@@ -9,14 +9,9 @@
 #include <gpupy.cuh>
 #include <time.h>
 #include <batchAllocator.cuh>
-#include <layer.cuh>
 
 extern "C"
 {
-
-	Layer *fLayer(){ return new Layer(); }
-	void fLayer_init(Layer *mylayer, int unitcount, int batch_size, int unit_type, GPUpy *gpupy, Layer *prev){ mylayer->init(unitcount,batch_size,(Unittype_t)unit_type,gpupy,prev); }
-
 	BatchAllocator *fBatchAllocator(){ return new BatchAllocator(); }
 
 	void fallocateNextAsync(BatchAllocator *b, Tensor *A, float *cpu_buffer, Tensor *B, float *cpu_buffer_y){ b->allocateNextAsync(A,cpu_buffer,B,cpu_buffer_y); }
@@ -39,100 +34,100 @@ extern "C"
 	Tensor *frandn(GPUpy *gpupy, int batches, int maps, int rows, int cols){ return gpupy->randn(batches, maps, rows, cols);  }
 	Tensor *fnormal(GPUpy *gpupy, int batches, int maps, int rows, int cols, float mean, float std){ return gpupy->normal(batches, maps, rows, cols, mean, std);  }
 
-	Tensor *fadd(Tensor *A, Tensor *B){ return applyFunc(A,B,add_tensor); }
-	void inp_add(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,add_tensor); }
-	Tensor *fsub(Tensor *A, Tensor *B){ return applyFunc(A,B,sub_tensor); }
-	void inp_sub(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,sub_tensor); }
-	Tensor *fmul(Tensor *A, Tensor *B){ return applyFunc(A,B,mul_tensor); }
-	void inp_mul(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,mul_tensor); }
-	Tensor *fdiv(Tensor *A, Tensor *B){ return applyFunc(A,B,div_tensor); }
-	void inp_div(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,div_tensor); }
+	Tensor *fadd(Tensor *A, Tensor *B){ return elementWise(A,B,add_tensor); }
+	void inp_add(Tensor *A, Tensor *B, Tensor *out){ elementWise(A,B,out,add_tensor); }
+	Tensor *fsub(Tensor *A, Tensor *B){ return elementWise(A,B,sub_tensor); }
+	void inp_sub(Tensor *A, Tensor *B, Tensor *out){ elementWise(A,B,out,sub_tensor); }
+	Tensor *fmul(Tensor *A, Tensor *B){ return elementWise(A,B,mul_tensor); }
+	void inp_mul(Tensor *A, Tensor *B, Tensor *out){ elementWise(A,B,out,mul_tensor); }
+	Tensor *fdiv(Tensor *A, Tensor *B){ return elementWise(A,B,div_tensor); }
+	void inp_div(Tensor *A, Tensor *B, Tensor *out){ elementWise(A,B,out,div_tensor); }
 	void ffree(Tensor *A){ A->freeTensor(); }
 
-	void ffprint(Tensor *A){ applyFunc(A,NULL,NULL,0.0f,print); }
+	void ffprint(Tensor *A){ elementWise(A,NULL,NULL,0.0f,print); }
 
-	Tensor *fcopy(Tensor *A){ return applyFunc(A,NULL,0.0f,copy); }
-	void inp_copy(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,0.0f, copy); }
+	Tensor *fcopy(Tensor *A){ return elementWise(A,NULL,0.0f,copy); }
+	void inp_copy(Tensor *A, Tensor *out){ elementWise(A,NULL,out,0.0f, copy); }
 
-	Tensor *fscalarAdd(Tensor *A, float a){ return applyFunc(A,NULL,a,add_scalar); }
-	void inp_scalarAdd(Tensor *A, float a, Tensor *out){ applyFunc(A,NULL,out,a,add_scalar); }
-	Tensor *fscalarSub(Tensor *A, float a){ return applyFunc(A,NULL,-a,add_scalar); }
-	void inp_scalarSub(Tensor *A, float a, Tensor *out){ applyFunc(A,NULL,out,-a,add_scalar); }
-	Tensor *fscalarMul(Tensor *A, float a){ return applyFunc(A,NULL,a,mul_scalar); }
-	void inp_scalarMul(Tensor *A, float a, Tensor *out){ applyFunc(A,NULL,out,a,mul_scalar); }
-	Tensor *fscalarDiv(Tensor *A, float a){ return applyFunc(A,NULL,1.0f/a,mul_scalar); }
-	void inp_scalarDiv(Tensor *A, float a, Tensor *out){ applyFunc(A,NULL,out,1.0f/a,mul_scalar); }
-
-
-	Tensor *fexp(Tensor *A){ return applyFunc(A,NULL,exp_tensor); }
-	void inp_exp(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,exp_tensor);}
-	Tensor *flog(Tensor *A){ return applyFunc(A,NULL,log_tensor);}
-	void inp_log(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,log_tensor);}
-	Tensor *ffabs(Tensor *A){ return applyFunc(A, NULL, abs_tensor); }
-	void inp_abs(Tensor *A, Tensor *out){ applyFunc(A,NULL,out,abs_tensor); }
-	Tensor *ffpow(Tensor *A, float power){ return applyFunc(A,NULL,power,pow_tensor); }
-	void inp_pow(Tensor *A, float power, Tensor *out){ applyFunc(A,NULL,out,power,pow_tensor); }
+	Tensor *fscalarAdd(Tensor *A, float a){ return elementWise(A,NULL,a,add_scalar); }
+	void inp_scalarAdd(Tensor *A, float a, Tensor *out){ elementWise(A,NULL,out,a,add_scalar); }
+	Tensor *fscalarSub(Tensor *A, float a){ return elementWise(A,NULL,-a,add_scalar); }
+	void inp_scalarSub(Tensor *A, float a, Tensor *out){ elementWise(A,NULL,out,-a,add_scalar); }
+	Tensor *fscalarMul(Tensor *A, float a){ return elementWise(A,NULL,a,mul_scalar); }
+	void inp_scalarMul(Tensor *A, float a, Tensor *out){ elementWise(A,NULL,out,a,mul_scalar); }
+	Tensor *fscalarDiv(Tensor *A, float a){ return elementWise(A,NULL,1.0f/a,mul_scalar); }
+	void inp_scalarDiv(Tensor *A, float a, Tensor *out){ elementWise(A,NULL,out,1.0f/a,mul_scalar); }
 
 
-	Tensor *flogistic(Tensor *A){ return applyFunc(A,NULL,logistic);}
-	void inp_logistic(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, logistic);}
-	Tensor *flogistic_grad(Tensor *A){ return applyFunc(A, NULL, logistic_grad); }
-	void inp_logistic_grad(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, logistic_grad); }
-	Tensor *fReLU(Tensor *A){ return applyFunc(A,NULL,rectified_linear);}
-	void inp_ReLU(Tensor *A, Tensor *out){ applyFunc(A,NULL,out, rectified_linear);}
+	Tensor *fexp(Tensor *A){ return elementWise(A,NULL,exp_tensor); }
+	void inp_exp(Tensor *A, Tensor *out){ elementWise(A,NULL,out,exp_tensor);}
+	Tensor *flog(Tensor *A){ return elementWise(A,NULL,log_tensor);}
+	void inp_log(Tensor *A, Tensor *out){ elementWise(A,NULL,out,log_tensor);}
+	Tensor *ffabs(Tensor *A){ return elementWise(A, NULL, abs_tensor); }
+	void inp_abs(Tensor *A, Tensor *out){ elementWise(A,NULL,out,abs_tensor); }
+	Tensor *ffpow(Tensor *A, float power){ return elementWise(A,NULL,power,pow_tensor); }
+	void inp_pow(Tensor *A, float power, Tensor *out){ elementWise(A,NULL,out,power,pow_tensor); }
+
+
+	Tensor *flogistic(Tensor *A){ return elementWise(A,NULL,logistic);}
+	void inp_logistic(Tensor *A, Tensor *out){ elementWise(A,NULL,out, logistic);}
+	Tensor *flogistic_grad(Tensor *A){ return elementWise(A, NULL, logistic_grad); }
+	void inp_logistic_grad(Tensor *A, Tensor *out){ elementWise(A,NULL,out, logistic_grad); }
+	Tensor *fReLU(Tensor *A){ return elementWise(A,NULL,rectified_linear);}
+	void inp_ReLU(Tensor *A, Tensor *out){ elementWise(A,NULL,out, rectified_linear);}
 
 	Tensor *fsoftmax(Tensor *A){return softmax(A); }
 	void inp_softmax(Tensor *A, Tensor *out){ softmax(A, out); }
 	Tensor *fargmax(Tensor *A){return argmax(A); }
 	void inp_argmax(Tensor *A, Tensor *out){ argmax(A, out); }
 
-	Tensor *faddVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,add_vec); }
-	void inp_addVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,add_vec); }
-	Tensor *fsubVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,sub_vec); }
-	void inp_subVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,sub_vec); }
-	Tensor *fmulVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,mul_vec); }
-	void inp_mulVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,mul_vec); }
-	Tensor *fdivVectorToTensor(Tensor *A, Tensor *v){ return applyFunc(A,v,div_vec); }
-	void inp_divVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,div_vec); }
+	Tensor *faddVectorToTensor(Tensor *A, Tensor *v){ return vectorWise(A,v,add_vec); }
+	void inp_addVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ vectorWise(A,v,out,add_vec); }
+	Tensor *fsubVectorToTensor(Tensor *A, Tensor *v){ return vectorWise(A,v,sub_vec); }
+	void inp_subVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ vectorWise(A,v,out,sub_vec); }
+	Tensor *fmulVectorToTensor(Tensor *A, Tensor *v){ return vectorWise(A,v,mul_vec); }
+	void inp_mulVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ vectorWise(A,v,out,mul_vec); }
+	Tensor *fdivVectorToTensor(Tensor *A, Tensor *v){ return vectorWise(A,v,div_vec); }
+	void inp_divVectorToTensor(Tensor *A, Tensor *v, Tensor *out){ vectorWise(A,v,out,div_vec); }
 
-	Tensor *feq(Tensor *A, Tensor *B){ return applyFunc(A,B,eq_tensor); }
-	void inp_eq(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,eq_tensor); }
-	Tensor *flt(Tensor *A, Tensor *B){ return applyFunc(A,B,lt_tensor); }
-	void inp_lt(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,lt_tensor); }
-	Tensor *fgt(Tensor *A, Tensor *B){ return applyFunc(A,B,gt_tensor); }
-	void inp_gt(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,gt_tensor); }
-	Tensor *fge(Tensor *A, Tensor *B){ return applyFunc(A,B,ge_tensor); }
-	void inp_ge(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,ge_tensor); }
-	Tensor *fle(Tensor *A, Tensor *B){ return applyFunc(A,B,le_tensor); }
-	void inp_le(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,le_tensor); }
-	Tensor *fne(Tensor *A, Tensor *B){ return applyFunc(A,B,ne_tensor); }
-	void inp_ne(Tensor *A, Tensor *B, Tensor *out){ applyFunc(A,B,out,ne_tensor); }
+	Tensor *feq(Tensor *A, Tensor *B){ return elementWise(A,B,eq_tensor); }
+	void inp_eq(Tensor *A, Tensor *B, Tensor *out){ elementWise(A,B,out,eq_tensor); }
+	Tensor *flt(Tensor *A, Tensor *B){ return elementWise(A,B,lt_tensor); }
+	void inp_lt(Tensor *A, Tensor *B, Tensor *out){ elementWise(A,B,out,lt_tensor); }
+	Tensor *fgt(Tensor *A, Tensor *B){ return elementWise(A,B,gt_tensor); }
+	void inp_gt(Tensor *A, Tensor *B, Tensor *out){ elementWise(A,B,out,gt_tensor); }
+	Tensor *fge(Tensor *A, Tensor *B){ return elementWise(A,B,ge_tensor); }
+	void inp_ge(Tensor *A, Tensor *B, Tensor *out){ elementWise(A,B,out,ge_tensor); }
+	Tensor *fle(Tensor *A, Tensor *B){ return elementWise(A,B,le_tensor); }
+	void inp_le(Tensor *A, Tensor *B, Tensor *out){ elementWise(A,B,out,le_tensor); }
+	Tensor *fne(Tensor *A, Tensor *B){ return elementWise(A,B,ne_tensor); }
+	void inp_ne(Tensor *A, Tensor *B, Tensor *out){ elementWise(A,B,out,ne_tensor); }
 
-	Tensor *fvec_eq(Tensor *A, Tensor *v){ return applyFunc(A,v,eq_vec); }
-	void inp_vec_eq(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,eq_vec); }
-	Tensor *fvec_lt(Tensor *A, Tensor *v){ return applyFunc(A,v,lt_vec); }
-	void inp_vec_lt(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,lt_vec); }
-	Tensor *fvec_gt(Tensor *A, Tensor *v){ return applyFunc(A,v,gt_vec); }
-	void inp_vec_gt(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,gt_vec); }
-	Tensor *fvec_le(Tensor *A, Tensor *v){ return applyFunc(A,v,le_vec); }
-	void inp_vec_le(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,le_vec); }
-	Tensor *fvec_ge(Tensor *A, Tensor *v){ return applyFunc(A,v,ge_vec); }
-	void inp_vec_ge(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,ge_vec); }
-	Tensor *fvec_ne(Tensor *A, Tensor *v){ return applyFunc(A,v,ne_vec); }
-	void inp_vec_ne(Tensor *A, Tensor *v, Tensor *out){ applyFunc(A,v,out,ne_vec); }
+	Tensor *fvec_eq(Tensor *A, Tensor *v){ return vectorWise(A,v,eq_vec); }
+	void inp_vec_eq(Tensor *A, Tensor *v, Tensor *out){ vectorWise(A,v,out,eq_vec); }
+	Tensor *fvec_lt(Tensor *A, Tensor *v){ return vectorWise(A,v,lt_vec); }
+	void inp_vec_lt(Tensor *A, Tensor *v, Tensor *out){ vectorWise(A,v,out,lt_vec); }
+	Tensor *fvec_gt(Tensor *A, Tensor *v){ return vectorWise(A,v,gt_vec); }
+	void inp_vec_gt(Tensor *A, Tensor *v, Tensor *out){ vectorWise(A,v,out,gt_vec); }
+	Tensor *fvec_le(Tensor *A, Tensor *v){ return vectorWise(A,v,le_vec); }
+	void inp_vec_le(Tensor *A, Tensor *v, Tensor *out){ vectorWise(A,v,out,le_vec); }
+	Tensor *fvec_ge(Tensor *A, Tensor *v){ return vectorWise(A,v,ge_vec); }
+	void inp_vec_ge(Tensor *A, Tensor *v, Tensor *out){ vectorWise(A,v,out,ge_vec); }
+	Tensor *fvec_ne(Tensor *A, Tensor *v){ return vectorWise(A,v,ne_vec); }
+	void inp_vec_ne(Tensor *A, Tensor *v, Tensor *out){ vectorWise(A,v,out,ne_vec); }
 
-	Tensor *fscalar_eq(Tensor *A, float flt){ return applyFunc(A,NULL,flt,eq_scalar); }
-	void inp_scalar_eq(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,eq_scalar); }
-	Tensor *fscalar_lt(Tensor *A, float flt){ return applyFunc(A,NULL,flt,lt_scalar); }
-	void inp_scalar_lt(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,lt_scalar); }
-	Tensor *fscalar_gt(Tensor *A, float flt){ return applyFunc(A,NULL,flt,gt_scalar); }
-	void inp_scalar_gt(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,gt_scalar); }
-	Tensor *fscalar_le(Tensor *A, float flt){ return applyFunc(A,NULL,flt,le_scalar); }
-	void inp_scalar_le(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,le_scalar); }
-	Tensor *fscalar_ge(Tensor *A, float flt){ return applyFunc(A,NULL,flt,ge_scalar); }
-	void inp_scalar_ge(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,ge_scalar); }
-	Tensor *fscalar_ne(Tensor *A, float flt){ return applyFunc(A,NULL,flt,ne_scalar); }
-	void inp_scalar_ne(Tensor *A, float flt, Tensor *out){ applyFunc(A,NULL,out,flt,ne_scalar); }
+	Tensor *fscalar_eq(Tensor *A, float flt){ return elementWise(A,NULL,flt,eq_scalar); }
+	void inp_scalar_eq(Tensor *A, float flt, Tensor *out){ elementWise(A,NULL,out,flt,eq_scalar); }
+	Tensor *fscalar_lt(Tensor *A, float flt){ return elementWise(A,NULL,flt,lt_scalar); }
+	void inp_scalar_lt(Tensor *A, float flt, Tensor *out){ elementWise(A,NULL,out,flt,lt_scalar); }
+	Tensor *fscalar_gt(Tensor *A, float flt){ return elementWise(A,NULL,flt,gt_scalar); }
+	void inp_scalar_gt(Tensor *A, float flt, Tensor *out){ elementWise(A,NULL,out,flt,gt_scalar); }
+	Tensor *fscalar_le(Tensor *A, float flt){ return elementWise(A,NULL,flt,le_scalar); }
+	void inp_scalar_le(Tensor *A, float flt, Tensor *out){ elementWise(A,NULL,out,flt,le_scalar); }
+	Tensor *fscalar_ge(Tensor *A, float flt){ return elementWise(A,NULL,flt,ge_scalar); }
+	void inp_scalar_ge(Tensor *A, float flt, Tensor *out){ elementWise(A,NULL,out,flt,ge_scalar); }
+	Tensor *fscalar_ne(Tensor *A, float flt){ return elementWise(A,NULL,flt,ne_scalar); }
+	void inp_scalar_ne(Tensor *A, float flt, Tensor *out){ elementWise(A,NULL,out,flt,ne_scalar); }
 
 	Tensor *fslice(Tensor *A, Slice *S){ return applySliceFunc(A,S); }
 

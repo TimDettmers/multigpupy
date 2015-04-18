@@ -126,7 +126,7 @@ Tensor *GPUpy::dropout(Tensor *A, float dropout_rate)
 void GPUpy::dropout(Tensor *A, Tensor *out, float dropout_rate)
 {
 	rand(out);
-	applyFunc(A, NULL, out, dropout_rate, dropout_tensor);
+	elementWise(A, NULL, out, dropout_rate, dropout_tensor);
 }
 
 

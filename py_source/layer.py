@@ -87,7 +87,6 @@ g = GradientSynchronizer()
 
 class Layer(object):
     def __init__(self, unitcount=0, activation_function=Input(), workdir = None, network_name = 'neural_net'):
-        self.p_layer = lib.funcs.fLayer()
         self.w_next = None
         self.w_next_sync = None
         self.activation = None

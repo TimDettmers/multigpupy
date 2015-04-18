@@ -161,9 +161,6 @@ funcs.fsum.restype = ct.c_float
 funcs.ffmin.restype = ct.c_float
 funcs.ffmax.restype = ct.c_float
 
-funcs.fLayer.restype = ct.c_void_p
-funcs.fLayer_init.restype = ct.c_void_p
-
 funcs.inp_RMSProp.restype = ct.c_void_p
 
 funcs.fGPUCount.restype = ct.c_int32
