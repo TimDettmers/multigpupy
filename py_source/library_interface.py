@@ -9,8 +9,6 @@ import numpy as np
 funcs = ct.cdll.LoadLibrary('./gpupylib.so')
 floats_8bit = np.float32(np.load('./8bit_floats.npy'))
 
-print floats_8bit
-
 class Tensor(ct.Structure):
     _fields_ = [('batches', ct.c_int),
                 ('maps', ct.c_int),
@@ -185,6 +183,7 @@ funcs.fdisablePeerAccess.restype = ct.c_void_p
 funcs.ffprint.restype = ct.c_void_p
 
 funcs.fsync.restype = ct.c_void_p
+funcs.fsync_8bit.restype = ct.c_void_p
 funcs.fsynchronize_streams.restype = ct.c_void_p
 funcs.fcreate_streams.restype = ct.c_void_p
 

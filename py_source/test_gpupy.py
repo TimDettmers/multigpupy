@@ -1183,6 +1183,11 @@ def test_8bit_compression():
     gpu.decompress_8bit(p_B2, max_value, C)
     abs_error = np.sqrt((A-C.tocpu())**2)
     rel_error = np.mean(abs_error/np.abs(A))
+    
+    abs_error16bit = np.sqrt((A-np.float16(A))**2)
+    rel_error16bit = np.mean(abs_error16bit/np.abs(A))
+    print rel_error16bit, rel_error
+    print np.mean(abs_error16bit), np.mean(abs_error)
     assert np.mean(abs_error) < 0.02, "Compression error"
     assert rel_error < 0.03, "Compression error" 
     

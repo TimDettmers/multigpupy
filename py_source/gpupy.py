@@ -10,8 +10,6 @@ import util as u
 from library_interface import lib
 
 ptr = lib.funcs.fempty_split(1,1,1,128,-1)
-print lib.floats_8bit
-print 
 p_gpupy = lib.funcs.fGPUpy(lib.floats_8bit.ctypes.data_as(ct.POINTER(ct.c_float)))
 
 class Slice():
@@ -312,10 +310,15 @@ def slice_axis(A, out):
 def stack_axis(A, out):
     lib.funcs.inp_stack_axis(A.pt, out.pt)
     
-def sync(source, target1, target2=None, target3=None, target4=None, layer_idx = 0):
+def sync(source, target1, target2=None, target3=None, layer_idx = 0):
     if target2 and target3: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, target3.pt, layer_idx)
     elif target2: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, None,layer_idx)
     else: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, None, None,layer_idx)
+    
+def sync_8bit(source, target1, target2=None, target3=None, layer_idx = 0):
+    if target2 and target3: lib.funcs.fsync_8bit(p_gpupy, source, target1, target2, target3, layer_idx)
+    elif target2: lib.funcs.fsync_8bit(p_gpupy, source, target1, target2, None,layer_idx)
+    else: lib.funcs.fsync_8bit(p_gpupy, source, target1, None, None,layer_idx)
     
 def sync_streams(layer_idx=0):
     lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)

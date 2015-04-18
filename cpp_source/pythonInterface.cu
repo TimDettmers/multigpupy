@@ -139,6 +139,7 @@ extern "C"
 	Tensor *fdropout(GPUpy *gpupy, Tensor *A, float dropout_rate){ return gpupy->dropout(A,dropout_rate); }
 	void inp_dropout(GPUpy *gpupy, Tensor *A, Tensor *out, float dropout_rate){ gpupy->dropout(A,out,dropout_rate); }
 
+	void fsync_8bit(GPUpy *gpupy, CharTensor *out1, CharTensor *out2, CharTensor *out3, CharTensor *out4, int layer_idx){ return gpupy->async_sync_8bit(out1,out2,out3,out4,layer_idx); }
 	void fsync(GPUpy *gpupy, Tensor *out1, Tensor *out2, Tensor *out3, Tensor *out4, int layer_idx){ return gpupy->async_sync(out1,out2,out3,out4,layer_idx); }
 	void fsynchronize_streams(GPUpy *gpupy, int layer_idx){ gpupy->synchronize_streams(layer_idx); }
 	void fcreate_streams(GPUpy *gpupy, int layer_count){ gpupy->createStreams(layer_count); }
