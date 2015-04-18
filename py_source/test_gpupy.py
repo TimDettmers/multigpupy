@@ -1138,9 +1138,11 @@ def test_batch_allocator_parallelism():
         gpu.sync_streams()
         gpu.add(B2,B3,B4)
         C2 = np.dot(B1.T,B1)  
+        print i
         print A.shape
-        print gpu.gpu_count()
-        t.assert_array_almost_equal(C2, B4.tocpu(),3, "synch add data parallelism not working!")
+        errors = np.sqrt((C2-B4.tocpu())**2).flatten()
+        print errors
+        t.assert_array_almost_equal(C2, B4.tocpu(),2, "synch add data parallelism not working!")
        
         
         
@@ -1170,6 +1172,22 @@ def test_neural_net():
     error = 1.0-((np.argmax(pred,1)==y[X.shape[0]*0.8:].T).sum()/(y.size*0.2))
     print error
     assert error < 0.20
+    
+def test_8bit_compression():
+    A = np.float32(np.random.rand(500,50,30,4))
+    B1 = gpu.array(A)
+    C = gpu.zeros(B1.shape)
+    p_B2 = gpu.empty_char_like(B1)
+    max_value = np.max(np.abs(A))
+    gpu.compress_8bit(B1, max_value, p_B2)
+    gpu.decompress_8bit(p_B2, max_value, C)
+    abs_error = np.sqrt((A-C.tocpu())**2)
+    rel_error = np.mean(abs_error/np.abs(A))
+    assert np.mean(abs_error) < 0.02, "Compression error"
+    assert rel_error < 0.03, "Compression error" 
+    
+    
+    
 
     
 if __name__ == '__main__':    

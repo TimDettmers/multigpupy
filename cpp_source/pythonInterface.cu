@@ -15,10 +15,11 @@ extern "C"
 	void freplaceCurrentBatch(GPUpy *gpupy){ gpupy->replaceCurrentBatch(); }
 	float *fto_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer){ return empty_pinned(batches,maps,rows,cols,cpu_buffer); }
 
-	GPUpy *fGPUpy(){GPUpy *gpupy = new GPUpy(); gpupy->init((int) ((time(0) + (12345)) % 10000)); return gpupy; }
-	GPUpy *fseeded_GPUpy(int seed){GPUpy *gpupy = new GPUpy(); gpupy->init((int) ((time(0) + (12345)) % 10000)); return gpupy; }
+	GPUpy *fGPUpy(float *floats_8bit){GPUpy *gpupy = new GPUpy(); gpupy->init((int) ((time(0) + (12345)) % 10000),floats_8bit); return gpupy; }
+	GPUpy *fseeded_GPUpy(int seed,float *floats_8bit){GPUpy *gpupy = new GPUpy(); gpupy->init((int) ((time(0) + (12345)) % 10000),floats_8bit); return gpupy; }
 	Slice *femptySlice(){ return emptySlice(); }
 	Tensor *fempty(int batches, int maps, int rows, int cols){ return empty(batches, maps, rows, cols); }
+	CharTensor *fempty_char_like(Tensor *A){ return empty_char_like(A); }
 	Tensor *fempty_split(int batches, int maps, int rows, int cols, int split_axis){ return empty(batches, maps, rows, cols, split_axis); }
 	Tensor *fzeros(int batches, int maps, int rows, int cols){ return zeros(batches, maps, rows, cols); }
 	Tensor *fzeros_split(int batches, int maps, int rows, int cols, int split_axis){ return zeros(batches, maps, rows, cols, split_axis); }
@@ -138,8 +139,9 @@ extern "C"
 	Tensor *fdropout(GPUpy *gpupy, Tensor *A, float dropout_rate){ return gpupy->dropout(A,dropout_rate); }
 	void inp_dropout(GPUpy *gpupy, Tensor *A, Tensor *out, float dropout_rate){ gpupy->dropout(A,out,dropout_rate); }
 
-	void fsync(GPUpy *gpupy, Tensor *out1, Tensor *out2, Tensor *out3, Tensor *out4){ return gpupy->async_sync(out1,out2,out3,out4); }
-	void fsynchronize_streams(GPUpy *gpupy){ gpupy->synchronize_streams(); }
+	void fsync(GPUpy *gpupy, Tensor *out1, Tensor *out2, Tensor *out3, Tensor *out4, int layer_idx){ return gpupy->async_sync(out1,out2,out3,out4,layer_idx); }
+	void fsynchronize_streams(GPUpy *gpupy, int layer_idx){ gpupy->synchronize_streams(layer_idx); }
+	void fcreate_streams(GPUpy *gpupy, int layer_count){ gpupy->createStreams(layer_count); }
 
 	void ftogpu_split(Tensor *out, float *cpu_buffer, int split_idx){ togpu(out,cpu_buffer, split_idx); }
 
@@ -162,5 +164,9 @@ extern "C"
 	int fis_synchronizing(GPUpy *gpupy){ return gpupy->IS_SYNCHRONIZING; }
 	int fcurrent_sync_idx(GPUpy *gpupy){ return gpupy->CURRENT_SYNC_IDX; }
 	void freset_sync_idx(GPUpy *gpupy){ gpupy->CURRENT_SYNC_IDX = 0; }
+
+	void fcompress_8bit(GPUpy *gpupy, Tensor *A, float precision, CharTensor *out){ compression_8bit(gpupy->FLT_TABLE_8BIT, A, precision,out); }
+	void fdecompress_8bit(GPUpy *gpupy, CharTensor *A, float precision, Tensor *out){ decompression_8bit(gpupy->FLT_TABLE_8BIT, A,precision, out); }
+
 
 }

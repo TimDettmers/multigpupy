@@ -9,7 +9,10 @@ import ctypes as ct
 import util as u
 from library_interface import lib
 
-p_gpupy = lib.funcs.fGPUpy()
+ptr = lib.funcs.fempty_split(1,1,1,128,-1)
+print lib.floats_8bit
+print 
+p_gpupy = lib.funcs.fGPUpy(lib.floats_8bit.ctypes.data_as(ct.POINTER(ct.c_float)))
 
 class Slice():
     def __init__(self, slice_pointer):
@@ -309,13 +312,13 @@ def slice_axis(A, out):
 def stack_axis(A, out):
     lib.funcs.inp_stack_axis(A.pt, out.pt)
     
-def sync(source, target1, target2=None, target3=None, target4=None):
-    if target2 and target3: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, target3.pt)
-    elif target2: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, None)
-    else: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, None, None)
+def sync(source, target1, target2=None, target3=None, target4=None, layer_idx = 0):
+    if target2 and target3: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, target3.pt, layer_idx)
+    elif target2: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, None,layer_idx)
+    else: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, None, None,layer_idx)
     
-def sync_streams():
-    lib.funcs.fsynchronize_streams(p_gpupy)
+def sync_streams(layer_idx=0):
+    lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)
 
 def sum(x1): return lib.funcs.fsum(x1.pt)
 def min(x1): return lib.funcs.ffmin(x1.pt)
@@ -327,3 +330,10 @@ def print_free_memory():
 def is_synchronizing(): return lib.funcs.fis_synchronizing()
 def current_sync_idx(): return lib.funcs.fcurrent_sync_idx()
 def reset_sync_idx(): lib.funcs.freset_sync_idx()
+
+def create_additional_streams(layer_count):    
+    lib.funcs.fcreate_streams(p_gpupy, layer_count)
+    
+def empty_char_like(x1): return lib.funcs.fempty_char_like(x1.pt)
+def compress_8bit(A, abs_max_value, char_pointer):lib.funcs.fcompress_8bit(p_gpupy, A.pt,ct.c_float(abs_max_value), char_pointer)
+def decompress_8bit(char_pointer, abs_max_value, out):lib.funcs.fdecompress_8bit(p_gpupy, char_pointer,ct.c_float(abs_max_value),out.pt)    

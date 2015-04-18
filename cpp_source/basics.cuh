@@ -69,9 +69,8 @@ void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learnin
 void slice_axis(Tensor *A, Tensor *out);
 void stack_axis(Tensor *A, Tensor *out);
 
-
-
-
+void compression_8bit(Tensor *tbl_flt, Tensor *A, float precision,  CharTensor *out);
+void decompression_8bit(Tensor *tbl_flt, CharTensor *A, float precision,  Tensor *out);
 
 #endif /* BASICS_CUH_ */
 

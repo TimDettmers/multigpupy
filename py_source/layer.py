@@ -116,7 +116,7 @@ class Layer(object):
         self.init_work_dir()
         self.epoch = 0
         
-        self.sync_process = None
+        self.has_gradients = False
         
     def log(self, msg, print_msg = True, level = logging.INFO):
         logging.log(level, msg)
@@ -171,7 +171,7 @@ class Layer(object):
         self.log_network()
         if self.next_layer:
             self.w_next = gpu.array(u.create_uniform_rdm_weight(self.unitcount,self.next_layer.unitcount))
-            self.w_next_sync = gpu.empty((self.unitcount,self.next_layer.unitcount))
+            self.w_next_sync = gpu.zeros((self.unitcount,self.next_layer.unitcount))
             self.b_next = gpu.zeros((1, self.next_layer.unitcount))
             self.m_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
             self.w_grad_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
@@ -238,9 +238,8 @@ class Layer(object):
         if self.next_layer: self.next_layer.forward(None, None, inTrainingMode)
     
     def handle_parallelism(self):
-        if self.config['parallelism'] == 'data' and self.next_layer: 
-            gpu.sync_streams()
-            self.next_layer.backward_grads()        
+        if self.config['parallelism'] == 'data' and self.next_layer and self.has_gradients: 
+            gpu.sync_streams(self.id)    
             gpu.add(self.w_grad_next, self.w_next_sync, self.w_grad_next)
             self.weight_update()
     
@@ -271,9 +270,11 @@ class Layer(object):
         
         
         if self.config['parallelism'] == 'data': 
-            #print 'sync: {0}'.format(self.id)
-            gpu.sync(self.w_grad_next, self.w_next_sync)        
-        if self.next_layer and self.config['parallelism'] != 'data': self.next_layer.backward_grads()        
+            if not self.has_gradients:  
+                self.has_gradients = True
+                gpu.create_additional_streams(1)
+            gpu.sync(self.w_grad_next, self.w_next_sync, layer_idx=self.id)
+        if self.next_layer: self.next_layer.backward_grads()        
         
         gpu.Tdot(self.bias_ones, self.next_layer.error, self.b_grad_next)
         
@@ -304,8 +305,9 @@ class Layer(object):
         
         
     def weight_update(self):
-        if self.next_layer:         
-            lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(self.config['momentum']),ct.c_float(self.config['learning_rate']), self.out.shape[2])
+        if self.next_layer:    
+            batch_size = ((self.out.shape[2]*gpu.gpu_count()) if self.config['parallelism'] != 'data' else self.out.shape[2])
+            lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(self.config['momentum']),ct.c_float(self.config['learning_rate']), batch_size)
             gpu.sub(self.w_next, self.w_grad_next, self.w_next)
             if self.config['parallelism'] != 'data':
                 self.next_layer.weight_update()         

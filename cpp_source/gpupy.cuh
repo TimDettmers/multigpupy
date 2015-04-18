@@ -70,6 +70,7 @@ public:
 	int DEVICE_COUNT;
 	int CURRENT_SYNC_IDX;
 	int IS_SYNCHRONIZING;
+	Tensor *FLT_TABLE_8BIT;
 
 	Tensor *rand(int batchsize, int mapsize, int rows, int cols);
 	void rand(Tensor *out);
@@ -79,7 +80,7 @@ public:
 	Tensor *randn(int batchsize, int mapsize, int rows, int cols);
 	void randn(Tensor *out);
 
-	void init(int seed);
+	void init(int seed, float* floats_8bit);
 
 	Tensor *dot(Tensor *A, Tensor *B);
 	Tensor *Tdot(Tensor *A, Tensor *B);
@@ -90,8 +91,9 @@ public:
 	void dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasOperation_t T2);
 	void enablePeerAccess();
 	void disablePeerAccess();
-	void async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3);
-	void synchronize_streams();
+	void synchronize_streams(int layer_idx);
+	void async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3, int layer_idx);
+	void async_sync_8bit(CharTensor *A, CharTensor *out1, CharTensor *out2, CharTensor *out3, int layer_idx);
 
 	Tensor *dropout(Tensor *A, float dropout_rate);
 	void dropout(Tensor *A, Tensor *out, float dropout_rate);
@@ -100,11 +102,12 @@ public:
 
 	void allocateNextAsync(Tensor *batch, float *cpu_buffer, Tensor *batch_y, float *cpu_buffer_y);
 	void replaceCurrentBatch();
+	void createStreams(int layer_count);
 
 private:
 	std::vector<curandGenerator_t> generators;
 	std::vector<cublasHandle_t> cublashandles;
-	std::vector<std::vector<cudaStream_t> >  stream_vectors;
+	std::vector< std::vector<std::vector<cudaStream_t> > > stream_vectors;
 
 };
 

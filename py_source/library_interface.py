@@ -5,7 +5,11 @@ Created on Apr 2, 2015
 '''
 import ctypes as ct
 import logging
+import numpy as np
 funcs = ct.cdll.LoadLibrary('./gpupylib.so')
+floats_8bit = np.float32(np.load('./8bit_floats.npy'))
+
+print floats_8bit
 
 class Tensor(ct.Structure):
     _fields_ = [('batches', ct.c_int),
@@ -15,6 +19,16 @@ class Tensor(ct.Structure):
                 ('bytes', ct.c_size_t),
                 ('size', ct.c_int),
                 ('data', ct.POINTER(ct.c_float))]    
+    def __init__(self): pass
+    
+class CharTensor(ct.Structure):
+    _fields_ = [('batches', ct.c_int),
+                ('maps', ct.c_int),
+                ('rows', ct.c_int),
+                ('cols', ct.c_int),
+                ('bytes', ct.c_size_t),
+                ('size', ct.c_int),
+                ('data', ct.POINTER(ct.c_uint8))]    
     def __init__(self): pass
     
 class _Slice(ct.Structure):
@@ -38,6 +52,8 @@ funcs.fones.restype = ct.POINTER(Tensor)
 funcs.ftocpu.restype = ct.POINTER(Tensor)
 funcs.ftogpu.restype = ct.c_void_p
 funcs.ffree.restype = ct.c_void_p
+
+funcs.fempty_char_like.restype = ct.POINTER(CharTensor)
 
 funcs.fT.restype = ct.POINTER(Tensor)
 funcs.inp_T.restype = ct.c_void_p
@@ -170,6 +186,7 @@ funcs.ffprint.restype = ct.c_void_p
 
 funcs.fsync.restype = ct.c_void_p
 funcs.fsynchronize_streams.restype = ct.c_void_p
+funcs.fcreate_streams.restype = ct.c_void_p
 
 funcs.fprint_free_memory.restype = ct.c_float
 
@@ -177,9 +194,14 @@ funcs.fis_synchronizing.restype = ct.c_int
 funcs.fcurrent_sync_idx.restype = ct.c_int
 funcs.freset_sync_idx.restype = ct.c_void_p
 
+funcs.fcompress_8bit.restype = ct.c_void_p
+funcs.fdecompress_8bit.restype = ct.c_void_p
 
 
-class lib(object): funcs = funcs
+
+class lib(object): 
+    funcs = funcs
+    floats_8bit = floats_8bit
 
 
 

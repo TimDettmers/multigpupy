@@ -12,8 +12,9 @@ import numpy as np
 
 class RandomState(object):
     def __init__(self, seed = None):
-        if seed: self.p_gpupy = lib.funcs.fseeded_GPUpy(seed)
-        else: self.p_gpupy = lib.funcs.fGPUpy()
+        ptr = lib.funcs.fempty_split(1,1,1,128,-1)    
+        if seed: self.p_gpupy = lib.funcs.fseeded_GPUpy(seed,lib.floats_8bit.ctypes.data_as(ct.POINTER(ct.c_float)))
+        else: self.p_gpupy = lib.funcs.fGPUpy(lib.floats_8bit.ctypes.data_as(ct.POINTER(ct.c_float)))
         
         
     def rand(self,d0,d1=None,d2=None,d3=None):

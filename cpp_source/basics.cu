@@ -444,6 +444,8 @@ void elementWise(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 				kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], B->data_gpus[i], out->data_gpus[i],A->size_gpus[i], flt, ops);
 			else if(out)
 				kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, out->data_gpus[i],A->size_gpus[i], flt, ops);
+			else
+				kElementWise<<<block_size,THREADS_PER_BLOCKS>>>(A->data_gpus[i], NULL, NULL,A->size_gpus[i], flt, ops);
 			CUDA_CHECK_RETURN(cudaPeekAtLastError());
 			if(ops == print){ CUDA_CHECK_RETURN(cudaDeviceSynchronize());}
 		}
@@ -557,30 +559,37 @@ float thrust_reduce(Tensor *A, Operation_t strategy)
 	return value;
 }
 
-
-float sum(Tensor *A)
+void compression_8bit(Tensor *tbl_flt, Tensor *A, float precision,  CharTensor *out)
 {
-	float sum = 0;
-	if(A->splitAxis == -1)
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
 	{
-
-		thrust::device_ptr<float> ptr(A->data);
-		sum = thrust::reduce(ptr, ptr+A->size);
+		int blocks = (A->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kCompression_8bit<<<blocks,THREADS_PER_BLOCKS>>>(tbl_flt->data_gpus[i], A->data_gpus[i], precision, A->size_gpus[i], out->data_gpus[i]);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
-	else
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+
+}
+
+
+
+void decompression_8bit(Tensor *tbl_flt, CharTensor *A, float precision,  Tensor *out)
+{
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
 	{
-		int gpus = 0;
-		CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-		for(int i = 0; i < gpus; i++)
-		{
-			CUDA_CHECK_RETURN(cudaSetDevice(i));
-			thrust::device_ptr<float> ptr(A->data_gpus[i]);
-			sum += thrust::reduce(ptr, ptr+A->size_gpus[i]);
-			CUDA_CHECK_RETURN(cudaPeekAtLastError());
-		}
-		CUDA_CHECK_RETURN(cudaSetDevice(0));
+		int blocks = (A->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kDecompression_8bit<<<blocks,THREADS_PER_BLOCKS>>>(tbl_flt->data_gpus[i],  A->data_gpus[i], precision, A->size_gpus[i], out->data_gpus[i]);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+		cudaDeviceSynchronize();
 	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
 
-	return sum;
+
 }
 
