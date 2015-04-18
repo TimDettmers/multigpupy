@@ -20,6 +20,8 @@
 #include <float.h>
 #include <limits.h>
 #include <assert.h>
+//this looks strange, but otherwise we cannot use template classes together with export "C" for ctypes
+#include <Tensor.cu>
 
 /**
  * This macro checks return value of the CUDA runtime call and exits
@@ -47,25 +49,9 @@
 #define DOT_REPS (4)
 
 
-class Tensor
-{
-public:
-	  int batches;
-	  int maps;
-	  int rows;
-	  int cols;
-	  int size;
-	  size_t bytes;
-	  float *data;
-	  int isCUDA;
-	  int splitAxis;
-	  std::vector<int*> shape_gpus;
-	  std::vector<int> size_gpus;
-	  std::vector<size_t> bytes_gpus;
-	  std::vector<float*> data_gpus;
 
-	  void freeTensor();
-};
+typedef TensorTemplate<float> Tensor;
+typedef TensorTemplate<unsigned char> CharTensor;
 
 
 

@@ -19,10 +19,7 @@ Slice *emptySlice()
 	return out;
 }
 
-Tensor *empty_like(Tensor *A)
-{
-	return empty(A->batches, A->maps, A->rows, A->cols, A->splitAxis);
-}
+
 
 int *get_split_shape(int batches, int maps, int rows, int cols,int split_axis,int gpuidx)
 {
@@ -50,14 +47,14 @@ int *get_split_shape(int batches, int maps, int rows, int cols,int split_axis,in
 
 }
 
-
-Tensor *empty(int batches, int maps, int rows, int cols){ return empty(batches, maps, rows, cols, -1); }
-Tensor *empty(int batches, int maps, int rows, int cols, int split_axis)
+//go around export "C" with this declaration
+template <typename T>
+TensorTemplate<T>* empty_template(int batches, int maps, int rows, int cols, int split_axis)
 {
 
-	Tensor *out = new Tensor();
+	TensorTemplate<T> *out = new TensorTemplate<T>();
 	int size = batches*maps*rows*cols;
-	size_t bytes = size*sizeof(float);
+	size_t bytes = size*sizeof(T);
 	out->batches = batches;
 	out->maps = maps;
 	out->rows = rows;
@@ -76,10 +73,10 @@ Tensor *empty(int batches, int maps, int rows, int cols, int split_axis)
 
 		out->shape_gpus.push_back(shape);
 		out->size_gpus.push_back(shape[0]*shape[1]*shape[2]*shape[3]);
-		out->bytes_gpus.push_back(shape[0]*shape[1]*shape[2]*shape[3]*sizeof(float));
+		out->bytes_gpus.push_back(shape[0]*shape[1]*shape[2]*shape[3]*sizeof(T));
 
 
-		float *gpu_data;
+		T *gpu_data;
 		CUDA_CHECK_RETURN(cudaMalloc((void**)&gpu_data, out->bytes_gpus.back()));
 
 		if(i == 0){ out->data = gpu_data; }
@@ -92,6 +89,17 @@ Tensor *empty(int batches, int maps, int rows, int cols, int split_axis)
 }
 
 
+
+
+Tensor *empty_like(Tensor *A){ return empty(A->batches, A->maps, A->rows, A->cols, A->splitAxis); }
+Tensor *empty(int batches, int maps, int rows, int cols){ return empty(batches, maps, rows, cols, -1); }
+Tensor *empty(int batches, int maps, int rows, int cols, int split_axis)
+{ return (Tensor*)empty_template<float>(batches, maps, rows, cols, split_axis); }
+
+CharTensor *empty_char_like(Tensor *A){ return empty_char(A->batches, A->maps, A->rows, A->cols, A->splitAxis); }
+CharTensor *empty_char(int batches, int maps, int rows, int cols){ return empty_char(batches, maps, rows, cols, -1); }
+CharTensor *empty_char(int batches, int maps, int rows, int cols, int split_axis)
+{ return (CharTensor*)empty_template<float>(batches, maps, rows, cols, split_axis); }
 
 void slice_or_stack_axis(Tensor *A, Tensor *out)
 {
@@ -612,6 +620,21 @@ void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learnin
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
+
+
+template <typename T>
+void foo()
+{
+	T a = 5;
+	float b = 5.0f;
+	return a + b;
+}
+
+
+
+
+
+
 
 
 float sum(Tensor *A)

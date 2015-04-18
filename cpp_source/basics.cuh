@@ -17,6 +17,10 @@ Slice *emptySlice();
 Tensor *empty_like(Tensor *A);
 Tensor *empty(int batches, int maps, int rows, int cols);
 Tensor *empty(int batches, int maps, int rows, int cols, int split_idx);
+CharTensor *empty_char_like(Tensor *A);
+CharTensor *empty_char(int batches, int maps, int rows, int cols);
+CharTensor *empty_char(int batches, int maps, int rows, int cols, int split_idx);
+
 float *empty_pinned(int batches, int maps, int rows, int cols,float *cpu_buffer);
 Tensor *zeros(int batches, int maps, int rows, int cols);
 Tensor *zeros(int batches, int maps, int rows, int cols, int split_axis);
@@ -56,6 +60,10 @@ void applySliceFunc(Tensor *A, Slice *S, Tensor *out);
 float sum(Tensor *A);
 float max(Tensor *A);
 float min(Tensor *A);
+
+
+template <int T> void foo();
+Tensor *udenkek(int a);
 
 void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learning_rate, int batch_size, weightUpdate_t strategy);
 
