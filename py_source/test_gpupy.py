@@ -13,6 +13,7 @@ from batch_allocator import batch_allocator
 import time
 import util as u
 from layer import *
+from neural_net import Neural_net
 
 def setup():
     pass
@@ -1157,6 +1158,18 @@ def test_arregates():
     t.assert_equal(np.min(A),B2.min(),"Thrust min with split")
     t.assert_almost_equal(np.sum(A),B1.sum(),3,"Thrust sum")
     t.assert_almost_equal(np.sum(A),B2.sum(),3,"Thrust sum with split")
+    
+def test_neural_net():
+    net = Neural_net(epochs=15)
+
+    X = np.load('./mnist_mini_X.npy')
+    y = np.load('./mnist_mini_y.npy')
+    
+    net.fit(X,y,batch_size=32)    
+    pred = net.predict_proba(X[X.shape[0]*0.8:])
+    error = 1.0-((np.argmax(pred,1)==y[X.shape[0]*0.8:].T).sum()/(y.size*0.2))
+    print error
+    assert error < 0.20
 
     
 if __name__ == '__main__':    
