@@ -88,9 +88,6 @@ TensorTemplate<T>* empty_template(int batches, int maps, int rows, int cols, int
 	return out;
 }
 
-
-
-
 Tensor *empty_like(Tensor *A){ return empty(A->batches, A->maps, A->rows, A->cols, A->splitAxis); }
 Tensor *empty(int batches, int maps, int rows, int cols){ return empty(batches, maps, rows, cols, -1); }
 Tensor *empty(int batches, int maps, int rows, int cols, int split_axis)
@@ -99,15 +96,13 @@ Tensor *empty(int batches, int maps, int rows, int cols, int split_axis)
 CharTensor *empty_char_like(Tensor *A){ return empty_char(A->batches, A->maps, A->rows, A->cols, A->splitAxis); }
 CharTensor *empty_char(int batches, int maps, int rows, int cols){ return empty_char(batches, maps, rows, cols, -1); }
 CharTensor *empty_char(int batches, int maps, int rows, int cols, int split_axis)
-{ return (CharTensor*)empty_template<float>(batches, maps, rows, cols, split_axis); }
+{ return (CharTensor*)empty_template<unsigned char>(batches, maps, rows, cols, split_axis); }
 
-void slice_or_stack_axis(Tensor *A, Tensor *out)
+
+void slice_axis(Tensor *A, Tensor *out)
 {
-
 	//only row slice supported right now
-	assert((out->splitAxis == -1 && A->splitAxis == 2) ||
-			(out->splitAxis == 2 && A->splitAxis == -1));
-	int forward_split = out->splitAxis == 2;
+	assert(out->splitAxis == 2 && A->splitAxis == -1);
 	Slice *S = emptySlice();
 	S->batch_stop = A->batches;
 	S->map_stop = A->maps;
@@ -115,40 +110,24 @@ void slice_or_stack_axis(Tensor *A, Tensor *out)
 	S->row_stop = 0;
 
 	int gpus = 0;
-	int idx = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
 	for(int i = 0; i < gpus; i++)
 	{
-		if(forward_split == 0){ S->row_stop = 0; S->row_start = 0;}
-		for(int j = 0; j < (forward_split == 1 ? 1 : gpus); j++)
-		{
-			if(forward_split == 0) idx = j;
-			else idx = i;
-			S->row_stop += out->splitAxis == 2 ? out->shape_gpus[i][2] : A->shape_gpus[idx][2];
-			CUDA_CHECK_RETURN(cudaSetDevice(i));
-			//this is a complete mess, an evil monster, but will do for now
-			if(forward_split == 1)
-			kSlice<<<dim3(A->shape_gpus[idx][0], A->shape_gpus[i][1],1),dim3(32,32,1)>>>(A->data_gpus[idx],out->data_gpus[i],
-					S->batch_start, S->batch_stop,
-					S->map_start, S->map_stop,
-					S->row_start, S->row_stop,
-					S->col_start, S->col_stop,
-					A->shape_gpus[i][2],A->shape_gpus[i][3],
-					out->shape_gpus[i][0],out->shape_gpus[i][1],
-					out->shape_gpus[i][3],out->shape_gpus[i][2], forward_split);
-			else
-				kSlice<<<dim3(out->shape_gpus[i][0], out->shape_gpus[i][1],1),dim3(32,32,1)>>>(A->data_gpus[idx],out->data_gpus[i],
-							S->batch_start, S->batch_stop,
-							S->map_start, S->map_stop,
-							S->row_start, S->row_stop,
-							S->col_start, S->col_stop,
-							out->shape_gpus[i][2],out->shape_gpus[i][3],
-							A->shape_gpus[idx][0],A->shape_gpus[idx][1],
-							A->shape_gpus[idx][3],A->shape_gpus[idx][2], forward_split);
-			CUDA_CHECK_RETURN(cudaPeekAtLastError());
+		S->row_stop += out->shape_gpus[i][2];
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		//this is a complete mess, an evil monster, but will do for now
+		kSlice<<<dim3(A->shape_gpus[i][0], A->shape_gpus[i][1],1),dim3(32,32,1)>>>(A->data_gpus[i],out->data_gpus[i],
+				S->batch_start, S->batch_stop,
+				S->map_start, S->map_stop,
+				S->row_start, S->row_stop,
+				S->col_start, S->col_stop,
+				A->shape_gpus[i][2],A->shape_gpus[i][3],
+				out->shape_gpus[i][0],out->shape_gpus[i][1],
+				out->shape_gpus[i][3],out->shape_gpus[i][2], 1);
 
-			S->row_start += out->splitAxis == 2 ? out->shape_gpus[i][2] : A->shape_gpus[idx][2];
-		}
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+
+		S->row_start += out->shape_gpus[i][2];
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
@@ -156,37 +135,38 @@ void slice_or_stack_axis(Tensor *A, Tensor *out)
 void stack_axis(Tensor *A, Tensor *out)
 {
 	//only row slice supported right now
-	assert((out->splitAxis == -1 && A->splitAxis == 2));
-	Slice *S = emptySlice();
-	S->batch_stop = out->batches;
-	S->map_stop = out->maps;
-	S->col_stop = out->cols;
-	S->row_stop = 0;
+		assert(out->splitAxis == -1 && A->splitAxis == 2);
+		Slice *S = emptySlice();
+		S->batch_stop = A->batches;
+		S->map_stop = A->maps;
+		S->col_stop = A->cols;
+		S->row_stop = 0;
 
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	for(int i = 0; i < gpus; i++)
-	{
-		 S->row_stop = 0;
-		 S->row_start = 0;
-		for(int j = 0; j < gpus; j++)
+		int gpus = 0;
+		CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+		for(int i = 0; i < gpus; i++)
 		{
-			S->row_stop += A->shape_gpus[j][2];
-			CUDA_CHECK_RETURN(cudaSetDevice(i));
-			kSlice<<<dim3(A->shape_gpus[j][0], A->shape_gpus[j][1],1),dim3(32,32,1)>>>(A->data_gpus[j],out->data_gpus[i],
-					S->batch_start, S->batch_stop,
-					S->map_start, S->map_stop,
-					S->row_start, S->row_stop,
-					S->col_start, S->col_stop,
-					A->shape_gpus[j][2],A->shape_gpus[j][3],
-					out->shape_gpus[i][0],out->shape_gpus[i][1],
-					out->shape_gpus[i][3],out->shape_gpus[i][2], 0);
-			CUDA_CHECK_RETURN(cudaPeekAtLastError());
+			S->row_stop = 0;
+			S->row_start = 0;
+			for(int j = 0; j < gpus; j++)
+			{
+				S->row_stop += A->shape_gpus[j][2];
+				CUDA_CHECK_RETURN(cudaSetDevice(i));
+				//this is a complete mess, an evil monster, but will do for now
+					kSlice<<<dim3(out->shape_gpus[i][0], out->shape_gpus[i][1],1),dim3(32,32,1)>>>(A->data_gpus[j],out->data_gpus[i],
+								S->batch_start, S->batch_stop,
+								S->map_start, S->map_stop,
+								S->row_start, S->row_stop,
+								S->col_start, S->col_stop,
+								out->shape_gpus[i][2],out->shape_gpus[i][3],
+								A->shape_gpus[j][0],A->shape_gpus[j][1],
+								A->shape_gpus[j][3],A->shape_gpus[j][2], 0);
+				CUDA_CHECK_RETURN(cudaPeekAtLastError());
 
-			S->row_start += out->splitAxis == 2 ? out->shape_gpus[i][2] : A->shape_gpus[i][2];
+				S->row_start += A->shape_gpus[j][2];
+			}
 		}
-	}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
+		CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
 
 float *empty_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer)
@@ -298,66 +278,6 @@ Tensor *to_row_major(Tensor *A)
 
   return out;
 }
-
-
-/*
-Tensor *T(Tensor *A)
-{
-	Tensor *out = empty(A->batches,A->maps,A->cols,A->rows);
-	T(A,out, A->rows,A->cols);
-	out->rows = A->cols;
-	out->cols = A->rows;
-	return out;
-}
-
-
-void T(Tensor *A, Tensor *out,  int rows, int cols)
-{
-	// setup execution parameters
-	int grid_x = rows / COPY_BLOCK_SIZE;
-	if (rows  % COPY_BLOCK_SIZE)
-		grid_x++;
-
-	int grid_y = cols / COPY_BLOCK_SIZE;
-	if (cols % COPY_BLOCK_SIZE)
-		grid_y++;
-
-	dim3 grid(grid_x, grid_y, A->maps);
-	dim3 threads(COPY_BLOCK_SIZE, COPY_BLOCK_SIZE, 1);
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	for(int i = 0; i < gpus; i++)
-	{
-		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kTransposeTensor<<< grid, threads >>>(A->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][0], rows, cols);
-		CUDA_CHECK_RETURN(cudaPeekAtLastError());
-	}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
-}
-
-Tensor *to_col_major(Tensor *A)
-{
-  Tensor *out = empty_like(A);
-  T(A, out, A->cols,A->rows);
-
-  return out;
-}
-
-void to_col_major(Tensor *A, Tensor *out)
-{
-	T(A, out, A->cols,A->rows);
-}
-
-Tensor *to_row_major(Tensor *A)
-{
-	Tensor *out = empty_like(A);
-	T(A, out, A->rows,A->cols);
-
-  return out;
-}
-*/
-
-
 
 Tensor *tocpu(Tensor *A, float *cpu_buffer)
 {
@@ -486,6 +406,7 @@ void applySliceFunc(Tensor *A, Slice *S, Tensor *out)
 {
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+
 	for(int i = 0; i < gpus; i++)
 	{
 		CUDA_CHECK_RETURN(cudaSetDevice(i));

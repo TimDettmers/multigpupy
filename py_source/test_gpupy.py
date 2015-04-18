@@ -1104,10 +1104,10 @@ def test_slice_or_stack_axis():
         A = np.random.rand(dims[0],dims[1])
         B1 = gpu.array(A)
         B2 = gpu.zeros((dims[0],dims[1]),2)
-        gpu.slice_or_stack_axis(B1, B2)
+        gpu.slice_axis(B1, B2)
         
         C = gpu.zeros((dims[0],dims[1]))
-        gpu.slice_or_stack_axis(B2, C)
+        gpu.stack_axis(B2, C)
         t.assert_array_almost_equal(C.tocpu(), A, 3, "slice and stack row not working!")
     #assert False
 
@@ -1128,7 +1128,7 @@ def test_batch_allocator_parallelism():
         B3 = gpu.zeros((A.shape[3], A.shape[3]))
         B4 = gpu.zeros((A.shape[3], A.shape[3]))
         
-        gpu.slice_or_stack_axis(alloc.batch, C1)    
+        gpu.stack_axis(alloc.batch, C1)    
         t.assert_array_equal(C1.tocpu(), A.tocpu(), "stack allocator data parallelism not working!")
         
         B1 = A.tocpu()                

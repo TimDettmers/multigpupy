@@ -684,6 +684,48 @@ __global__ void kSlice(float *A, float *out, int b1, int b2, int m1, int m2, int
 	}
 }
 
+
+/*
+//for column major data
+__global__ void kSlice(float *A, float *out, Slice *S,  int rows, int cols, int batches_slice, int maps_slice, int cols_slice, int rows_slice, int is_forward_slice)
+{
+	int mapOffset = rows*cols;
+	int batchOffset = mapOffset*gridDim.y;
+	int mapOffsetSlice = rows_slice*cols_slice;
+	int batchOffsetSlice = mapOffsetSlice*maps_slice;
+	int batchidx=0;
+	int mapidx=0;
+	int colidx=0;
+	int batchidx_slice = 0;
+	int mapidx_slice = 0;
+	int colidx_slice = 0;
+
+	for(int batch = blockIdx.x+S->batch_start; batch < S->batch_stop; batch+=gridDim.x)
+	{
+		batchidx = batch*batchOffset;
+		batchidx_slice = (batch - S->batch_start)*batchOffsetSlice;
+		for(int map = blockIdx.y+S->map_start; map < S->map_stop; map+=gridDim.y)
+		{
+			mapidx = (map*mapOffset)+batchidx;
+			mapidx_slice = ((map-S->map_start)*mapOffsetSlice) + batchidx_slice;
+			for(int col = threadIdx.y+S->col_start; col < S->col_stop; col+=blockDim.y)
+			{
+				colidx =  (col*rows)+mapidx;
+				colidx_slice = ((col-S->col_start)*rows_slice) + mapidx_slice;
+				for(int row = threadIdx.x+S->row_start; row < S->row_stop; row+=blockDim.x)
+				{
+					if(is_forward_slice == 1)
+						out[colidx_slice + (row-S->row_start)] = A[colidx + (row < 0 ? (rows + row) : row)];
+					else
+						out[colidx + (row < 0 ? (rows + row) : row)] = A[colidx_slice + (row-S->row_start)];
+				}
+
+			}
+		}
+	}
+}
+*/
+
 //for column major data
 __global__ void kAddScaledMatrixVector(float *A, float *v, float weight, float *out, int rows, int size)
 {

@@ -235,8 +235,8 @@ class batch_allocator(object):
                     self.batch_buffers[str(self.current.shape) + 'X'] = gpu.empty(shape, 2)
                     shape = self.current_y.shape                    
                     self.batch_buffers[str(self.current_y.shape) + 'y'] = gpu.empty(shape, 2)
-                gpu.slice_or_stack_axis(self.current, self.batch_buffers[str(self.current.shape) + 'X'])
-                gpu.slice_or_stack_axis(self.current_y, self.batch_buffers[str(self.current_y.shape) + 'y'])
+                gpu.slice_axis(self.current, self.batch_buffers[str(self.current.shape) + 'X'])
+                gpu.slice_axis(self.current_y, self.batch_buffers[str(self.current_y.shape) + 'y'])
                 
                 #gpu.print_free_memory()
                 

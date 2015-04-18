@@ -303,8 +303,11 @@ def argmax(x1,out=None):
     if out: lib.funcs.inp_argmax(x1.pt, out.pt)
     return array(None, lib.funcs.fargmax(x1.pt))  
 
-def slice_or_stack_axis(A, out):
-    lib.funcs.inp_slice_or_stack_axis(A.pt, out.pt)
+def slice_axis(A, out):
+    lib.funcs.inp_slice_axis(A.pt, out.pt)
+    
+def stack_axis(A, out):
+    lib.funcs.inp_stack_axis(A.pt, out.pt)
     
 def sync(source, target1, target2=None, target3=None, target4=None):
     if target2 and target3: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, target3.pt)

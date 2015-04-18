@@ -68,7 +68,8 @@ float min(Tensor *A);
 
 void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learning_rate, int batch_size, weightUpdate_t strategy);
 
-void slice_or_stack_axis(Tensor *A, Tensor *out);
+void slice_axis(Tensor *A, Tensor *out);
+void stack_axis(Tensor *A, Tensor *out);
 
 
 
