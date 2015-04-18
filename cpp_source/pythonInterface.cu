@@ -143,9 +143,9 @@ extern "C"
 
 	void ftogpu_split(Tensor *out, float *cpu_buffer, int split_idx){ togpu(out,cpu_buffer, split_idx); }
 
-	float fsum(Tensor *A){ return sum(A);}
-	float ffmin(Tensor *A){ return min(A);}
-	float ffmax(Tensor *A){ return max(A);}
+	float fsum(Tensor *A){ return thrust_reduce(A,sum_tensor);}
+	float ffmin(Tensor *A){ return thrust_reduce(A,min_tensor);}
+	float ffmax(Tensor *A){ return thrust_reduce(A,max_tensor);}
 
 	void inp_RMSProp(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learning_rate, int batch_size)
 	{ weightUpdate(RMS, grad, RMS_multiplier, learning_rate, batch_size, RMSProp); }

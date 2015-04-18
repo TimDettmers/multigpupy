@@ -998,8 +998,8 @@ def test_layer():
     #y = np.load('/home/tim/data/MNIST/train_y.npy')
     
     alloc = batch_allocator(X,y, 0.2,0.0,32)   
-    net.set_config_value('dropout', 0.5)
-    net.set_config_value('input_dropout', 0.2) 
+    net.set_config_value('dropout', 0.0)
+    net.set_config_value('input_dropout', 0.0) 
     net.set_config_value('parallelism','None')
     for epoch in range(15):
         t0 = time.time()    
@@ -1028,9 +1028,9 @@ def test_layer():
     #print C2[0:20].T
     #print y[0:20].T
     
-    C2 = net.predict(gpu.array(X)).tocpu()
-    print np.sum((C2-y)**2)    
-    assert np.sum((C2-y)**2) < 500
+    C2 = net.predict(gpu.array(X[0:X.shape[0]*0.8])).tocpu()
+    print np.sum((C2-y[0:X.shape[0]*0.8])**2)    
+    assert np.sum((C2-y[0:X.shape[0]*0.8])**2) < 50
 
 def test_sync():
     gpu.enable_peer_access()
@@ -1144,6 +1144,19 @@ def test_batch_allocator_parallelism():
         
         
     gpu.disable_peer_access()
+    
+    
+def test_arregates():
+    A = np.float32(np.random.randn(4,13,2,4))
+    B1 = gpu.array(A)
+    B2 = gpu.array(A,split_idx=2)
+    
+    t.assert_equal(np.max(A),B1.max(),"Thrust max")
+    t.assert_equal(np.max(A),B2.max(),"Thrust max with split")
+    t.assert_equal(np.min(A),B1.min(),"Thrust min")
+    t.assert_equal(np.min(A),B2.min(),"Thrust min with split")
+    t.assert_almost_equal(np.sum(A),B1.sum(),3,"Thrust sum")
+    t.assert_almost_equal(np.sum(A),B2.sum(),3,"Thrust sum with split")
 
     
 if __name__ == '__main__':    

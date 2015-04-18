@@ -58,7 +58,10 @@ enum Operation_t
 	copy,
 	dropout_tensor,
 	print,
-	vertial_stack
+	vertial_stack,
+	sum_tensor,
+	max_tensor,
+	min_tensor
 };
 
 __global__ void kRdmNumbers(float *seed, int size, float *out);

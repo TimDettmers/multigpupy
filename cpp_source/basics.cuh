@@ -62,9 +62,7 @@ void elementWise(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops);
 Tensor *applySliceFunc(Tensor *A, Slice *S);
 void applySliceFunc(Tensor *A, Slice *S, Tensor *out);
 
-float sum(Tensor *A);
-float max(Tensor *A);
-float min(Tensor *A);
+float thrust_reduce(Tensor *A, Operation_t strategy);
 
 void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learning_rate, int batch_size, weightUpdate_t strategy);
 

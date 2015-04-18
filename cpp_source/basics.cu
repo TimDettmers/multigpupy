@@ -520,6 +520,42 @@ void weightUpdate(Tensor *RMS, Tensor *grad, float RMS_multiplier, float learnin
 
 
 
+float thrust_reduce(Tensor *A, Operation_t strategy)
+{
+	float value = 0;
+	if(A->splitAxis == -1)
+	{
+		thrust::device_ptr<float> ptr(A->data);
+		switch(strategy)
+		{
+			case sum_tensor: value = thrust::reduce(ptr, ptr+A->size); break;
+			case max_tensor: value = thrust::reduce(ptr, ptr+A->size,-1.0f, thrust::maximum<float>()); break;
+			case min_tensor: value = thrust::reduce(ptr, ptr+A->size,-1.0f, thrust::minimum<float>()); break;
+		}
+
+	}
+	else
+	{
+		switch(strategy){ case max_tensor: value = -FLT_MAX; break; case min_tensor: value = FLT_MAX; break; }
+		int gpus = 0;
+		CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+		for(int i = 0; i < gpus; i++)
+		{
+			CUDA_CHECK_RETURN(cudaSetDevice(i));
+			thrust::device_ptr<float> ptr(A->data_gpus[i]);
+			switch(strategy)
+			{
+				case sum_tensor: value += thrust::reduce(ptr, ptr+A->size_gpus[i]); break;
+				case max_tensor: value = fmax(value,thrust::reduce(ptr, ptr+A->size_gpus[i],-1.0f, thrust::maximum<float>())); break;
+				case min_tensor: value = fmin(value,thrust::reduce(ptr, ptr+A->size_gpus[i],-1.0f, thrust::minimum<float>())); break;
+			}
+			CUDA_CHECK_RETURN(cudaPeekAtLastError());
+		}
+		CUDA_CHECK_RETURN(cudaSetDevice(0));
+	}
+
+	return value;
+}
 
 
 float sum(Tensor *A)
@@ -547,57 +583,4 @@ float sum(Tensor *A)
 
 	return sum;
 }
-
-float max(Tensor *A)
-{
-	float max = 0;
-	float res = -1.0f;
-	if(A->splitAxis == -1)
-	{
-
-		thrust::device_ptr<float> ptr(A->data);
-		max = thrust::reduce(ptr, ptr+A->size,res, thrust::maximum<float>());
-	}
-	else
-	{
-		int gpus = 0;
-		CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-		for(int i = 0; i < gpus; i++)
-		{
-			CUDA_CHECK_RETURN(cudaSetDevice(i));
-			thrust::device_ptr<float> ptr(A->data_gpus[i]);
-			max = fmax(max,thrust::reduce(ptr, ptr+A->size,res, thrust::maximum<float>()));
-			CUDA_CHECK_RETURN(cudaPeekAtLastError());
-		}
-		CUDA_CHECK_RETURN(cudaSetDevice(0));
-	}
-	return max;
-}
-
-float min(Tensor *A)
-{
-	float min = 0;
-	float res = -1.0f;
-	if(A->splitAxis == -1)
-	{
-
-		thrust::device_ptr<float> ptr(A->data);
-		min = thrust::reduce(ptr, ptr+A->size,res, thrust::minimum<float>());
-	}
-	else
-	{
-		int gpus = 0;
-		CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-		for(int i = 0; i < gpus; i++)
-		{
-			CUDA_CHECK_RETURN(cudaSetDevice(i));
-			thrust::device_ptr<float> ptr(A->data_gpus[i]);
-			min = fmin(min,thrust::reduce(ptr, ptr+A->size,res, thrust::minimum<float>()));
-			CUDA_CHECK_RETURN(cudaPeekAtLastError());
-		}
-		CUDA_CHECK_RETURN(cudaSetDevice(0));
-	}
-	return min;
-}
-
 
