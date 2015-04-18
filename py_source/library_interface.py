@@ -142,11 +142,9 @@ funcs.inp_dropout.restype = ct.c_void_p
 
 funcs.ftogpu_split.restype = ct.c_void_p
 
-funcs.fBatchAllocator.restype = ct.c_void_p
 funcs.fallocateNextAsync.restype = ct.c_void_p
 funcs.freplaceCurrentBatch.restype = ct.c_void_p
 funcs.fto_pinned.restype = ct.POINTER(ct.c_float)
-
 
 funcs.flogistic.restype = ct.POINTER(Tensor)
 funcs.inp_logistic.restype = ct.c_void_p

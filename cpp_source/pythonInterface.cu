@@ -8,14 +8,11 @@
 #include <basics.cuh>
 #include <gpupy.cuh>
 #include <time.h>
-#include <batchAllocator.cuh>
 
 extern "C"
 {
-	BatchAllocator *fBatchAllocator(){ return new BatchAllocator(); }
-
-	void fallocateNextAsync(BatchAllocator *b, Tensor *A, float *cpu_buffer, Tensor *B, float *cpu_buffer_y){ b->allocateNextAsync(A,cpu_buffer,B,cpu_buffer_y); }
-	void freplaceCurrentBatch(BatchAllocator *b){ b->replaceCurrentBatch(); }
+	void fallocateNextAsync(GPUpy *gpupy, Tensor *A, float *cpu_buffer, Tensor *B, float *cpu_buffer_y){ gpupy->allocateNextAsync(A,cpu_buffer,B,cpu_buffer_y); }
+	void freplaceCurrentBatch(GPUpy *gpupy){ gpupy->replaceCurrentBatch(); }
 	float *fto_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer){ return empty_pinned(batches,maps,rows,cols,cpu_buffer); }
 
 	GPUpy *fGPUpy(){GPUpy *gpupy = new GPUpy(); gpupy->init((int) ((time(0) + (12345)) % 10000)); return gpupy; }

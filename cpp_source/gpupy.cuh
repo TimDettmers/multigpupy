@@ -95,6 +95,11 @@ public:
 
 	Tensor *dropout(Tensor *A, float dropout_rate);
 	void dropout(Tensor *A, Tensor *out, float dropout_rate);
+	std::vector<cudaStream_t> streams;
+	std::vector<cudaStream_t> streams_y;
+
+	void allocateNextAsync(Tensor *batch, float *cpu_buffer, Tensor *batch_y, float *cpu_buffer_y);
+	void replaceCurrentBatch();
 
 private:
 	std::vector<curandGenerator_t> generators;

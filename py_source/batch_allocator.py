@@ -17,7 +17,6 @@ class batch_allocator(object):
         elif labels.shape[0]==1 or labels.shape[1]==1: labels = u.create_t_matrix(labels)    
         self.size = labels.shape[0]
         self.shapes = [data.shape[1],labels.shape[1]]
-        self.p_allocator = lib.funcs.fBatchAllocator()
             
         shape = u.handle_shape(data.shape)  
         shape_label = u.handle_shape(labels.shape)
@@ -218,10 +217,10 @@ class batch_allocator(object):
         self.handle_next_batch_id()    
         batch = np.float32(np.asfortranarray(self.X[:,:,self.next_batch_idx:self.handle_copy_index(),:]))
         batch_y = np.float32(np.asfortranarray(self.y[:,:,self.next_batch_idx:self.handle_copy_index(),:]))
-        lib.funcs.fallocateNextAsync(self.p_allocator, self.next_X.pt,batch.ctypes.data_as(ct.POINTER(ct.c_float)),self.next_y.pt,batch_y.ctypes.data_as(ct.POINTER(ct.c_float)))
+        lib.funcs.fallocateNextAsync(gpu.p_gpupy, self.next_X.pt,batch.ctypes.data_as(ct.POINTER(ct.c_float)),self.next_y.pt,batch_y.ctypes.data_as(ct.POINTER(ct.c_float)))
         
     def replace_current_batch(self): 
-        lib.funcs.freplaceCurrentBatch(self.p_allocator)
+        lib.funcs.freplaceCurrentBatch(gpu.p_gpupy)
         u.swap_pointer_and_shape(self.current,self.next_X )
         u.swap_pointer_and_shape(self.current_y,self.next_y)
         self.next_batch_idx +=self.batch_size
