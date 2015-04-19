@@ -315,15 +315,21 @@ def sync(source, target1, target2=None, target3=None, layer_idx = 0):
     elif target2: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, None,layer_idx)
     else: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, None, None,layer_idx)
     
-def sync_8bit(source, target1, target2=None, target3=None, layer_idx = 0):
-    if target2 and target3: lib.funcs.fsync_8bit(p_gpupy, source, target1, target2, target3, layer_idx)
-    elif target2: lib.funcs.fsync_8bit(p_gpupy, source, target1, target2, None,layer_idx)
-    else: lib.funcs.fsync_8bit(p_gpupy, source, target1, None, None,layer_idx)
-  
 def sync_1bit(source, target1, target2=None, target3=None, layer_idx = 0):
     if target2 and target3: lib.funcs.fsync_1bit(p_gpupy, source, target1, target2, target3, layer_idx)
     elif target2: lib.funcs.fsync_1bit(p_gpupy, source, target1, target2, None,layer_idx)
     else: lib.funcs.fsync_1bit(p_gpupy, source, target1, None, None,layer_idx)
+    
+def sync_8bit(source, target1, target2=None, target3=None, layer_idx = 0):
+    if target2 and target3: lib.funcs.fsync_8bit(p_gpupy, source, target1, target2, target3, layer_idx)
+    elif target2: lib.funcs.fsync_8bit(p_gpupy, source, target1, target2, None,layer_idx)
+    else: lib.funcs.fsync_8bit(p_gpupy, source, target1, None, None,layer_idx)    
+
+def sync_16bit(source, target1, target2=None, target3=None, layer_idx = 0):
+    if target2 and target3: lib.funcs.fsync_16bit(p_gpupy, source, target1, target2, target3, layer_idx)
+    elif target2: lib.funcs.fsync_16bit(p_gpupy, source, target1, target2, None,layer_idx)
+    else: lib.funcs.fsync_16bit(p_gpupy, source, target1, None, None,layer_idx)
+  
     
 def sync_streams(layer_idx=0):
     lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)

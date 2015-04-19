@@ -107,7 +107,9 @@ class Layer(object):
                        'dropout' : self.funcs.dropout,
                        'learning_rate_decay' : 1.0,
                        'parallelism' : 'data',
-                       'compression' : '8bit'
+                       'compression' : '8bit',
+                       'dropout_decay' : True,
+                       'test_for_convergence' : True
                        }        
         self.logger = None
         
@@ -177,12 +179,15 @@ class Layer(object):
             self.m_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
             self.w_grad_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
             self.b_grad_next = gpu.zeros((1, self.next_layer.unitcount))   
-            self.w_next_sync = gpu.zeros((self.unitcount,self.next_layer.unitcount))   
-            if self.next_layer.config['compression'] == '8bit': 
+            self.w_next_sync = gpu.zeros((self.unitcount,self.next_layer.unitcount))
+            if self.next_layer.config['compression'] == '16bit':
+                self.w_next_grad_16bit = gpu.empty_ushort_like(self.w_grad_next)  
+                self.w_next_sync_16bit = gpu.empty_ushort_like(self.w_grad_next) 
+            elif self.next_layer.config['compression'] == '8bit': 
                 self.max_value_buffer = gpu.zeros((self.unitcount,self.next_layer.unitcount))
                 self.w_next_grad_8bit = gpu.empty_char_like(self.w_grad_next)  
                 self.w_next_sync_8bit = gpu.empty_char_like(self.w_grad_next)  
-            if self.next_layer.config['compression'] == '1bit':
+            elif self.next_layer.config['compression'] == '1bit':
                 self.w_next_grad_1bit = gpu.empty_uint_like(self.w_grad_next) 
                 self.w_next_sync_1bit = gpu.empty_uint_like(self.w_grad_next)  
                 self.errors = gpu.zeros_like(self.w_grad_next)
@@ -258,7 +263,9 @@ class Layer(object):
     def handle_parallelism(self):
         if self.config['parallelism'] == 'data' and self.next_layer and self.has_gradients: 
             gpu.sync_streams(self.id)    
-            if self.next_layer.config['compression'] == '8bit':                 
+            if self.next_layer.config['compression'] == '16bit':
+                gpu.decompress_16bit(self.w_next_sync_16bit, self.w_next_sync)
+            elif self.next_layer.config['compression'] == '8bit':                 
                 gpu.decompress_8bit(self.w_next_sync_8bit, self.abs_max_grad_value, self.w_next_sync)
             elif self.next_layer.config['compression'] == '1bit':
                 gpu.decompress_1bit(self.w_next_sync_1bit, self.errors,self.posAvg, self.negAvg, self.w_next_sync)
@@ -295,7 +302,10 @@ class Layer(object):
             if not self.has_gradients:  
                 self.has_gradients = True
                 gpu.create_additional_streams(1)
-            if self.next_layer.config['compression'] == '8bit':
+            if self.next_layer.config['compression'] == '16bit':
+                gpu.compress_16bit(self.w_grad_next, self.w_next_grad_16bit)
+                gpu.sync_16bit(self.w_next_grad_16bit, self.w_next_sync_16bit, layer_idx=self.id)
+            elif self.next_layer.config['compression'] == '8bit':
                 if self.abs_max_grad_value == 0.0:
                     gpu.abs(self.w_grad_next, self.max_value_buffer)
                     self.abs_max_grad_value = gpu.max(self.max_value_buffer)
@@ -350,10 +360,45 @@ class Layer(object):
             if self.config['parallelism'] != 'data':
                 self.next_layer.weight_update()         
         
+    def test_for_no_convergence(self):
+        if not self.config['test_for_convergence']: return False
+        if len(self.error_epochs['CV']) < 20: return False
+        #this is a simple 99% confidence interval test 
+        #for the null hypothesis that the CV error
+        #for the last 20 epochs is the same as for the last 10 epochs
+        #In short: It tests if the neural net has converged
+        null_hypo_mean = np.mean(self.error_epochs['CV'][-20:])
+        null_hypo_SE = np.std(self.error_epochs['CV'][-20:])/20.
+        null_CI = [null_hypo_mean+(2.57*null_hypo_SE),null_hypo_mean-(2.57*null_hypo_SE)]
+        data_mean = np.mean(self.error_epochs['CV'][-10:])
+        data_SE = np.std(self.error_epochs['CV'][-10:])/10.
+        data_CI = [data_mean+(2.57*data_SE),data_mean-(2.57*data_SE)]
+        if data_CI[0] > null_CI[1]: 
+            self.log('Convergence detected: null hypothesis vs data: {0} vs {1}'.format(null_CI, data_CI), True)
+            self.config['test_for_convergence'] = False
+        return data_CI[0] > null_CI[1]
+        
+        
     def end_epoch(self):
         self.set_config_value('learning_rate', 0.0, 'learning_rate_decay', lambda a,b: a*b)   
         self.abs_max_grad_value = 0.0
+        if self.id == 0 and self.test_for_no_convergence(): self.dropout_decay()
         if self.next_layer: self.next_layer.end_epoch()
+        
+    def dropout_decay(self):
+        if not self.config['dropout_decay']: return
+        self.config['learning_rate_decay'] = 0.85
+        self.config['dropout'] *=0.5
+        self.config['input_dropout'] *=0.5
+        if self.prev_layer: self.funcs.dropout = self.config['dropout']
+        else: 
+            self.funcs.dropout = self.config['input_dropout']
+            self.log("Appling dropout decay", True)
+            
+        if self.next_layer: self.next_layer.dropout_decay()
+        
+        self.log_network()
+        
         
     def set_config_value(self, key, value, key2=None, func=None):
         if func and key2: self.config[key] = func(self.config[key], self.config[key2])

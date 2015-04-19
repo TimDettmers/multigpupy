@@ -1275,7 +1275,7 @@ def test_16bit_compression():
         
         gpu.compress_16bit(B, C2)
         gpu.decompress_16bit(C2, C1)
-        t.assert_array_almost_equal(C1.tocpu(),A,2,"half float compression")
+        t.assert_array_almost_equal(C1.tocpu(),A,2,"half-float compression")
         
     
 if __name__ == '__main__':    
