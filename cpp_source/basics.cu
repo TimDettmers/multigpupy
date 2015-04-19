@@ -104,6 +104,10 @@ UIntTensor *empty_uint(int batches, int maps, int rows, int cols){ return empty_
 UIntTensor *empty_uint(int batches, int maps, int rows, int cols, int split_axis)
 { return (UIntTensor*)empty_template<unsigned int>(batches, maps, rows, cols, split_axis); }
 
+UShortTensor *empty_ushort_like(Tensor *A){ return empty_ushort(A->batches, A->maps, A->rows, A->cols, A->splitAxis); }
+UShortTensor *empty_ushort(int batches, int maps, int rows, int cols){ return empty_ushort(batches, maps, rows, cols, -1); }
+UShortTensor *empty_ushort(int batches, int maps, int rows, int cols, int split_axis)
+{ return (UShortTensor*)empty_template<unsigned int>(batches, maps, rows, cols, split_axis); }
 
 void slice_axis(Tensor *A, Tensor *out)
 {
@@ -615,6 +619,35 @@ void decompression_1bit(UIntTensor *quant, Tensor *errors, Tensor *avgPos, Tenso
 }
 
 
+void compression_16bit(Tensor *A, UShortTensor *out)
+{
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		int blocks = (A->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kCompression_16bit<<<blocks,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size_gpus[i]);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+
+}
+
+
+void decompression_16bit(UShortTensor *A, Tensor *out)
+{
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		int blocks = (A->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kDecompression_16bit<<<blocks,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size_gpus[i]);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
 
 
 

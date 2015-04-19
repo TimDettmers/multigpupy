@@ -24,6 +24,10 @@ UIntTensor *empty_uint_like(Tensor *A);
 UIntTensor *empty_uint(int batches, int maps, int rows, int cols);
 UIntTensor *empty_uint(int batches, int maps, int rows, int cols, int split_idx);
 
+UShortTensor *empty_ushort_like(Tensor *A);
+UShortTensor *empty_ushort(int batches, int maps, int rows, int cols);
+UShortTensor *empty_ushort(int batches, int maps, int rows, int cols, int split_axis);
+
 float *empty_pinned(int batches, int maps, int rows, int cols,float *cpu_buffer);
 Tensor *zeros(int batches, int maps, int rows, int cols);
 Tensor *zeros(int batches, int maps, int rows, int cols, int split_axis);
@@ -75,6 +79,8 @@ void compression_8bit(Tensor *tbl_flt, Tensor *A, float precision,  CharTensor *
 void decompression_8bit(Tensor *tbl_flt, CharTensor *A, float precision,  Tensor *out);
 void compression_1bit(Tensor *A_with_errors, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, UIntTensor *out);
 void decompression_1bit(UIntTensor *quant, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, Tensor *out);
+void compression_16bit(Tensor *A, UShortTensor *out);
+void decompression_16bit(UShortTensor *A, Tensor *out);
 
 void reduceRow(Tensor *A, Tensor *out, Operation_t ops);
 

@@ -53,6 +53,7 @@
 typedef TensorTemplate<float> Tensor;
 typedef TensorTemplate<unsigned char> CharTensor;
 typedef TensorTemplate<unsigned int> UIntTensor;
+typedef TensorTemplate<unsigned short> UShortTensor;
 
 
 

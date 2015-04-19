@@ -39,6 +39,16 @@ class UIntTensor(ct.Structure):
                 ('data', ct.POINTER(ct.c_uint32))]    
     def __init__(self): pass
     
+class UShortTensor(ct.Structure):
+    _fields_ = [('batches', ct.c_int),
+                ('maps', ct.c_int),
+                ('rows', ct.c_int),
+                ('cols', ct.c_int),
+                ('bytes', ct.c_size_t),
+                ('size', ct.c_int),
+                ('data', ct.POINTER(ct.c_uint16))]    
+    def __init__(self): pass
+    
 class _Slice(ct.Structure):
     _fields_ = [('batch_start', ct.c_int),
                 ('batch_stop', ct.c_int),
@@ -64,6 +74,7 @@ funcs.ffill.restype = ct.c_void_p
 
 funcs.fempty_char_like.restype = ct.POINTER(CharTensor)
 funcs.fempty_uint_like.restype = ct.POINTER(UIntTensor)
+funcs.fempty_ushort_like.restype = ct.POINTER(UShortTensor)
 funcs.fempty_like.restype = ct.POINTER(Tensor)
 
 funcs.fT.restype = ct.POINTER(Tensor)
@@ -196,8 +207,9 @@ funcs.fdisablePeerAccess.restype = ct.c_void_p
 funcs.ffprint.restype = ct.c_void_p
 
 funcs.fsync.restype = ct.c_void_p
-funcs.fsync_8bit.restype = ct.c_void_p
 funcs.fsync_1bit.restype = ct.c_void_p
+funcs.fsync_8bit.restype = ct.c_void_p
+funcs.fsync_16bit.restype = ct.c_void_p
 funcs.fsynchronize_streams.restype = ct.c_void_p
 funcs.fcreate_streams.restype = ct.c_void_p
 
@@ -207,10 +219,12 @@ funcs.fis_synchronizing.restype = ct.c_int
 funcs.fcurrent_sync_idx.restype = ct.c_int
 funcs.freset_sync_idx.restype = ct.c_void_p
 
-funcs.fcompress_8bit.restype = ct.c_void_p
-funcs.fdecompress_8bit.restype = ct.c_void_p
 funcs.fcompress_1bit.restype = ct.c_void_p
 funcs.fdecompress_1bit.restype = ct.c_void_p
+funcs.fcompress_8bit.restype = ct.c_void_p
+funcs.fdecompress_8bit.restype = ct.c_void_p
+funcs.fcompress_16bit.restype = ct.c_void_p
+funcs.fdecompress_16bit.restype = ct.c_void_p
 
 funcs.fsum_row.restype = ct.c_void_p
 

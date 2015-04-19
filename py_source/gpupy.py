@@ -350,9 +350,12 @@ def zeros_like(x1):
 def empty_like(x1): return array(None, lib.funcs.fempty_like(x1.pt))
 def empty_uint_like(x1): return lib.funcs.fempty_uint_like(x1.pt)
 def empty_char_like(x1): return lib.funcs.fempty_char_like(x1.pt)
+def empty_ushort_like(x1): return lib.funcs.fempty_ushort_like(x1.pt)
 
 def compress_8bit(A, abs_max_value, char_pointer):lib.funcs.fcompress_8bit(p_gpupy, A.pt,ct.c_float(abs_max_value), char_pointer)
-def decompress_8bit(char_pointer, abs_max_value, out):lib.funcs.fdecompress_8bit(p_gpupy, char_pointer,ct.c_float(abs_max_value),out.pt)    
+def decompress_8bit(char_pointer, abs_max_value, out):lib.funcs.fdecompress_8bit(p_gpupy, char_pointer,ct.c_float(abs_max_value),out.pt)   
+def compress_16bit(A, out): lib.funcs.fcompress_16bit(A.pt, out)
+def decompress_16bit(A, out): lib.funcs.fdecompress_16bit(A, out.pt) 
 
 def sum_row(x1, out):
     lib.funcs.fsum_row(x1.pt, out.pt)

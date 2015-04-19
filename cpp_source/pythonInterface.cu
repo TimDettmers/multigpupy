@@ -22,6 +22,7 @@ extern "C"
 	Tensor *fempty_like(Tensor *A){ return empty_like(A); }
 	CharTensor *fempty_char_like(Tensor *A){ return empty_char_like(A); }
 	UIntTensor *fempty_uint_like(Tensor *A){ return empty_uint_like(A); }
+	UShortTensor *fempty_ushort_like(Tensor *A){ return empty_ushort_like(A); }
 	Tensor *fempty_split(int batches, int maps, int rows, int cols, int split_axis){ return empty(batches, maps, rows, cols, split_axis); }
 	Tensor *fzeros(int batches, int maps, int rows, int cols){ return zeros(batches, maps, rows, cols); }
 	Tensor *fzeros_split(int batches, int maps, int rows, int cols, int split_axis){ return zeros(batches, maps, rows, cols, split_axis); }
@@ -145,6 +146,7 @@ extern "C"
 
 	void fsync_1bit(GPUpy *gpupy, UIntTensor *out1, UIntTensor *out2, UIntTensor *out3, UIntTensor *out4, int layer_idx){ return gpupy->async_sync_1bit(out1,out2,out3,out4,layer_idx); }
 	void fsync_8bit(GPUpy *gpupy, CharTensor *out1, CharTensor *out2, CharTensor *out3, CharTensor *out4, int layer_idx){ return gpupy->async_sync_8bit(out1,out2,out3,out4,layer_idx); }
+	void fsync_16bit(GPUpy *gpupy, UShortTensor *out1, UShortTensor *out2, UShortTensor *out3, UShortTensor *out4, int layer_idx){ return gpupy->async_sync_16bit(out1,out2,out3,out4,layer_idx); }
 	void fsync(GPUpy *gpupy, Tensor *out1, Tensor *out2, Tensor *out3, Tensor *out4, int layer_idx){ return gpupy->async_sync(out1,out2,out3,out4,layer_idx); }
 	void fsynchronize_streams(GPUpy *gpupy, int layer_idx){ gpupy->synchronize_streams(layer_idx); }
 	void fcreate_streams(GPUpy *gpupy, int layer_count){ gpupy->createStreams(layer_count); }
@@ -175,6 +177,8 @@ extern "C"
 	void fdecompress_8bit(GPUpy *gpupy, CharTensor *A, float precision, Tensor *out){ decompression_8bit(gpupy->FLT_TABLE_8BIT, A,precision, out); }
 	void fcompress_1bit(Tensor *A_with_errors, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, UIntTensor *out){ compression_1bit(A_with_errors, errors, avgPos, avgNeg, out); }
 	void fdecompress_1bit(UIntTensor *quant, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, Tensor *out){ decompression_1bit(quant, errors, avgPos, avgNeg, out); }
+	void fcompress_16bit(Tensor *A, UShortTensor *out){ compression_16bit(A, out); }
+	void fdecompress_16bit(UShortTensor *A, Tensor *out){ decompression_16bit(A, out); }
 
 	void fsum_row(Tensor *A, Tensor *out){ reduceRow(A, out, add_tensor); }
 

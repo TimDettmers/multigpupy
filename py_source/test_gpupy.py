@@ -1240,7 +1240,6 @@ def test_1bit_compression():
     for i in range(10):
         dims = np.random.randint(2,637,(2,))
         dims = [dims[0], dims[1] + (32- (dims[1] % 32))]#we need a multiple of 32 dims
-        dims = [784,1024]
         A = np.float32(np.random.randn(dims[0],dims[1]))  
         B = gpu.array(A)
         val_with_errors = gpu.zeros_like(B)
@@ -1265,8 +1264,19 @@ def test_1bit_compression():
             print np.abs(errors.tocpu()).sum()/float(A.size)            
             assert np.abs(errors.tocpu()).sum()/float(A.size) < 1.0, "quantization error too large!"
     
-              
-
+           
+def test_16bit_compression():   
+    for i in range(100):
+        dims = np.random.randint(2,637,(2,))                
+        A = np.float32(np.random.randn(dims[0],dims[1]))  
+        B = gpu.array(A)
+        C1 = gpu.empty_like(B)
+        C2 = gpu.empty_ushort_like(B)
+        
+        gpu.compress_16bit(B, C2)
+        gpu.decompress_16bit(C2, C1)
+        t.assert_array_almost_equal(C1.tocpu(),A,2,"half float compression")
+        
     
 if __name__ == '__main__':    
     nose.run()
