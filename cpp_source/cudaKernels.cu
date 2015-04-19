@@ -311,6 +311,7 @@ __global__ void kElementWise(float *A,float *B, float *out, int size, float flt,
 		  case ne_scalar: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] != flt); break;
 		  case dropout_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = out[i] > flt ? A[i] : 0.0f; break;
 		  case print: for (unsigned int i = idx;i < size; i += numThreads) printf("%f ",A[i]); break;
+		  case fill:  for (unsigned int i = idx;i < size; i += numThreads) A[i] = flt; break;
 	}
 
 }
@@ -1803,7 +1804,7 @@ __global__ void kCompression_1bit(float *A_with_errors, float *error,  float *av
 
 			quant = __ballot(bit);
 
-			out_quant[(rows * (col/32) + row)] = quant;
+			out_quant[(rows * (col/32)) + row] = quant;
 		}
 	}
 

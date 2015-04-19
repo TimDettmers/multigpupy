@@ -197,6 +197,7 @@ funcs.ffprint.restype = ct.c_void_p
 
 funcs.fsync.restype = ct.c_void_p
 funcs.fsync_8bit.restype = ct.c_void_p
+funcs.fsync_1bit.restype = ct.c_void_p
 funcs.fsynchronize_streams.restype = ct.c_void_p
 funcs.fcreate_streams.restype = ct.c_void_p
 

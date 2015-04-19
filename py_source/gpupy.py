@@ -319,6 +319,11 @@ def sync_8bit(source, target1, target2=None, target3=None, layer_idx = 0):
     if target2 and target3: lib.funcs.fsync_8bit(p_gpupy, source, target1, target2, target3, layer_idx)
     elif target2: lib.funcs.fsync_8bit(p_gpupy, source, target1, target2, None,layer_idx)
     else: lib.funcs.fsync_8bit(p_gpupy, source, target1, None, None,layer_idx)
+  
+def sync_1bit(source, target1, target2=None, target3=None, layer_idx = 0):
+    if target2 and target3: lib.funcs.fsync_1bit(p_gpupy, source, target1, target2, target3, layer_idx)
+    elif target2: lib.funcs.fsync_1bit(p_gpupy, source, target1, target2, None,layer_idx)
+    else: lib.funcs.fsync_1bit(p_gpupy, source, target1, None, None,layer_idx)
     
 def sync_streams(layer_idx=0):
     lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)
@@ -339,7 +344,7 @@ def create_additional_streams(layer_count):
     
 def zeros_like(x1):
     arr = array(None, lib.funcs.fempty_like(x1.pt))
-    arr *=0
+    lib.funcs.ffill(arr.pt, ct.c_float(0.0))
     return arr
     
 def empty_like(x1): return array(None, lib.funcs.fempty_like(x1.pt))
@@ -354,6 +359,7 @@ def sum_row(x1, out):
     
 def compress_1bit(A, val_with_errors, errors, avgPositive,  avgNegative, out, maskPos, maskNeg, posCount, negCount):
     add(A,errors,val_with_errors)
+    #print val_with_errors.sum(), A.sum(), errors.sum()
     greater_equal(val_with_errors, 0.0, maskPos)
     less(val_with_errors, 0.0, maskNeg)
     sum_row(maskPos, posCount)

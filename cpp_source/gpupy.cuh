@@ -96,6 +96,7 @@ public:
 	void synchronize_streams(int layer_idx);
 	void async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3, int layer_idx);
 	void async_sync_8bit(CharTensor *A, CharTensor *out1, CharTensor *out2, CharTensor *out3, int layer_idx);
+	void async_sync_1bit(UIntTensor *A, UIntTensor *out1, UIntTensor *out2, UIntTensor *out3, int layer_idx);
 
 	Tensor *dropout(Tensor *A, float dropout_rate);
 	void dropout(Tensor *A, Tensor *out, float dropout_rate);

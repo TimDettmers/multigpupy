@@ -1238,7 +1238,9 @@ def test_row_sum():
     
 def test_1bit_compression():
     for i in range(10):
-        dims = np.random.randint(2,50,(2,))
+        dims = np.random.randint(2,637,(2,))
+        dims = [dims[0], dims[1] + (32- (dims[1] % 32))]#we need a multiple of 32 dims
+        dims = [784,1024]
         A = np.float32(np.random.randn(dims[0],dims[1]))  
         B = gpu.array(A)
         val_with_errors = gpu.zeros_like(B)
@@ -1252,7 +1254,7 @@ def test_1bit_compression():
         quant = gpu.empty_uint_like(B)
         C = gpu.empty_like(B)
         
-        for i in range(10):
+        for j in range(3):
             A = np.float32(np.random.randn(dims[0],dims[1]))
             B = gpu.array(A)
             gpu.compress_1bit(B, val_with_errors, errors, avgpos, avgneg, quant, maskPos, maskNeg, pos_count, neg_count)      
@@ -1260,8 +1262,10 @@ def test_1bit_compression():
             #print avgpos.tocpu().sum()
             #print avgneg.tocpu().sum()
             gpu.decompress_1bit(quant, errors, avgpos, avgneg, C)
-            #print np.abs(errors.tocpu()).sum()/float(A.size)
-            assert np.abs(errors.tocpu()).sum()/float(A.size) < 1.0, "quantization error too large!"       
+            print np.abs(errors.tocpu()).sum()/float(A.size)            
+            assert np.abs(errors.tocpu()).sum()/float(A.size) < 1.0, "quantization error too large!"
+    
+              
 
     
 if __name__ == '__main__':    

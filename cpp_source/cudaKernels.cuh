@@ -61,7 +61,8 @@ enum Operation_t
 	vertial_stack,
 	sum_tensor,
 	max_tensor,
-	min_tensor
+	min_tensor,
+	fill
 };
 
 __global__ void kRdmNumbers(float *seed, int size, float *out);

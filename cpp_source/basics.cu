@@ -99,10 +99,10 @@ CharTensor *empty_char(int batches, int maps, int rows, int cols, int split_axis
 { return (CharTensor*)empty_template<unsigned char>(batches, maps, rows, cols, split_axis); }
 
 
-UIntTensor *empty_uint_like(Tensor *A){ return empty_uint(A->batches, A->maps, A->rows, A->cols, A->splitAxis); }
+UIntTensor *empty_uint_like(Tensor *A){ return empty_uint(A->batches, A->maps, A->rows, A->cols/32, A->splitAxis); }
 UIntTensor *empty_uint(int batches, int maps, int rows, int cols){ return empty_uint(batches, maps, rows, cols, -1); }
 UIntTensor *empty_uint(int batches, int maps, int rows, int cols, int split_axis)
-{ return (UIntTensor*)empty_template<unsigned char>(batches, maps, rows, cols, split_axis); }
+{ return (UIntTensor*)empty_template<unsigned int>(batches, maps, rows, cols, split_axis); }
 
 
 void slice_axis(Tensor *A, Tensor *out)
@@ -201,30 +201,16 @@ Tensor *zeros(int batches, int maps, int rows, int cols){ return zeros(batches, 
 Tensor *zeros(int batches, int maps, int rows, int cols, int split_axis)
 {
 	Tensor *out = empty(batches,maps,rows,cols,split_axis);
-	return fill_with_number(out, 0.0f);
+	elementWise(out, NULL,NULL,0.0f,fill);
+	return out;
 }
 
 Tensor *ones(int batches, int maps, int rows, int cols)
 {
 	Tensor *out = empty(batches,maps,rows,cols);
-	return fill_with_number(out, 1.0f);
+	elementWise(out, NULL,NULL,1.0f,fill);
+	return out;
 }
-
-Tensor *fill_with_number(Tensor *A, float fill_value)
-{
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	for(int i = 0; i < gpus; i++)
-	{
-		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		thrust::device_ptr<float> ptr_dev(A->data_gpus[i]);
-		thrust::fill(ptr_dev, ptr_dev + A->size_gpus[i],fill_value);
-	}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
-
-	return A;
-}
-
 
 
 Tensor *T(Tensor *A)
