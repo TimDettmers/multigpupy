@@ -1146,7 +1146,6 @@ def test_batch_allocator_parallelism():
        
         
         
-    gpu.disable_peer_access()
     
     
 def test_arregates():
@@ -1192,8 +1191,54 @@ def test_8bit_compression():
     assert rel_error < 0.03, "Compression error" 
     
     
+def test_bandwidth():
+    '''
+    A = np.float32(np.random.rand(256,1024,1024))#1GB
+    B1 = gpu.array(A,split_idx=2)
+    B2 = gpu.zeros((128,1024,1024))
+    C = gpu.zeros((256,1024,1024))
+    gpu.create_additional_streams(3)
+    t0 = time.time()
+    for i in range(3):        
+        gpu.sync(B1,B2,layer_idx=i)
+    
+    for i in range(3):
+        gpu.sync_streams(i)
+    secs = time.time()-t0
+    GB = 3*A.size*4/1024/1024/1024/2.
+    print secs
+    print GB
+    print GB/secs
+    gpu.add(B1,B2,C)
+    
+    print C.sum()
+    print A.sum()
+    
+    #assert False
+    '''
+    
+    gpu.disable_peer_access()
+    
+    
+def test_row_sum():
+    for i in range(100):
+        dims = np.random.randint(2,763,(2,))
+        A = np.float32(np.random.rand(dims[0],dims[1]))        
+        B1 = gpu.array(A)
+        B2 = gpu.zeros((A.shape[0],))
+        
+        gpu.sum_row(B1, B2)
+        #print B2.tocpu()
+        #print np.sum(A,axis=1)
+        errors = np.sort(np.sqrt(((np.sum(A,axis=1)-B2.tocpu())**2)).flatten())[::-1][0:10]
+        print errors
+        print A.shape
+        t.assert_almost_equal(np.sum(A,axis=1),B2.tocpu(),3,"row sum")
+    
+    
     
 
     
 if __name__ == '__main__':    
     nose.run()
+    

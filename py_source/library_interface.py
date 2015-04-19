@@ -196,6 +196,8 @@ funcs.freset_sync_idx.restype = ct.c_void_p
 funcs.fcompress_8bit.restype = ct.c_void_p
 funcs.fdecompress_8bit.restype = ct.c_void_p
 
+funcs.fsum_row.restype = ct.c_void_p
+
 
 
 class lib(object): 

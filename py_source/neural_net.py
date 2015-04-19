@@ -26,10 +26,11 @@ class Neural_net(object):
         for epoch in range(self.epochs):
             t0 = time.time()
             for i in self.alloc.train():
-                if self.alloc.batch.shape[2] != batch_size: continue
+                if self.net.config['parallelism'] == 'data' and self.alloc.batch.shape[2] != batch_size: continue
                 self.net.forward(self.alloc.batch,self.alloc.batch_y)        
                 self.net.backward()
-                self.net.weight_update()
+                if self.net.config['parallelism'] != 'data':
+                    self.net.weight_update()
             
             self.net.log('EPOCH: {0}'.format(epoch+1))
             for i in self.alloc.train(0.1):   

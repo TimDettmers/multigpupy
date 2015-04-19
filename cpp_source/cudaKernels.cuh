@@ -84,6 +84,7 @@ __global__ void AddGradientsN(float **arrA, int size, int myrank, int matrix_cou
 __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int cols);
 __device__ void reduceToMax(float* sdata, unsigned int tid);
 __device__ void reduceToSumLocal(float* sdata, unsigned int tid);
+__global__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int cols);
 __global__ void kSlice(float *A, float *out, int b1, int b2, int m1, int m2, int r1, int r2, int c1, int c2,  int rows, int cols, int batches_slice, int maps_slice, int cols_slice, int rows_slice, int is_forward_slice);
 __global__ void kSlice(float *A, float *out, Slice *S,  int rows, int cols, int batches_slice, int maps_slice, int cols_slice, int rows_slice, int is_forward_slice);
 __global__ void kVectorWise(float *A, float *v, float *out, int batches, int rows, int size, Operation_t strategy);

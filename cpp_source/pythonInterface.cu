@@ -169,5 +169,7 @@ extern "C"
 	void fcompress_8bit(GPUpy *gpupy, Tensor *A, float precision, CharTensor *out){ compression_8bit(gpupy->FLT_TABLE_8BIT, A, precision,out); }
 	void fdecompress_8bit(GPUpy *gpupy, CharTensor *A, float precision, Tensor *out){ decompression_8bit(gpupy->FLT_TABLE_8BIT, A,precision, out); }
 
+	void fsum_row(Tensor *A, Tensor *out){ reduceRow(A, out, add_tensor); }
+
 
 }

@@ -10,6 +10,8 @@
 #include <Tensor.cuh>
 #include <curand.h>
 #include <cublas_v2.h>
+#include <map>
+#include <string>
 
 #define CURAND_CHECK_RETURN(value) {											\
 	curandStatus_t _m_cudaStat = value;										\
@@ -104,10 +106,18 @@ public:
 	void replaceCurrentBatch();
 	void createStreams(int layer_count);
 
+	void tick();
+	void tick(std::string name);
+	float tock();
+	float tock(std::string name);
+
+
 private:
 	std::vector<curandGenerator_t> generators;
 	std::vector<cublasHandle_t> cublashandles;
 	std::vector< std::vector<std::vector<cudaStream_t> > > stream_vectors;
+	std::map<std::string,cudaEvent_t*> m_dictTickTock;
+	 std::map<std::string,float> m_dictTickTockCumulative;
 
 };
 

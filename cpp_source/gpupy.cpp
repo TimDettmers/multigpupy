@@ -215,20 +215,25 @@ void GPUpy::async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3, int 
 	//left-right transfer across PCIe switches
 	//this is the fastest transfer method for multi-GPU setups on non-specialized hardware
 	//this transfer is made exactly like the matrix cross product where left and right transfers are left and right arrows
+	//tick();
 	IS_SYNCHRONIZING = 1;
 	for(int transfer_round = 1; transfer_round < DEVICE_COUNT; transfer_round++)
 	{
 		//right transfer
 		for(int right_idx = 0; right_idx < DEVICE_COUNT-transfer_round; right_idx++)
 			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[right_idx+transfer_round]->data_gpus[right_idx+transfer_round], A->data_gpus[right_idx],A->bytes_gpus[right_idx],cudaMemcpyDefault, stream_vectors[layer_idx][right_idx][right_idx+transfer_round]));
+			//CUDA_CHECK_RETURN(cudaMemcpy(out[right_idx+transfer_round]->data_gpus[right_idx+transfer_round], A->data_gpus[right_idx],A->bytes_gpus[right_idx],cudaMemcpyDeviceToDevice));
 
 		//left transfer
 		for(int left_idx = transfer_round; left_idx < DEVICE_COUNT; left_idx++)
 		{
 			idx = (DEVICE_COUNT)-transfer_round;
 			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDefault, stream_vectors[layer_idx][left_idx][left_idx-transfer_round]));
+			//CUDA_CHECK_RETURN(cudaMemcpy(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDeviceToDevice));
 		}
 	}
+	//tick();
+
 }
 
 void GPUpy::async_sync_8bit(CharTensor *A, CharTensor *out1, CharTensor *out2, CharTensor *out3, int layer_idx)
@@ -265,11 +270,17 @@ void GPUpy::async_sync_8bit(CharTensor *A, CharTensor *out1, CharTensor *out2, C
 
 void GPUpy::synchronize_streams(int layer_idx)
 {
+	tick();
+	/*
 	for(int i = 0; i < DEVICE_COUNT; i++)
 		for(int j = 0; j < DEVICE_COUNT; j++)
 			CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][i][j]));
+			*/
 
+	CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][1][0]));
+	CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][0][1]));
 	CURRENT_SYNC_IDX +=1;
+	//tock();
 
 }
 
@@ -293,6 +304,51 @@ void GPUpy::replaceCurrentBatch()
 	{
 		CUDA_CHECK_RETURN(cudaStreamSynchronize(streams[i]));
 		CUDA_CHECK_RETURN(cudaStreamSynchronize(streams_y[i]));
+	}
+}
+
+
+void GPUpy::tick()
+{
+	tick("default");
+}
+void GPUpy::tick(std::string name)
+{
+	if (m_dictTickTock.count(name) > 0)
+	{
+		if (m_dictTickTockCumulative.count(name) > 0)
+		{
+			m_dictTickTockCumulative[name] += ::tock(m_dictTickTock[name],
+					0.0f);
+			m_dictTickTock.erase(name);
+		} else
+		{
+			m_dictTickTockCumulative[name] = ::tock(m_dictTickTock[name], 0.0f);
+			m_dictTickTock.erase(name);
+		}
+	} else
+	{
+		m_dictTickTock[name] = ::tick();
+	}
+}
+float GPUpy::tock(){ return tock("default"); }
+float GPUpy::tock(std::string name)
+{
+	if (m_dictTickTockCumulative.count(name) > 0)
+	{
+		::tock("<<<Cumulative>>>: " + name, m_dictTickTockCumulative[name]);
+		float value = m_dictTickTockCumulative[name];
+		m_dictTickTockCumulative.erase(name);
+		return value;
+	}
+	else
+	{
+		if (m_dictTickTock.count(name) == 0)
+			cout << "Error for name: " << name << endl;
+		assert(("No tick event was registered for the name" + name, m_dictTickTock.count(name) > 0));
+		float value = ::tock(m_dictTickTock[name], name);
+		m_dictTickTock.erase(name);
+		return value;
 	}
 }
 

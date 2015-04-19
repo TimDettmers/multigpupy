@@ -586,10 +586,61 @@ void decompression_8bit(Tensor *tbl_flt, CharTensor *A, float precision,  Tensor
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
 		kDecompression_8bit<<<blocks,THREADS_PER_BLOCKS>>>(tbl_flt->data_gpus[i],  A->data_gpus[i], precision, A->size_gpus[i], out->data_gpus[i]);
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
-		cudaDeviceSynchronize();
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 
 
+}
+
+
+
+void reduceRow(Tensor *A, Tensor *out, Operation_t ops)
+{
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		int blocks = max(256,(A->shape_gpus[i][2]));
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kReduceRow<<<blocks,256>>>(A->data_gpus[i], out->data_gpus[i], A->rows, A->cols);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+
+}
+
+cudaEvent_t* tick()
+{
+    cudaEvent_t* startstop;
+    startstop = (cudaEvent_t*)malloc(2*sizeof(cudaEvent_t));
+    cudaEventCreate(&startstop[0]);
+    cudaEventCreate(&startstop[1]);
+    cudaEventRecord(startstop[0], 0);
+
+    return startstop;
+}
+float tock(cudaEvent_t* startstop){ return tock(startstop, "Time for the kernel(s): "); }
+float tock(cudaEvent_t* startstop, std::string text)
+{
+	float time;
+	cudaEventRecord(startstop[1], 0);
+	cudaEventSynchronize(startstop[1]);
+	cudaEventElapsedTime(&time, startstop[0], startstop[1]);
+	printf((text + ": %f ms.\n").c_str(), time);
+	return time;
+}
+float tock(std::string text, float tocks)
+{
+	printf((text + ": %f ms.\n").c_str(), tocks);
+	return tocks;
+}
+float tock(cudaEvent_t* startstop, float tocks)
+{
+	float time;
+	cudaEventRecord(startstop[1], 0);
+	cudaEventSynchronize(startstop[1]);
+	cudaEventElapsedTime(&time, startstop[0], startstop[1]);
+
+	return time+tocks;
 }
 

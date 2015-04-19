@@ -532,31 +532,56 @@ __device__ void reduceToMaxAndArgMax(float* sdataMax, float* sdataArgMax, unsign
 	}
 }
 
-__device__ void reduceToSumLocal(float* sdata, unsigned int tid)
-{
 
-  //Synchronize threads to share shared memory data
-  __syncthreads();
+/*
+__device__ void reduceToSumLocal(float* sdata, unsigned int tid, int threads)
+{
+  float mySum = sdata[tid];
+
+  // do reduction in shared mem
+  if (threads >= 512) { if (tid < 256) { sdata[tid] = mySum = mySum + sdata[tid + 256]; } __syncthreads(); }
+  if (threads >= 256) { if (tid < 128) { sdata[tid] = mySum = mySum + sdata[tid + 128]; } __syncthreads(); }
+  if (threads >= 128) { if (tid <  64) { sdata[tid] = mySum = mySum + sdata[tid +  64]; } __syncthreads(); }
+
+  // do warp reduction in volatile shared memory
+  volatile float* smem = sdata;
+  if (threads >=  64) if(tid < 32)  { smem[tid] = mySum = mySum + smem[tid + 32]; }
+  if(tid < 16)
+  {
+	  if (threads >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
+	  if (threads >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
+	  if (threads >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
+	  if (threads >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
+	  if (threads >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
+  }
+
+}
+
+
+*/
+
+__device__ void reduceToSumLocal(float* sdata, unsigned int tid, int threads)
+{
 
   float mySum = sdata[tid];
 
   // do reduction in shared mem
-  if (NUM_THREADS >= 512) { if (tid < 256) { sdata[tid] = mySum = mySum + sdata[tid + 256]; } __syncthreads(); }
-  if (NUM_THREADS >= 256) { if (tid < 128) { sdata[tid] = mySum = mySum + sdata[tid + 128]; } __syncthreads(); }
-  if (NUM_THREADS >= 128) { if (tid <  64) { sdata[tid] = mySum = mySum + sdata[tid +  64]; } __syncthreads(); }
+  if (threads >= 512) { if (tid < 256) { sdata[tid] = mySum = mySum + sdata[tid + 256]; } __syncthreads(); }
+  if (threads >= 256) { if (tid < 128) { sdata[tid] = mySum = mySum + sdata[tid + 128]; } __syncthreads(); }
+  if (threads >= 128) { if (tid <  64) { sdata[tid] = mySum = mySum + sdata[tid +  64]; } __syncthreads(); }
 
-  if (NUM_THREADS == 32){
+  if (threads == 32){
     if (tid < 16)
     {
       // now that we are using warp-synchronous programming (below)
       // we need to declare our shared memory volatile so that the compiler
       // doesn't reorder stores to it and induce incorrect behavior.
       volatile float* smem = sdata;
-      if (NUM_THREADS >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
-      if (NUM_THREADS >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
-      if (NUM_THREADS >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
-      if (NUM_THREADS >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
-      if (NUM_THREADS >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
+      if (threads >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
+      if (threads >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
+      if (threads >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
+      if (threads >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
+      if (threads >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
     }
   }
   else
@@ -567,13 +592,85 @@ __device__ void reduceToSumLocal(float* sdata, unsigned int tid)
       // we need to declare our shared memory volatile so that the compiler
       // doesn't reorder stores to it and induce incorrect behavior.
       volatile float* smem = sdata;
-      if (NUM_THREADS >=  64) { smem[tid] = mySum = mySum + smem[tid + 32]; }
-      if (NUM_THREADS >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
-      if (NUM_THREADS >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
-      if (NUM_THREADS >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
-      if (NUM_THREADS >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
-      if (NUM_THREADS >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
+      if (threads >=  64) { smem[tid] = mySum = mySum + smem[tid + 32]; }
+      if (threads >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
+      if (threads >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
+      if (threads >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
+      if (threads >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
+      if (threads >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
     }
+  }
+}
+
+
+__global__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int cols)
+{
+	__shared__ float row_values[256];
+	unsigned int idx = 0;
+	float row_value = 0.0f;
+	int active_threads = 0;
+
+	row_values[threadIdx.x] = 0.0f;
+	__syncthreads();
+
+	for (unsigned int row = blockIdx.x; row < rows; row += gridDim.x)
+	{
+		row_value = 0.0f;
+		for(unsigned int col = threadIdx.x; col < cols; col +=blockDim.x)
+		{
+			if(col >= blockDim.x)
+			{
+				if(col < blockDim.x-256) active_threads = 256;
+				else active_threads = cols % 256;
+				idx = col % 256;
+				for(int i = idx; i < 256; i+=active_threads)
+					row_values[i] = 0.0f;
+
+				__syncthreads();
+
+			}
+
+			idx = (col * rows) + row;
+			row_values[threadIdx.x] = A[idx];
+			__syncthreads(); reduceToSumLocal(row_values, threadIdx.x, 256); __syncthreads();
+			if(threadIdx.x == 0) row_value += row_values[0];
+
+
+		}
+
+		if(threadIdx.x == 0) out[row] = row_value;
+
+	}
+}
+
+
+
+
+__global__ void kMaxout(float *A, float *out, float *outargmax, int maxout_level, unsigned int cols, unsigned int rows)
+{
+  __shared__ float max_values[32];
+  __shared__ float argmax_values[32];
+  float const min_value = -FLT_MAX;
+
+  for(int row = blockIdx.x; row < rows; row +=blockDim.x)
+  {
+	  int softout_block_idx = row + (blockIdx.y*maxout_level*rows);
+	  if(threadIdx.x < maxout_level)
+	  {
+		  max_values[threadIdx.x] = A[softout_block_idx+(threadIdx.x*rows)];
+		  argmax_values[threadIdx.x] = (float)((blockIdx.y*maxout_level)+threadIdx.x);
+	  }
+	  else
+	  {
+		  max_values[threadIdx.x] = min_value;
+		  argmax_values[threadIdx.x] = -1.0f;
+	  }
+
+	  //reduceToMax(max_values, threadIdx.x);
+	  reduceToMaxAndArgMax(max_values, argmax_values, threadIdx.x, 32);
+	  __syncthreads();
+	  if(threadIdx.x == 0) out[row + (blockIdx.y*rows)] = max_values[0];
+	  if(threadIdx.x == 1) outargmax[row + (blockIdx.y*rows)] = argmax_values[0];
   }
 }
 
@@ -1301,34 +1398,6 @@ __global__ void kPrintData(float *A, int size)
 	printf("]\n");
 }
 
-__global__ void kMaxout(float *A, float *out, float *outargmax, int maxout_level, unsigned int cols, unsigned int rows)
-{
-  __shared__ float max_values[32];
-  __shared__ float argmax_values[32];
-  float const min_value = -FLT_MAX;
-
-  for(int row = blockIdx.x; row < rows; row +=blockDim.x)
-  {
-	  int softout_block_idx = row + (blockIdx.y*maxout_level*rows);
-	  if(threadIdx.x < maxout_level)
-	  {
-		  max_values[threadIdx.x] = A[softout_block_idx+(threadIdx.x*rows)];
-		  argmax_values[threadIdx.x] = (float)((blockIdx.y*maxout_level)+threadIdx.x);
-	  }
-	  else
-	  {
-		  max_values[threadIdx.x] = min_value;
-		  argmax_values[threadIdx.x] = -1.0f;
-	  }
-
-	  //reduceToMax(max_values, threadIdx.x);
-	  reduceToMaxAndArgMax(max_values, argmax_values, threadIdx.x, 32);
-	  __syncthreads();
-	  if(threadIdx.x == 0) out[row + (blockIdx.y*rows)] = max_values[0];
-	  if(threadIdx.x == 1) outargmax[row + (blockIdx.y*rows)] = argmax_values[0];
-  }
-}
-
 
 __global__ void kMaxColumnwise(float* mat, float* target, unsigned int width, unsigned int height)
 {
@@ -1706,11 +1775,200 @@ __global__ void kDot8bit_shared(unsigned char *A, unsigned char *B, float *out, 
 
 		offset +=64;
 	}
-
-
-
-
-
-
 }
+
+
+	/*
+__global__ void quantize(float *in, unsigned int *out, float *quantizationError,  float *avgPos, float *avgNeg, int size)
+{
+	  // This code only works if this is the case
+
+	  __shared__ float pos[128];
+	  __shared__ float poscount[32];
+
+
+	  // Calculate per-row averages
+	  const int row = getRow();
+
+	  float pos = 0.0f;
+	  int posCount = 0;
+	  float neg = 0.0f;
+	  int negCount = 0;
+
+	  int myRow = 0;
+
+	  for (int col = threadIdx.x; col < size; col += blockDim.x)
+	  {
+	    const float val = in[myRow][col] + quantizationError[myRow][col];
+	    if (val >= 0.0f)
+	    {
+	      pos += val;
+	      ++posCount;
+	    }
+	    else
+	    {
+	      neg += val;
+	      ++negCount;
+	    }
+	  }
+
+	  __shared__ float max_values[32];
+	  __shared__ float argmax_values[32];
+	  float const min_value = -FLT_MAX;
+
+	  for(int row = blockIdx.x; row < rows; row +=blockDim.x)
+	  {
+		  int softout_block_idx = row + (blockIdx.y*maxout_level*rows);
+		  if(threadIdx.x < maxout_level)
+		  {
+			  max_values[threadIdx.x] = A[softout_block_idx+(threadIdx.x*rows)];
+			  argmax_values[threadIdx.x] = (float)((blockIdx.y*maxout_level)+threadIdx.x);
+		  }
+		  else
+		  {
+			  max_values[threadIdx.x] = min_value;
+			  argmax_values[threadIdx.x] = -1.0f;
+		  }
+
+		  //reduceToMax(max_values, threadIdx.x);
+		  reduceToMaxAndArgMax(max_values, argmax_values, threadIdx.x, 32);
+
+
+
+	  // Warp reduce the values
+	  pos = warpReduceSum(pos);
+	  posCount = warpReduceSum(posCount);
+	  neg = warpReduceSum(neg);
+	  negCount = warpReduceSum(negCount);
+
+	  // Block reduce the values, one for each warp
+	  __shared__ float blockPos[4];
+	  __shared__ int blockPosCount[4];
+	  __shared__ float blockNeg[4];
+	  __shared__ int blockNegCount[4];
+
+	  if (getLaneId() == 0) {
+	    blockPos[getWarpId()] = pos;
+	    blockPosCount[getWarpId()] = posCount;
+	    blockNeg[getWarpId()] = neg;
+	    blockNegCount[getWarpId()] = negCount;
+	  }
+
+	  __syncthreads();
+
+	  // We need all threads in the block to know the average.
+	  pos = 0.0f;
+	  posCount = 0;
+	  neg = 0.0f;
+	  negCount = 0;
+
+	  // There is always at least one warp executing this, and the number
+	  // of warps will be <= the number of lanes in a warp, so each warp
+	  // is guaranteed to get all values here.
+	  if (getLaneId() < blockDim.x / WARP_SIZE) {
+	    pos = blockPos[getLaneId()];
+	    posCount = blockPosCount[getLaneId()];
+	    neg = blockNeg[getLaneId()];
+	    negCount = blockNegCount[getLaneId()];
+	  }
+
+	  // Warp sum all the values
+	  pos = warpReduceSum(pos);
+	  posCount = warpReduceSum(posCount);
+	  neg = warpReduceSum(neg);
+	  negCount = warpReduceSum(negCount);
+
+	  // Now all threads in all warps have the final average.
+
+	  if (posCount > 0) {
+	    pos /= (float) posCount;
+	  }
+	  if (negCount > 0) {
+	    neg /= (float) negCount;
+	  }
+
+	  // Only one response per row
+	  if (threadIdx.x == 0) {
+	    avgPos[row] = pos;
+	    avgNeg[row] = neg;
+	  }
+
+	  // Quantize values
+	  int quantizedCol = 0;
+
+	  // Each warp reads up to 32 values from the row, quantizes them to a
+	  // single bit, and then we shuffle reduce to one unsigned int per
+	  // warp, which we write out.
+	  for (int warpCol = WARP_SIZE * getWarpId();
+	       warpCol < in.getSize(1);
+	       warpCol += blockDim.x) {
+	    int col = warpCol + getLaneId();
+
+	    unsigned on = 0;
+	    if (col < in.getSize(1)) {
+	      float val = in[row][col] + quantizationError[row][col];
+
+	      float error = 0.0f;
+
+	      if (val >= 0) {
+	        on = 1;
+	        error = val - pos;
+	      } else {
+	        error = val - neg;
+	      }
+
+	      // Each thread produces an error per entry.
+	      quantizationError[row][col] = error;
+	    }
+
+	    // Each lane will write a bit into the output if their value is >=
+	    // 0. Data is effectively then little endian with regards to input
+	    // order.
+	    const unsigned warpQuantized = __ballot(on);
+
+	    if (getLaneId() == 0) {
+	      out[row][warpCol / WARP_SIZE] = warpQuantized;
+	    }
+
+	    ++quantizedCol;
+	  }
+	}
+
+
+	__global__ void
+	dequantize(const DeviceTensor<unsigned, 2> in,
+	           const DeviceTensor<float, 1> avgPos,
+	           const DeviceTensor<float, 1> avgNeg,
+	           DeviceTensor<float, 2> out) {
+	  // This code only works if this is the case
+	  assert(warpSize == WARP_SIZE && WARP_SIZE == NUM_BITS);
+
+	  const int row = getRow();
+	  float pos = avgPos[row];
+	  float neg = avgNeg[row];
+
+	  // Each warp present will read a single quantized unsigned int, and
+	  // each thread will write out a single dequantized value
+	  for (int quantizedCol = getWarpId();
+	       quantizedCol < in.getSize(1);
+	       quantizedCol += blockDim.x / WARP_SIZE) {
+	    // All threads in the warp read the same quantized value
+	    const unsigned quantized = in[row][quantizedCol];
+
+	    // Each lane will read a bit from the input; data is effectively
+	    // little endian with regards to input order.
+	    const int bit = getBit(quantized, getLaneId());
+	    const float dequantized = bit ? pos : neg;
+
+	    // Of course, some of the bits may not correspond to real outputs
+	    const int dequantizedCol = quantizedCol * WARP_SIZE + getLaneId();
+	    if (dequantizedCol < out.getSize(1)) {
+	      out[row][dequantizedCol] = dequantized;
+	    }
+	  }
+	}
+	*/
+
+
+
 

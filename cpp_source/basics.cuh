@@ -71,6 +71,13 @@ void stack_axis(Tensor *A, Tensor *out);
 
 void compression_8bit(Tensor *tbl_flt, Tensor *A, float precision,  CharTensor *out);
 void decompression_8bit(Tensor *tbl_flt, CharTensor *A, float precision,  Tensor *out);
+void reduceRow(Tensor *A, Tensor *out, Operation_t ops);
+
+cudaEvent_t* tick();
+float tock(cudaEvent_t* startstop);
+float tock(cudaEvent_t* startstop, std::string text);
+float tock(std::string text, float tocks);
+float tock(cudaEvent_t* startstop, float tocks);
 
 #endif /* BASICS_CUH_ */
 
