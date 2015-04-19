@@ -20,6 +20,9 @@ Tensor *empty(int batches, int maps, int rows, int cols, int split_idx);
 CharTensor *empty_char_like(Tensor *A);
 CharTensor *empty_char(int batches, int maps, int rows, int cols);
 CharTensor *empty_char(int batches, int maps, int rows, int cols, int split_idx);
+UIntTensor *empty_uint_like(Tensor *A);
+UIntTensor *empty_uint(int batches, int maps, int rows, int cols);
+UIntTensor *empty_uint(int batches, int maps, int rows, int cols, int split_idx);
 
 float *empty_pinned(int batches, int maps, int rows, int cols,float *cpu_buffer);
 Tensor *zeros(int batches, int maps, int rows, int cols);
@@ -71,6 +74,9 @@ void stack_axis(Tensor *A, Tensor *out);
 
 void compression_8bit(Tensor *tbl_flt, Tensor *A, float precision,  CharTensor *out);
 void decompression_8bit(Tensor *tbl_flt, CharTensor *A, float precision,  Tensor *out);
+void compression_1bit(Tensor *A_with_errors, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, UIntTensor *out);
+void decompression_1bit(UIntTensor *quant, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, Tensor *out);
+
 void reduceRow(Tensor *A, Tensor *out, Operation_t ops);
 
 cudaEvent_t* tick();

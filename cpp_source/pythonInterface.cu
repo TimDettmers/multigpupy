@@ -19,7 +19,9 @@ extern "C"
 	GPUpy *fseeded_GPUpy(int seed,float *floats_8bit){GPUpy *gpupy = new GPUpy(); gpupy->init((int) ((time(0) + (12345)) % 10000),floats_8bit); return gpupy; }
 	Slice *femptySlice(){ return emptySlice(); }
 	Tensor *fempty(int batches, int maps, int rows, int cols){ return empty(batches, maps, rows, cols); }
+	Tensor *fempty_like(Tensor *A){ return empty_like(A); }
 	CharTensor *fempty_char_like(Tensor *A){ return empty_char_like(A); }
+	UIntTensor *fempty_uint_like(Tensor *A){ return empty_uint_like(A); }
 	Tensor *fempty_split(int batches, int maps, int rows, int cols, int split_axis){ return empty(batches, maps, rows, cols, split_axis); }
 	Tensor *fzeros(int batches, int maps, int rows, int cols){ return zeros(batches, maps, rows, cols); }
 	Tensor *fzeros_split(int batches, int maps, int rows, int cols, int split_axis){ return zeros(batches, maps, rows, cols, split_axis); }
@@ -41,6 +43,8 @@ extern "C"
 	Tensor *fdiv(Tensor *A, Tensor *B){ return elementWise(A,B,div_tensor); }
 	void inp_div(Tensor *A, Tensor *B, Tensor *out){ elementWise(A,B,out,div_tensor); }
 	void ffree(Tensor *A){ A->freeTensor(); }
+
+	void ffill(Tensor *A, float value){ fill_with_number(A, value); }
 
 	void ffprint(Tensor *A){ elementWise(A,NULL,NULL,0.0f,print); }
 
@@ -168,6 +172,8 @@ extern "C"
 
 	void fcompress_8bit(GPUpy *gpupy, Tensor *A, float precision, CharTensor *out){ compression_8bit(gpupy->FLT_TABLE_8BIT, A, precision,out); }
 	void fdecompress_8bit(GPUpy *gpupy, CharTensor *A, float precision, Tensor *out){ decompression_8bit(gpupy->FLT_TABLE_8BIT, A,precision, out); }
+	void fcompress_1bit(Tensor *A_with_errors, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, UIntTensor *out){ compression_1bit(A_with_errors, errors, avgPos, avgNeg, out); }
+	void fdecompress_1bit(UIntTensor *quant, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, Tensor *out){ decompression_1bit(quant, errors, avgPos, avgNeg, out); }
 
 	void fsum_row(Tensor *A, Tensor *out){ reduceRow(A, out, add_tensor); }
 

@@ -289,7 +289,7 @@ __global__ void kElementWise(float *A,float *B, float *out, int size, float flt,
 		  case add_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] + B[i]; break;
 		  case sub_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] - B[i]; break;
 		  case mul_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] * B[i]; break;
-		  case div_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = fdividef(A[i], B[i]); break;
+		  case div_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = B[i] == 0.0 ? 0.0 : fdividef(A[i], B[i]); break;
 		  case exp_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __expf(A[i]); break;
 		  case pow_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __powf(A[i],flt); break;
 		  case log_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __logf(A[i]); break;
@@ -608,7 +608,7 @@ __global__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int
 	__shared__ float row_values[256];
 	unsigned int idx = 0;
 	float row_value = 0.0f;
-	int active_threads = 0;
+	unsigned int active_threads = 0;
 
 	row_values[threadIdx.x] = 0.0f;
 	__syncthreads();
@@ -620,10 +620,12 @@ __global__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int
 		{
 			if(col >= blockDim.x)
 			{
-				if(col < blockDim.x-256) active_threads = 256;
-				else active_threads = cols % 256;
-				idx = col % 256;
-				for(int i = idx; i < 256; i+=active_threads)
+				if(col < cols-blockDim.x) active_threads = blockDim.x;
+				else active_threads = cols % blockDim.x;
+				idx = col % blockDim.x;
+				if(active_threads == 0) active_threads = blockDim.x;//TODO: cannot figure out why this occurs, but this hack will do for now
+
+				for(int i = idx; i < blockDim.x; i+=active_threads)
 					row_values[i] = 0.0f;
 
 				__syncthreads();
@@ -632,7 +634,7 @@ __global__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int
 
 			idx = (col * rows) + row;
 			row_values[threadIdx.x] = A[idx];
-			__syncthreads(); reduceToSumLocal(row_values, threadIdx.x, 256); __syncthreads();
+			__syncthreads(); reduceToSumLocal(row_values, threadIdx.x, blockDim.x); __syncthreads();
 			if(threadIdx.x == 0) row_value += row_values[0];
 
 
@@ -1775,6 +1777,64 @@ __global__ void kDot8bit_shared(unsigned char *A, unsigned char *B, float *out, 
 
 		offset +=64;
 	}
+}
+
+
+__global__ void kCompression_1bit(float *A_with_errors, float *error,  float *avgPos, float *avgNeg, unsigned int *out_quant, int rows, int cols)
+{
+	float pos = 0.0f;
+	float neg = 0.0f;
+	unsigned int idx = 0;
+	unsigned int bit = 0;
+	unsigned int quant = 0.0;
+	float value = 0.0f;
+	for (unsigned int row = blockIdx.x; row < rows; row += gridDim.x)
+	{
+		pos = avgPos[row];
+		neg = avgNeg[row];
+		for(unsigned int col = threadIdx.x; col < cols; col +=blockDim.x)
+		{
+			idx = (col * rows) + row;
+			value = A_with_errors[idx];
+			if(value >= 0)
+			{
+				bit = 1;
+				error[idx] = value-pos;
+			}
+			else
+			{
+				bit = 0;
+				error[idx] = value-neg;
+			}
+
+			quant = __ballot(bit);
+
+			out_quant[(rows * (col/32) + row)] = quant;
+		}
+	}
+
+}
+
+__global__ void kDecompression_1bit(unsigned int *A_quant, float *error,  float *avgPos, float *avgNeg, float *out,  int rows, int cols)
+{
+	float pos = 0.0f;
+	float neg = 0.0f;
+	unsigned int idx = 0;
+	unsigned int bit = 0;
+	unsigned quant = 0.0;
+	for (unsigned int row = blockIdx.x; row < rows; row += gridDim.x)
+	{
+		pos = avgPos[row];
+		neg = avgNeg[row];
+		for(unsigned int col = threadIdx.x; col < cols; col +=blockDim.x)
+		{
+			idx = (rows * (col/32) + row);
+			quant = A_quant[idx];
+			bit = quant & (1<<(threadIdx.x % 32));
+			out[(rows * col) + row] = bit ? pos : neg;
+		}
+	}
+
 }
 
 

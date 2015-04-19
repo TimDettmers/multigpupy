@@ -337,9 +337,42 @@ def reset_sync_idx(): lib.funcs.freset_sync_idx()
 def create_additional_streams(layer_count):    
     lib.funcs.fcreate_streams(p_gpupy, layer_count)
     
+def zeros_like(x1):
+    arr = array(None, lib.funcs.fempty_like(x1.pt))
+    arr *=0
+    return arr
+    
+def empty_like(x1): return array(None, lib.funcs.fempty_like(x1.pt))
+def empty_uint_like(x1): return lib.funcs.fempty_uint_like(x1.pt)
 def empty_char_like(x1): return lib.funcs.fempty_char_like(x1.pt)
+
 def compress_8bit(A, abs_max_value, char_pointer):lib.funcs.fcompress_8bit(p_gpupy, A.pt,ct.c_float(abs_max_value), char_pointer)
 def decompress_8bit(char_pointer, abs_max_value, out):lib.funcs.fdecompress_8bit(p_gpupy, char_pointer,ct.c_float(abs_max_value),out.pt)    
 
 def sum_row(x1, out):
     lib.funcs.fsum_row(x1.pt, out.pt)
+    
+def compress_1bit(A, val_with_errors, errors, avgPositive,  avgNegative, out, maskPos, maskNeg, posCount, negCount):
+    add(A,errors,val_with_errors)
+    greater_equal(val_with_errors, 0.0, maskPos)
+    less(val_with_errors, 0.0, maskNeg)
+    sum_row(maskPos, posCount)
+    fill(negCount, A.shape_tensor[3])
+    sub(negCount,posCount, negCount)
+    mul(val_with_errors,maskPos, maskPos)
+    mul(val_with_errors,maskNeg, maskNeg)
+    sum_row(maskPos, avgPositive)
+    sum_row(maskNeg, avgNegative)    
+    div(avgPositive, posCount, avgPositive)
+    div(avgNegative, negCount, avgNegative)
+    #print A.sum(), errors.sum(), avgPositive.sum(), avgNegative.sum()
+    lib.funcs.fcompress_1bit(A.pt, errors.pt, avgPositive.pt, avgNegative.pt, out)
+    
+def decompress_1bit(quant, errors, avgPos, avgNeg, out):
+    lib.funcs.fdecompress_1bit(quant, errors.pt, avgPos.pt, avgNeg.pt, out.pt)
+    
+def fill(x1, fill_value): lib.funcs.ffill(x1.pt, ct.c_float(fill_value))
+     
+    
+    
+    

@@ -128,4 +128,6 @@ __global__ void kExpandPartialVocabGradient(float *grad, float *vocab_idx, float
 __global__ void kExpandVocabGradientMiddleWord(float *grad, float *vocab_idx, float *vocab_grad);
 __global__ void kUpdateVocabWithGradient(float *grad, float *vocab_idx, float* vocab, float learning_rate);
 __global__ void concat_batches(float **batch_X, float **batch_Y, float *out_X, float *out_Y);
+__global__ void kCompression_1bit(float *A_with_errors, float *error,  float *avgPos, float *avgNeg, unsigned int *out_quant,  int rows, int cols);
+__global__ void kDecompression_1bit(unsigned int *A_quant,float *error,  float *avgPos, float *avgNeg, float *out,  int rows, int cols);
 #endif

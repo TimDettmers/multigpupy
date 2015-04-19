@@ -99,6 +99,12 @@ CharTensor *empty_char(int batches, int maps, int rows, int cols, int split_axis
 { return (CharTensor*)empty_template<unsigned char>(batches, maps, rows, cols, split_axis); }
 
 
+UIntTensor *empty_uint_like(Tensor *A){ return empty_uint(A->batches, A->maps, A->rows, A->cols, A->splitAxis); }
+UIntTensor *empty_uint(int batches, int maps, int rows, int cols){ return empty_uint(batches, maps, rows, cols, -1); }
+UIntTensor *empty_uint(int batches, int maps, int rows, int cols, int split_axis)
+{ return (UIntTensor*)empty_template<unsigned char>(batches, maps, rows, cols, split_axis); }
+
+
 void slice_axis(Tensor *A, Tensor *out)
 {
 	//only row slice supported right now
@@ -588,9 +594,41 @@ void decompression_8bit(Tensor *tbl_flt, CharTensor *A, float precision,  Tensor
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
 
+
+void compression_1bit(Tensor *A_with_errors, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, UIntTensor *out)
+{
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		int blocks = (A_with_errors->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kCompression_1bit<<<blocks,THREADS_PER_BLOCKS>>>(A_with_errors->data_gpus[i], errors->data_gpus[i],avgPos->data_gpus[i], avgNeg->data_gpus[i], out->data_gpus[i],A_with_errors->shape_gpus[i][2],A_with_errors->shape_gpus[i][3]);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
 
 }
+
+
+
+void decompression_1bit(UIntTensor *quant, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, Tensor *out)
+{
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		int blocks = (out->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		kDecompression_1bit<<<blocks,THREADS_PER_BLOCKS>>>(quant->data_gpus[i], errors->data_gpus[i],avgPos->data_gpus[i], avgNeg->data_gpus[i], out->data_gpus[i],out->shape_gpus[i][2],out->shape_gpus[i][3]);
+		CUDA_CHECK_RETURN(cudaPeekAtLastError());
+	}
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
+
 
 
 
