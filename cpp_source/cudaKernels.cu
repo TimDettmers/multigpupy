@@ -608,7 +608,7 @@ __global__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int
 	__shared__ float row_values[256];
 	unsigned int idx = 0;
 	float row_value = 0.0f;
-	unsigned int active_threads = 0;
+	unsigned int next_thread_block_range = blockDim.x*2;
 
 	row_values[threadIdx.x] = 0.0f;
 	__syncthreads();
@@ -616,28 +616,22 @@ __global__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int
 	for (unsigned int row = blockIdx.x; row < rows; row += gridDim.x)
 	{
 		row_value = 0.0f;
-		for(unsigned int col = threadIdx.x; col < cols; col +=blockDim.x)
+		for(unsigned int col = threadIdx.x; col < cols; col +=blockDim.x,next_thread_block_range+=blockDim.x)
 		{
-			if(col >= blockDim.x)
-			{
-				if(col < cols-blockDim.x) active_threads = blockDim.x;
-				else active_threads = cols % blockDim.x;
-				idx = col % blockDim.x;
-				if(active_threads == 0) active_threads = blockDim.x;//TODO: cannot figure out why this occurs, but this hack will do for now
-
-				for(int i = idx; i < blockDim.x; i+=active_threads)
-					row_values[i] = 0.0f;
-
-				__syncthreads();
-
-			}
-
 			idx = (col * rows) + row;
 			row_values[threadIdx.x] = A[idx];
 			__syncthreads(); reduceToSumLocal(row_values, threadIdx.x, blockDim.x); __syncthreads();
 			if(threadIdx.x == 0) row_value += row_values[0];
 
+			if(cols< next_thread_block_range )
+			{
+				//the next block will be partially out of range
+				//so that the values do not longer overlap
+				//so we have to set the non-overlapping values to zero
+				row_values[threadIdx.x] = 0.0f;
+				__syncthreads();
 
+			}
 		}
 
 		if(threadIdx.x == 0) out[row] = row_value;
