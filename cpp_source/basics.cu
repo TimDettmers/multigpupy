@@ -291,7 +291,16 @@ Tensor *tocpu(Tensor *A, float *cpu_buffer)
 	out->isCUDA = 0;
 	out->splitAxis = -1;
 
-	CUDA_CHECK_RETURN(cudaFree(temp->data));
+	int gpus = 0;
+	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+	for(int i = 0; i < gpus; i++)
+	{
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
+		CUDA_CHECK_RETURN(cudaFree(temp->data_gpus[i]));
+	}
+
+
+	CUDA_CHECK_RETURN(cudaSetDevice(0));
 	delete temp;
 
 

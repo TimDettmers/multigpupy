@@ -83,25 +83,29 @@ class Autoencoder(object):
         if type(root.funcs) == Code: return root.out.tocpu()
         else: print 'No code layer found!'
         
-    def classify(self, codes, y,test_top=0.2):
+    def classify(self, codes, y, test_codes, proba=False, classes=10):
         preds = []
-        labels = []
         X = gpu.array(codes)
         buffer = gpu.empty_like(X)      
         row_buffer = gpu.empty((X.shape[0],1))  
-        for i, code in enumerate(codes[X.shape[0]*(1-test_top):]):
-            if i % 100 == 0: print i
+        for i, code in enumerate(test_codes):
+            if i % 1000 == 0: print i
+            row = np.zeros((classes,))
             vec = gpu.array(code)
             gpu.sub(X,vec,buffer)
             gpu.square(buffer, buffer)
             gpu.sum_row(buffer, row_buffer)
             gpu.sqrt(row_buffer,row_buffer)
-            nearest = np.argsort(row_buffer.tocpu(), axis=None)[1]
-            preds.append(y[nearest])
-            #counts = np.bincount(np.int32(y[nearest].flatten()))
-            #print y[nearest].T, y[(X.shape[0]*(1-test_top))+i],np.argmax(counts)
-            #preds.append(np.argmax(counts))
-            labels.append(y[(X.shape[0]*(1-test_top))+i])
+            distance = row_buffer.tocpu()
+            nearest = np.argsort(distance, axis=None)[1:5]
+            if proba:
+                for i in range(classes):
+                    idx = np.where(y[nearest]==i)[0]            
+                    if idx.shape[0] > 0:
+                        row[i] += np.sum(np.exp(-distance[idx]))
+                preds.append(row.tolist())
+            else:
+                preds.append(y[nearest])
             
             del vec           
             #distance = cdist(codes, np.matrix(code),'cos')
@@ -109,7 +113,7 @@ class Autoencoder(object):
             #counts = np.bincount(np.int32(y[nearest].flatten()))
             #preds.append(np.argmax(counts))
         
-        return np.array(preds), np.array(labels)
+        return np.array(preds)
             
         
     def print_codes(self, X, y):

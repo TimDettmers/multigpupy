@@ -4,6 +4,14 @@
 #include <cuda_runtime_api.h>
 #include <vector>
 
+#define CUDA_CHECK_RETURN(value) {											\
+	cudaError_t _m_cudaStat = value;										\
+	if (_m_cudaStat != cudaSuccess) {										\
+		fprintf(stderr, "Error %s at line %d in file %s\n",					\
+				cudaGetErrorString(_m_cudaStat), __LINE__, __FILE__);		\
+		exit(1);															\
+	} }
+
 //this looks strange, but otherwise we cannot use template classes together with export "C" for ctypes
 
 template <typename T>
@@ -28,12 +36,14 @@ void freeTensor()
 {
 	if(isCUDA)
 	{
-		for(int i = 0;i < data_gpus.size(); i++)
+		int gpus = 0;
+		CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+		for(int i = 0;i < gpus; i++)
 		{
-			cudaSetDevice(i);
-			cudaFree(data_gpus[i]);
+			CUDA_CHECK_RETURN(cudaSetDevice(i));
+			CUDA_CHECK_RETURN(cudaFree(data_gpus[i]));
 		}
-		cudaSetDevice(0);
+		CUDA_CHECK_RETURN(cudaSetDevice(0));
 	}
 	else{ free(data); }
 	free(this);
