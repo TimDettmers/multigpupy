@@ -53,6 +53,14 @@ class Softmax(ActivationFunc):
         super(Softmax, self).__init__(0.0, gpu.softmax, gpu.linear)
     def activation(self, previous_output, my_activation, my_output, useDropout): 
         self.gpu_func(previous_output, my_output); 
+        
+class Code(ActivationFunc):
+    def __init__(self):   
+        #super(Code, self).__init__(0.0, gpu.double_ReLU, gpu.double_ReLU_grad)
+        super(Code, self).__init__(0.0, gpu.linear, gpu.linear)
+        #super(Code, self).__init__(0.0, gpu.logistic, gpu.logistic_grad)
+    def activation(self, previous_output, my_activation, my_output, useDropout): 
+        self.gpu_func(previous_output, my_output); 
 
 '''
 class GradientSynchronizer(Thread):
@@ -101,7 +109,8 @@ class Layer(object):
         self.current_SE = []
         self.error_epochs = {}
         self.confidence_interval_epochs = {}
-        self.config = {'learning_rate' : 0.03,
+        #print 1./unitcount if unitcount > 0.0 else 0.003
+        self.config = {'learning_rate' : 0.003,
                        'momentum' : 0.9,
                        'input_dropout': self.funcs.dropout,
                        'dropout' : self.funcs.dropout,
@@ -109,7 +118,8 @@ class Layer(object):
                        'parallelism' : 'data',
                        'compression' : '8bit',
                        'dropout_decay' : True,
-                       'test_for_convergence' : True
+                       'test_for_convergence' : True,
+                       'error_evaluation' : 'classification'
                        }        
         self.logger = None
         
@@ -274,7 +284,11 @@ class Layer(object):
     
     def predict(self, data):
         self.forward(data, None,False)   
-        if type(self.root.funcs) == Softmax: return gpu.argmax(self.root.out)
+        if type(self.root.funcs) == Softmax:            
+            if self.config['error_evaluation'] == 'classification':
+                return gpu.argmax(self.root.out)              
+            elif self.config['error_evaluation'] == 'logloss':
+                return self.root.out
         else: return self.root.out 
         
     def backward(self):
@@ -327,12 +341,20 @@ class Layer(object):
         gpu.Tdot(self.bias_ones, self.next_layer.error, self.b_grad_next)
         
     def accumulate_error(self):
-        predicted_labels = gpu.argmax(self.root.out) 
-        target_labels = gpu.argmax(self.root.target)
-        gpu.equal(predicted_labels, target_labels, target_labels)
-        error = 1.0-(target_labels.sum()/self.out.shape[2])
+        if self.config['error_evaluation'] == 'classification':
+            predicted_labels = gpu.argmax(self.root.out) 
+            target_labels = gpu.argmax(self.root.target)
+            gpu.equal(predicted_labels, target_labels, target_labels)
+            error = 1.0-(target_labels.sum()/self.out.shape[2])
+          
+        elif self.config['error_evaluation'] == 'logloss':
+            size =  self.root.out.shape_tensor[2]
+            error = (self.root.target*gpu.log(self.root.out+1e-15)).sum()/np.float32(-size)
+        elif self.config['error_evaluation'] == 'regression':
+            error = gpu.sum((self.activation-self.root.out)**2)/np.float32(self.root.out.shape_tensor[2]*self.root.out.shape_tensor[3])
+            
         self.current_error.append(error) 
-        self.current_SE.append(np.array(self.current_error).std()/len(self.current_error))
+        self.current_SE.append(np.array(self.current_error).std()/len(self.current_error))        
         
         
     def print_reset_error(self, error_name='Train'):

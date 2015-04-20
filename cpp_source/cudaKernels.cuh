@@ -37,6 +37,8 @@ enum Operation_t
 	logistic,
 	logistic_grad,
 	rectified_linear,
+	double_rectified_linear,
+	double_rectified_linear_grad,
 	eq_tensor,
 	lt_tensor,
 	gt_tensor,

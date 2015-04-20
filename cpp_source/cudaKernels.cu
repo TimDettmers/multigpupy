@@ -291,12 +291,13 @@ __global__ void kElementWise(float *A,float *B, float *out, int size, float flt,
 		  case mul_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] * B[i]; break;
 		  case div_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = B[i] == 0.0 ? 0.0 : fdividef(A[i], B[i]); break;
 		  case exp_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __expf(A[i]); break;
-		  case pow_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __powf(A[i],flt); break;
 		  case log_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __logf(A[i]); break;
 		  case abs_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = fabs(A[i]); break;
 		  case logistic: for (unsigned int i = idx;i < size; i += numThreads) out[i] = __fdividef(1.0f , (1.0 + __expf(-A[i]))); break;
 		  case logistic_grad: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i]*(1.0f-A[i]); break;
 		  case rectified_linear: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] > 0.0f ? A[i] : 0.0f; break;
+		  case double_rectified_linear: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] > 0.0f && A[i] < 1.0f ? A[i] : 0.0f; break;
+		  case double_rectified_linear_grad: for (unsigned int i = idx;i < size; i += numThreads) out[i] = A[i] > 0.0f && A[i] < 1.0f ? 1.0f : 0.0f; break;
 		  case eq_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] == B[i]); break;
 		  case lt_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] < B[i]); break;
 		  case gt_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = (float)(A[i] > B[i]); break;
@@ -312,6 +313,20 @@ __global__ void kElementWise(float *A,float *B, float *out, int size, float flt,
 		  case dropout_tensor: for (unsigned int i = idx;i < size; i += numThreads) out[i] = out[i] > flt ? A[i] : 0.0f; break;
 		  case print: for (unsigned int i = idx;i < size; i += numThreads) printf("%f ",A[i]); break;
 		  case fill:  for (unsigned int i = idx;i < size; i += numThreads) A[i] = flt; break;
+		  case pow_tensor:
+			  int flt_int = flt;
+			  if(flt == (float)flt_int && flt_int % 2 == 0)
+				  for (unsigned int i = idx;i < size; i += numThreads)
+					  out[i] = A[i] < 0.0f ? __powf(-A[i],flt) : __powf(A[i],flt);
+			  else if(flt == (float)flt_int)
+				  for (unsigned int i = idx;i < size; i += numThreads)
+					  out[i] = A[i] < 0.0f ? -__powf(-A[i],flt) : __powf(A[i],flt);
+			  else
+				  for (unsigned int i = idx;i < size; i += numThreads)
+					  out[i] = __powf(A[i],flt);
+
+
+		  	  break;
 	}
 
 }

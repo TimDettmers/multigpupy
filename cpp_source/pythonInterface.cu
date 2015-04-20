@@ -78,6 +78,10 @@ extern "C"
 	void inp_logistic_grad(Tensor *A, Tensor *out){ elementWise(A,NULL,out, logistic_grad); }
 	Tensor *fReLU(Tensor *A){ return elementWise(A,NULL,rectified_linear);}
 	void inp_ReLU(Tensor *A, Tensor *out){ elementWise(A,NULL,out, rectified_linear);}
+	Tensor *fdouble_ReLU(Tensor *A){ return elementWise(A,NULL,double_rectified_linear);}
+	void inp_double_ReLU(Tensor *A, Tensor *out){ elementWise(A,NULL,out, double_rectified_linear);}
+	Tensor *fdouble_ReLU_grad(Tensor *A){ return elementWise(A,NULL,double_rectified_linear_grad);}
+	void inp_double_ReLU_grad(Tensor *A, Tensor *out){ elementWise(A,NULL,out, double_rectified_linear_grad);}
 
 	Tensor *fsoftmax(Tensor *A){return softmax(A); }
 	void inp_softmax(Tensor *A, Tensor *out){ softmax(A, out); }

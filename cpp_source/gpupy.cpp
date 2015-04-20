@@ -145,7 +145,20 @@ void GPUpy::dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasO
 		assert(A->shape_gpus[i][1] == 1 && "Tensors dot product is not supported.");
 		assert(A->shape_gpus[i][0] == 1 && "Tensors dot product is not supported.");
 
+		if(A_cols != B_rows)
+		{
+			cout << "A rows: " << A_rows << " vs. " <<  "A cols: " <<B_cols << endl;
+			cout << "B rows: " << B_rows << " vs. " <<  "B cols: " <<B_cols << endl;
+			cout << "out rows: " << out->shape_gpus[i][2] << " vs. " <<  "out cols: " << out->shape_gpus[i][3] << endl;
+		}
 		assert(A_cols == B_rows);
+		if(out->shape_gpus[i][2] != A_rows || out->shape_gpus[i][3] != B_cols)
+		{
+			cout << "A rows: " << A_rows << " vs. " <<  "A cols: " <<B_cols << endl;
+			cout << "B rows: " << B_rows << " vs. " <<  "B cols: " <<B_cols << endl;
+			cout << "out rows: " << out->shape_gpus[i][2] << " vs. " <<  "out cols: " << out->shape_gpus[i][3] << endl;
+		}
+		assert(out->shape_gpus[i][2] == A_rows && out->shape_gpus[i][3] == B_cols);
 
 
 		CUDA_CHECK_RETURN(cudaSetDevice(i));

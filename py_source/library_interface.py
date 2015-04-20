@@ -189,6 +189,12 @@ funcs.flogistic.restype = ct.POINTER(Tensor)
 funcs.inp_logistic.restype = ct.c_void_p
 funcs.flogistic_grad.restype = ct.POINTER(Tensor)
 funcs.inp_logistic_grad.restype = ct.c_void_p
+
+funcs.fdouble_ReLU.restype = ct.POINTER(Tensor)
+funcs.inp_double_ReLU.restype = ct.c_void_p
+funcs.fdouble_ReLU_grad.restype = ct.POINTER(Tensor)
+funcs.inp_double_ReLU_grad.restype = ct.c_void_p
+
 funcs.fReLU.restype = ct.POINTER(Tensor)
 funcs.inp_ReLU.restype = ct.c_void_p
 funcs.fcopy.restype = ct.POINTER(Tensor)

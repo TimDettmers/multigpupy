@@ -309,6 +309,20 @@ def test_logisticGrad():
     C = gpu.logistic_grad(B).tocpu()  
     t.assert_array_almost_equal(C, A*(1.0-A), 5, "LogisticGrad not like numpy equivalent") 
     
+def test_double_ReLU():    
+    A = np.float32(np.random.randn(10,7,83,4))
+    B = gpu.array(A)
+    C = gpu.double_ReLU(B).tocpu()  
+    t.assert_array_almost_equal(C, A*(A>0.0)*(A<1.0), 5, "Double relu not like numpy equivalent")
+    
+    
+def test_double_ReLU_grad():    
+    A = np.float32(np.random.randn(10,7,83,4))
+    C2 = np.ones_like(A)
+    B = gpu.array(A)
+    C = gpu.double_ReLU_grad(B).tocpu()  
+    t.assert_array_almost_equal(C, C2*(A>0.0)*(A<1.0), 5, "Double relu grad not like numpy equivalent")
+    
 def test_abs():    
     A = np.float32(np.random.rand(10,7,83,4))
     B = gpu.array(A)
@@ -323,11 +337,29 @@ def test_square():
     
 def test_pow():
     A = np.float32(np.random.rand(10,7,83,4))
+    A2 = np.float32(np.random.rand(10,7,83,4))
     B = gpu.array(A)
+    B2 = gpu.array(A2)
     C = gpu.power(B,5).tocpu()  
     t.assert_array_almost_equal(C, np.power(A,5), 5, "power not like numpy equivalent") 
     C = gpu.power(B,17.83).tocpu()  
     t.assert_array_almost_equal(C, np.power(A,17.83), 5, "power not like numpy equivalent") 
+    
+    
+    C = (B**5).tocpu()  
+    t.assert_array_almost_equal(C, np.power(A,5), 5, "power not like numpy equivalent") 
+    C = (B**17.83).tocpu()  
+    t.assert_array_almost_equal(C, np.power(A,17.83), 5, "power not like numpy equivalent") 
+    
+    C = gpu.power(B-B2,5).tocpu()  
+    t.assert_array_almost_equal(C, np.power(A-A2,5), 5, "power not like numpy equivalent") 
+    C = gpu.power(B-B2,2).tocpu()  
+    t.assert_array_almost_equal(C, np.power(A-A2,2), 5, "power not like numpy equivalent") 
+    
+    C = ((B-B2)**5).tocpu()  
+    t.assert_array_almost_equal(C, np.power(A-A2,5), 5, "power not like numpy equivalent") 
+    C = ((B-B2)**2).tocpu()  
+    t.assert_array_almost_equal(C, np.power(A-A2,2), 5, "power not like numpy equivalent") 
     
 def test_addVectorToTensor():
     A1 = np.float32(np.random.rand(10,7,83,4))

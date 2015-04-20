@@ -106,6 +106,7 @@ class array(object):
     def __ge__(self, other): return greater_equal(self,other)
     def __le__(self, other): return less_equal(self,other)
     def __ne__(self, other): return not_equal(self,other)
+    def __pow__(self, other): return power(self,other)
     #def abs(self): return absolute(self, out=None)
     
     
@@ -204,7 +205,15 @@ def copy(x1,out=None):
     
 def logistic(x1,out=None):
     if out: lib.funcs.inp_logistic(x1.pt,out.pt);
-    else: return array(None, lib.funcs.flogistic(x1.pt))
+    else: return array(None, lib.funcs.flogistic(x1.pt))    
+    
+def double_ReLU(x1,out=None):
+    if out: lib.funcs.inp_double_ReLU(x1.pt,out.pt);
+    else: return array(None, lib.funcs.fdouble_ReLU(x1.pt))    
+    
+def double_ReLU_grad(x1,out=None):
+    if out: lib.funcs.inp_double_ReLU_grad(x1.pt,out.pt);
+    else: return array(None, lib.funcs.fdouble_ReLU_grad(x1.pt))
 
 def logistic_grad(x1,out=None):    
     """Computes x1*(1-x1).
