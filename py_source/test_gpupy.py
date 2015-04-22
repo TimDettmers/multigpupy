@@ -22,7 +22,7 @@ def teardown():
     pass
 
 def test_cpu():
-    A = np.random.rand(17,83)
+    A = np.float32(np.random.rand(17,83))
     B = gpu.array(A)
     C = B.tocpu()
     t.assert_array_almost_equal(A,C,4,"array.tocpu not equal to init array!")
@@ -1225,33 +1225,6 @@ def test_8bit_compression():
     assert rel_error < 0.03, "Compression error" 
     
     
-def test_bandwidth():    
-    A = np.float32(np.random.rand(256,1024,1024))#1GB
-    B1 = gpu.array(A,split_idx=2)
-    B2 = gpu.zeros((128,1024,1024))
-    C = gpu.zeros((256,1024,1024))
-    gpu.create_additional_streams(3)
-    t0 = time.time()
-    for i in range(3):        
-        gpu.sync(B1,B2,layer_idx=i)
-    
-    for i in range(3):
-        gpu.sync_streams(i)
-    secs = time.time()-t0
-    GB = 3*A.size*4/1024/1024/1024/2.
-    print secs
-    print GB
-    print GB/secs
-    gpu.add(B1,B2,C)
-    
-    print C.sum()
-    print A.sum()
-    
-    #assert False
-    
-    
-    gpu.disable_peer_access()
-    
  
 def test_row_sum():
     for i in range(100):
@@ -1329,7 +1302,16 @@ def test_ticktock():
     print ms1000
     assert (ms100*10)*0.9 < ms1000 and (ms100*10)*1.1 > ms1000, "tick-tock has no linear scaling"
 
-    
+
+
+def test_to_pinned(): 
+    for i in range(100):
+        dims = np.random.randint(2,637,(2,))  
+        A = np.random.rand(dims[0],dims[1])
+        B = gpu.to_pinned(A)
+        A = np.float32(A)
+        print i
+        t.assert_array_equal(A, B, "pinned memory copy not working")
     
 if __name__ == '__main__':    
     nose.run()

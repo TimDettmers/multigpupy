@@ -399,5 +399,15 @@ def fill(x1, fill_value): lib.funcs.ffill(x1.pt, ct.c_float(fill_value))
      
 def tick(eventname='default'): lib.funcs.ftick(p_gpupy, ct.c_char_p(eventname))
 def tock(eventname='default'): return lib.funcs.ftock(p_gpupy, ct.c_char_p(eventname))
+
+
+def to_pinned(x1):
+    if x1.dtype != np.float32:
+        x1 = np.float32(x1)
+    shape = u.handle_shape(x1.shape)
+    p_pinned = lib.funcs.fto_pinned(shape[0],shape[1], shape[2], shape[3], x1.ctypes.data_as(ct.POINTER(ct.c_float)))
+    str_buffer = ct.string_at(p_pinned, ct.sizeof(ct.c_float)*x1.size)
+    return np.fromstring(str_buffer, dtype=np.float32).reshape(x1.shape)     
+
     
     
