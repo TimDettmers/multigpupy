@@ -234,6 +234,9 @@ funcs.fdecompress_16bit.restype = ct.c_void_p
 
 funcs.fsum_row.restype = ct.c_void_p
 
+funcs.ftick.restype = ct.c_void_p
+funcs.ftock.restype = ct.c_float
+
 
 
 class lib(object): 

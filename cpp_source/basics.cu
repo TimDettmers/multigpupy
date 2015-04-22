@@ -709,4 +709,3 @@ float tock(cudaEvent_t* startstop, float tocks)
 
 	return time+tocks;
 }
-

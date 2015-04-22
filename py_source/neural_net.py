@@ -43,7 +43,7 @@ class Neural_net(object):
                 self.net.accumulate_error()
             self.net.print_reset_error('CV')
             self.net.end_epoch()
-            #print time.time()-t0
+            print time.time()-t0
             
     def predict_proba(self, X):
         X_gpu = gpu.array(X)

@@ -80,16 +80,18 @@ def test_transpose():
     C = gpu.array(A).T.tocpu()
     t.assert_array_equal(A.T, C, "Transpose not identical to numpy")    
     
-    A = np.float32(np.random.rand(17,17,17))
+    A = np.float32(np.random.rand(3,3,3))
     C1 = gpu.array(A).T.tocpu()
     C2 = np.transpose(A,(0,2,1))
+    print C1
+    print C2
     t.assert_array_equal(C1, C2, "Transpose not identical to numpy")
-    
+ 
     A = np.float32(np.random.rand(17,17,17,17))
     C1 = gpu.array(A).T.tocpu()
     C2 = np.transpose(A,(0,1,3,2))
     t.assert_array_equal(C1, C2, "Transpose not identical to numpy")
-    
+   
 
    
    
@@ -1223,8 +1225,7 @@ def test_8bit_compression():
     assert rel_error < 0.03, "Compression error" 
     
     
-def test_bandwidth():
-    '''
+def test_bandwidth():    
     A = np.float32(np.random.rand(256,1024,1024))#1GB
     B1 = gpu.array(A,split_idx=2)
     B2 = gpu.zeros((128,1024,1024))
@@ -1247,7 +1248,7 @@ def test_bandwidth():
     print A.sum()
     
     #assert False
-    '''
+    
     
     gpu.disable_peer_access()
     
@@ -1309,6 +1310,26 @@ def test_16bit_compression():
         gpu.decompress_16bit(C2, C1)
         t.assert_array_almost_equal(C1.tocpu(),A,2,"half-float compression")
         
+def test_ticktock():
+    A = rdm.rand(128,1024)
+    w = rdm.rand(1024,512)
+    out = gpu.zeros((128,512))
+    out_split = gpu.zeros((128,512),2)
+    sync_out = gpu.zeros((128,512),2)
+    
+    gpu.tick()
+    for i in range(300):
+        gpu.dot(A,w, out)   
+    ms100 = gpu.tock()
+    t.assert_(ms100 > 0.0, "tick-tock is not working")
+    gpu.tick()
+    for i in range(3000):
+        gpu.dot(A,w, out)   
+    ms1000 = gpu.tock()
+    print ms1000
+    assert (ms100*10)*0.9 < ms1000 and (ms100*10)*1.1 > ms1000, "tick-tock has no linear scaling"
+
+    
     
 if __name__ == '__main__':    
     nose.run()

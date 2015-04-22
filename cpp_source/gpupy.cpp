@@ -337,7 +337,6 @@ void GPUpy::async_sync_16bit(UShortTensor *A, UShortTensor *out1, UShortTensor *
 
 void GPUpy::synchronize_streams(int layer_idx)
 {
-	tick();
 	/*
 	for(int i = 0; i < DEVICE_COUNT; i++)
 		for(int j = 0; j < DEVICE_COUNT; j++)
@@ -347,7 +346,6 @@ void GPUpy::synchronize_streams(int layer_idx)
 	CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][1][0]));
 	CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][0][1]));
 	CURRENT_SYNC_IDX +=1;
-	//tock();
 
 }
 

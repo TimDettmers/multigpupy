@@ -186,5 +186,8 @@ extern "C"
 
 	void fsum_row(Tensor *A, Tensor *out){ reduceRow(A, out, add_tensor); }
 
+	void ftick(GPUpy *gpupy, char *eventname){ std::string str(eventname); gpupy->tick(str); }
+	float ftock(GPUpy *gpupy, char *eventname){ std::string str(eventname); return gpupy->tock(str); }
+
 
 }
