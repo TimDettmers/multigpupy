@@ -54,6 +54,7 @@ void argmax(Tensor *A, Tensor *out);
 Tensor *to_col_major(Tensor *A);
 void to_col_major(Tensor *A, Tensor *out);
 Tensor *to_row_major(Tensor *A);
+void to_col_major_pinned(float  *A_data, float *out_data, int batches, int maps, int rows, int cols);
 
 Tensor *vectorWise(Tensor *A, Tensor *B, Operation_t ops);
 Tensor *vectorWise(Tensor *A, Tensor *B, float flt, Operation_t ops);

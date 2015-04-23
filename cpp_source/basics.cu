@@ -275,6 +275,30 @@ Tensor *to_row_major(Tensor *A)
   return out;
 }
 
+void to_col_major_pinned(float  *A_data, float *out_data, int batches, int maps, int rows, int cols)
+{
+	unsigned int mapOffset = 0;
+	unsigned int batchOffset = 0;
+
+	//this is slow, but we usually do this to provide data to the batch allocator
+	//which is in the right format, so nothing to worry about in terms of performance here
+	for(int batch = 0; batch < batches; batch++ )
+	{
+		batchOffset = cols*rows*maps*batch;
+		for(int map = 0; map < batches; map++ )
+		{
+			mapOffset = cols*rows*map;
+			for(int row = 0; row < rows; row++)
+			{
+				for(int col = 0; col < cols; col++)
+				{
+					out_data[(col*rows) + row +batchOffset + mapOffset ] = A_data[(row*cols)+col + batchOffset + mapOffset];
+				}
+			}
+		}
+	}
+}
+
 Tensor *tocpu(Tensor *A, float *cpu_buffer)
 {
 	Tensor *temp = to_row_major(A);

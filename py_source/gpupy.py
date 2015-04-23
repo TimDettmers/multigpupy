@@ -292,6 +292,10 @@ def dotT(a,b,out=None):
     if out: lib.funcs.inp_dotT(p_gpupy, a.pt, b.pt, out.pt)
     else: return array(None, lib.funcs.fdotT(p_gpupy, a.pt,b.pt))
 
+def transpose(x1, out=None):
+    if out: lib.funcs.inp_T(x1.pt,out.pt);
+    else: return array(None, lib.funcs.fT(x1.pt))
+
 def print_tensor(x1):
     lib.funcs.ffprint(x1.pt)
 
@@ -401,13 +405,31 @@ def tick(eventname='default'): lib.funcs.ftick(p_gpupy, ct.c_char_p(eventname))
 def tock(eventname='default'): return lib.funcs.ftock(p_gpupy, ct.c_char_p(eventname))
 
 
-def to_pinned(x1):
-    if x1.dtype != np.float32:
-        x1 = np.float32(x1)
+def to_pinned_pointer(x1):
+    if x1.dtype != np.float32: x1 = np.float32(x1)
     shape = u.handle_shape(x1.shape)
-    p_pinned = lib.funcs.fto_pinned(shape[0],shape[1], shape[2], shape[3], x1.ctypes.data_as(ct.POINTER(ct.c_float)))
-    str_buffer = ct.string_at(p_pinned, ct.sizeof(ct.c_float)*x1.size)
-    return np.fromstring(str_buffer, dtype=np.float32).reshape(x1.shape)     
+    return lib.funcs.fto_pinned(shape[0],shape[1], shape[2], shape[3], x1.ctypes.data_as(ct.POINTER(ct.c_float)))    
+
+def empty_pinned_pointer(shape):      
+    out = np.empty(shape)
+    shape_tensor = u.handle_shape(shape)
+    return lib.funcs.fto_pinned(shape_tensor[0],shape_tensor[1], shape_tensor[2], shape_tensor[3], out.ctypes.data_as(ct.POINTER(ct.c_float)))  
+
+def pointer2ndarray(pt, shape, dtype=np.float32):
+    shape_tensor = u.handle_shape(shape)
+    size = shape_tensor[0]*shape_tensor[1]*shape_tensor[2]*shape_tensor[3]
+    str_buffer = ct.string_at(pt, ct.sizeof(ct.c_float)*size)
+    return np.fromstring(str_buffer, dtype=dtype).reshape(shape)   
+
+def to_col_major_pinned_pointer(x1, pt_out=None):
+    if x1.dtype != np.float32: x1 = np.float32(x1)
+    shape = u.handle_shape(x1.shape)
+    if not pt_out: pt_out = empty_pinned_pointer(shape) 
+    lib.funcs.inp_to_col_major_pinned(x1.ctypes.data_as(ct.POINTER(ct.c_float)),pt_out, shape[0],shape[1],shape[2],shape[3])
+    return pt_out
+
+
+    
 
     
     

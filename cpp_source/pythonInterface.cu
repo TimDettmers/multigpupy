@@ -31,6 +31,7 @@ extern "C"
 	Tensor *fT(Tensor *A){ return T(A); }
 	void inp_T(Tensor *A, Tensor *out){ T(A, out, A->cols,A->rows); }
 	void ftogpu(Tensor *out, float *cpu_buffer){ togpu(out,cpu_buffer); }
+	void inp_to_col_major_pinned(float *A_data, float *out_data, int batches, int maps, int rows, int cols){ to_col_major_pinned(A_data, out_data, batches, maps, rows, cols); }
 	Tensor *frand(GPUpy *gpupy, int batches, int maps, int rows, int cols){ return gpupy->rand(batches, maps, rows, cols);  }
 	Tensor *frandn(GPUpy *gpupy, int batches, int maps, int rows, int cols){ return gpupy->randn(batches, maps, rows, cols);  }
 	Tensor *fnormal(GPUpy *gpupy, int batches, int maps, int rows, int cols, float mean, float std){ return gpupy->normal(batches, maps, rows, cols, mean, std);  }

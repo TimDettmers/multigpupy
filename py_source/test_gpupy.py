@@ -1290,15 +1290,15 @@ def test_ticktock():
     out_split = gpu.zeros((128,512),2)
     sync_out = gpu.zeros((128,512),2)
     
-    gpu.tick()
+    gpu.tick("tick-tock test")
     for i in range(300):
         gpu.dot(A,w, out)   
-    ms100 = gpu.tock()
+    ms100 = gpu.tock("tick-tock test")
     t.assert_(ms100 > 0.0, "tick-tock is not working")
-    gpu.tick()
+    gpu.tick("tick-tock test")
     for i in range(3000):
         gpu.dot(A,w, out)   
-    ms1000 = gpu.tock()
+    ms1000 = gpu.tock("tick-tock test")
     print ms1000
     assert (ms100*10)*0.9 < ms1000 and (ms100*10)*1.1 > ms1000, "tick-tock has no linear scaling"
 
@@ -1307,11 +1307,25 @@ def test_ticktock():
 def test_to_pinned(): 
     for i in range(100):
         dims = np.random.randint(2,637,(2,))  
-        A = np.random.rand(dims[0],dims[1])
-        B = gpu.to_pinned(A)
-        A = np.float32(A)
-        print i
-        t.assert_array_equal(A, B, "pinned memory copy not working")
+        A1 = np.random.rand(dims[0],dims[1])
+        A2 = np.copy(A1)
+        pt_B = gpu.to_pinned_pointer(A1)
+        B = gpu.pointer2ndarray(pt_B,(dims[0],dims[1]))
+        A2 = np.float32(A2)
+        t.assert_array_equal(A2, B, "pinned memory copy not working")
+        
+def test_empty_pinned():
+    for i in range(10):
+        dims = np.random.randint(2,637,(2,))
+        A = np.float32(np.random.rand(dims[0],dims[1]))
+        gpu.tick('to col-major pinned')
+        pt_B = gpu.to_col_major_pinned_pointer(A)
+        gpu.tick('to col-major pinned')
+        B = gpu.pointer2ndarray(pt_B,(dims[0],dims[1]))
+        
+        t.assert_array_equal(A.T.flatten(),B.flatten())
+        
+    gpu.tock('to col-major pinned')
     
 if __name__ == '__main__':    
     nose.run()
