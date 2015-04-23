@@ -11,7 +11,8 @@
 
 extern "C"
 {
-	void fallocateNextAsync(GPUpy *gpupy, Tensor *A, float *cpu_buffer, Tensor *B, float *cpu_buffer_y){ gpupy->allocateNextAsync(A,cpu_buffer,B,cpu_buffer_y); }
+	void fallocateNextAsync(GPUpy *gpupy, Tensor *A, float *cpu_buffer,float *pinned_A, Tensor *B, float *cpu_buffer_y, float *pinned_B, int batch_start_idx, int isSplit)
+	{ gpupy->allocateNextAsync(A,cpu_buffer,pinned_A,B,cpu_buffer_y,pinned_B,batch_start_idx,isSplit); }
 	void freplaceCurrentBatch(GPUpy *gpupy){ gpupy->replaceCurrentBatch(); }
 	float *fto_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer){ return empty_pinned(batches,maps,rows,cols,cpu_buffer); }
 

@@ -28,7 +28,7 @@ UShortTensor *empty_ushort_like(Tensor *A);
 UShortTensor *empty_ushort(int batches, int maps, int rows, int cols);
 UShortTensor *empty_ushort(int batches, int maps, int rows, int cols, int split_axis);
 
-float *empty_pinned(int batches, int maps, int rows, int cols,float *cpu_buffer);
+float *empty_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer);
 Tensor *zeros(int batches, int maps, int rows, int cols);
 Tensor *zeros(int batches, int maps, int rows, int cols, int split_axis);
 Tensor *ones(int batches, int maps, int rows, int cols);
@@ -42,7 +42,14 @@ void print_slice(Slice *S);
 void print_shape(int *shape);
 float print_free_memory();
 void print_tensor_shape(Tensor *A);
+void printsum(Tensor *A);
 
+void printmat(Tensor *A);
+void printmat(Tensor *A, int end_rows, int end_cols);
+void printmat(Tensor *A, int start_row, int end_row, int start_col, int end_col);
+void print_cpu_matrix(Tensor *A, int start_row, int end_row, int start_col, int end_col);
+
+Tensor *tocpu(Tensor *A);
 Tensor *tocpu(Tensor *A, float *cpu_buffer);
 Tensor *T(Tensor *A);
 void T(Tensor *A, Tensor *out, int rows, int cols);

@@ -791,7 +791,7 @@ def test_dot():
     
         
 def test_allocator_init():    
-    data = np.float32(np.random.rand(5333,256))
+    data = np.float32(np.random.rand(5333,784))
     labels = np.float32(np.random.randint(0,10,(5333,)))
     #labels = np.float32(np.random.rand(5333,4))
     
@@ -804,8 +804,13 @@ def test_allocator_init():
             batch = data[i:stop_idx]
             batch_y = u.create_t_matrix(labels[i:stop_idx],10)
             #batch_y = labels[i:stop_idx]
+            #print data[0:3]
+            #gpu.print_tensor(alloc.batch)
+            print i
             t.assert_equal(alloc.batch.tocpu(), batch)
             t.assert_equal(alloc.batch_y.tocpu(),batch_y )
+            #assert False
+            
             
         t.assert_equal(batchno+1, alloc.batch_count[0])
         
@@ -933,11 +938,11 @@ def test_allocator_init():
             
     sec = time.time()-t0
     GB = 10*data.shape[0]*data.shape[1]*4*(1024**-3)
-    
-    assert GB/sec > 1.75
+    print GB/sec
+    assert GB/sec > 1.75    
     #TODO: this should be closer to 8GB/s -> use pinned memory 
    
-    
+
 def test_dropout():
     A = np.float32(np.random.rand(14,13,17,83))
     B = gpu.array(A)
@@ -1326,7 +1331,7 @@ def test_empty_pinned():
         t.assert_array_equal(A.T.flatten(),B.flatten())
         
     gpu.tock('to col-major pinned')
-    
+ 
 if __name__ == '__main__':    
     nose.run()
     

@@ -331,6 +331,30 @@ Tensor *tocpu(Tensor *A, float *cpu_buffer)
 	return out;
 }
 
+Tensor *tocpu(Tensor *A)
+{
+	Tensor *temp = to_row_major(A);
+	Tensor *out = new Tensor();
+
+	float *data = (float*)malloc(A->bytes);
+
+	CUDA_CHECK_RETURN(cudaMemcpy(data,temp->data_gpus[0],temp->bytes_gpus[0],cudaMemcpyDefault));
+	out->batches = temp->batches;
+	out->maps = temp->maps;
+	out->rows = temp->rows;
+	out->cols = temp->cols;
+	out->bytes = temp->bytes;
+	out->size = temp->size;
+	out->data = data;
+	out->isCUDA = 0;
+	out->splitAxis = -1;
+
+	temp->freeTensor();
+
+
+	return out;
+}
+
 
 void print_slice(Slice *S)
 {
@@ -360,6 +384,59 @@ void print_tensor_shape(Tensor *A)
 	for(int i = 0; i < A->data_gpus.size(); i++)
 		print_shape(A->shape_gpus[i]);
 }
+
+void printsum(Tensor *A)
+{
+	cout << thrust_reduce(A, sum_tensor) << endl;
+}
+
+
+void printdim(Tensor *A)
+{
+	cout << A->rows << "x" << A->cols << endl;
+}
+
+void printmat(Tensor *A)
+{
+	Tensor * m = tocpu(A);
+	print_cpu_matrix(m,0,A->rows, 0, A->cols);
+	m->freeTensor();
+
+}
+void printmat(Tensor *A, int end_rows, int end_cols)
+{
+	Tensor *m = tocpu(A);
+	print_cpu_matrix(m, 0,end_rows, 0,end_cols);
+	m->freeTensor();
+
+}
+
+void printmat(Tensor *A, int start_row, int end_row, int start_col, int end_col)
+{
+	Tensor *m = tocpu(A);
+	print_cpu_matrix(m, start_row, end_row, start_col, end_col);
+	m->freeTensor();
+
+}
+void print_cpu_matrix(Tensor *A, int start_row, int end_row, int start_col, int end_col)
+{
+
+	for(int row = start_row; row< end_row; row++)
+	{
+		printf("[");
+		for(int col =start_col; col < end_col; col++)
+		{
+		  if(A->data[(row*A->cols)+col] > 0.0f)
+			  printf("% f ",A->data[(row*A->cols)+col]);
+		  else
+			  printf("%f ",A->data[(row*A->cols)+col]);
+		}
+		printf("]\n");
+	}
+	printf("\n");
+
+}
+
 
 
 void togpu(Tensor *out, float *cpu_buffer){ togpu(out, cpu_buffer, -1); }

@@ -104,7 +104,7 @@ public:
 	std::vector<cudaStream_t> streams;
 	std::vector<cudaStream_t> streams_y;
 
-	void allocateNextAsync(Tensor *batch, float *cpu_buffer, Tensor *batch_y, float *cpu_buffer_y);
+	void allocateNextAsync(Tensor *batch, float *cpu_buffer, float *pinned_X, Tensor *batch_y, float *cpu_buffer_y, float* pinned_y, int batch_start_idx, int isSplit);
 	void replaceCurrentBatch();
 	void createStreams(int layer_count);
 

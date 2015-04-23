@@ -352,12 +352,21 @@ void GPUpy::synchronize_streams(int layer_idx)
 
 
 
-void GPUpy::allocateNextAsync(Tensor *batch, float *cpu_buffer, Tensor *batch_y, float *cpu_buffer_y)
+void GPUpy::allocateNextAsync(Tensor *batch, float *cpu_buffer, float *pinned_X, Tensor *batch_y, float *cpu_buffer_y, float* pinned_y, int batch_start_idx, int isSplit)
 {
+	memcpy(pinned_X, cpu_buffer, batch->bytes);
+	memcpy(pinned_y, cpu_buffer_y, batch_y->bytes);
+
+	//to_col_major_pinned(&cpu_buffer[batch_start_idx*batch->cols], pinned_X,1,1,batch->rows, batch->cols);
+	//to_col_major_pinned(&cpu_buffer_y[batch_start_idx*batch_y->cols], pinned_y,1,1,batch_y->rows, batch_y->cols);
+
 	for(int i = 0; i < DEVICE_COUNT; i++)
 	{
-		CUDA_CHECK_RETURN(cudaMemcpyAsync(batch->data_gpus[i],cpu_buffer,batch->bytes,cudaMemcpyDefault, streams[i]));
-		CUDA_CHECK_RETURN(cudaMemcpyAsync(batch_y->data_gpus[i],cpu_buffer_y,batch_y->bytes,cudaMemcpyDefault, streams_y[i]));
+		if(isSplit == 0)
+		{
+			CUDA_CHECK_RETURN(cudaMemcpyAsync(batch->data_gpus[i],pinned_X,batch->bytes_gpus[i],cudaMemcpyDefault, streams[i]));
+			CUDA_CHECK_RETURN(cudaMemcpyAsync(batch_y->data_gpus[i],pinned_y,batch_y->bytes_gpus[i],cudaMemcpyDefault, streams_y[i]));
+		}
 	}
 }
 
