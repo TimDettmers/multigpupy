@@ -16,7 +16,8 @@ extern "C"
 	void freplaceCurrentBatch(GPUpy *gpupy){ gpupy->replaceCurrentBatch(); }
 	float *fto_pinned(int batches, int maps, int rows, int cols, float *cpu_buffer){ return empty_pinned(batches,maps,rows,cols,cpu_buffer); }
 
-	GPUpy *fGPUpy(float *floats_8bit){GPUpy *gpupy = new GPUpy(); gpupy->init((int) ((time(0) + (12345)) % 10000),floats_8bit); return gpupy; }
+	//GPUpy *fGPUpy(float *floats_8bit){GPUpy *gpupy = new GPUpy(); gpupy->init((int) ((time(0) + (12345)) % 10000),floats_8bit); return gpupy; }
+	GPUpy *fGPUpy(float *floats_8bit){GPUpy *gpupy = new GPUpy(); gpupy->init(12345,floats_8bit); return gpupy; }
 	GPUpy *fseeded_GPUpy(int seed,float *floats_8bit){GPUpy *gpupy = new GPUpy(); gpupy->init((int) ((time(0) + (12345)) % 10000),floats_8bit); return gpupy; }
 	Slice *femptySlice(){ return emptySlice(); }
 	Tensor *fempty(int batches, int maps, int rows, int cols){ return empty(batches, maps, rows, cols); }

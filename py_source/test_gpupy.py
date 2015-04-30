@@ -1074,17 +1074,44 @@ def test_layer():
 
 def test_sync():
     gpu.enable_peer_access()
-    for i in range(50):
-        dims = np.random.randint(5,100,(2,))
-        #dims = [8,2]
+    #logistic_func = lambda x: 1.0/(1.0+np.exp(-x))
+    for i in range(1):
+        dims = np.random.randint(5,100,(2,))        
         dims[0]+=  gpu.gpu_count() - (dims[0] % gpu.gpu_count())
         A1 = np.float32(np.random.rand(dims[0],dims[1]))
+        w = np.float32(np.random.rand(dims[1],10))
+        W1 = gpu.array(w)
         B1 = gpu.array(A1,split_idx=2)
+        B2 = gpu.empty((dims[0], 10), split_idx=2)
         gpu.sync(B1)
         C1 = gpu.sync_streams_add(B1)
         dim = dims[0]/4
         C =  A1[0:dim] + A1[dim:2*dim] + A1[2*dim:3*dim] + A1[3*dim:4*dim]
         t.assert_almost_equal(C,C1.tocpu(),4,'split sync with add not working')
+        '''
+        B1 = gpu.array(A1,split_idx=2)
+        
+        C2 = logistic_func(np.dot(A1,w))
+        
+        
+        gpu.dot(B1,W1,B2)
+        gpu.logistic(B2,B2)
+        
+        gpu.sync(B2)
+        gpu.sync_streams_add(B2, layer_idx=0, split_idx=2)
+        print C1.tocpu()
+        print C2
+        t.assert_almost_equal(C2,C1.tocpu(),1,'split sync with add not working')
+        '''
+        '''
+        gpu.compress_and_sync(B2, abs_max_value=1.0, dtype=np.char)
+        C1 = gpu.decompress_sync_streams_add(B2, layer_idx=0, split_idx=2, abs_max_value=1.0, dtype=np.char)
+        print C1.tocpu()
+        print C2
+        t.assert_almost_equal(C2,C1.tocpu(),1,'split sync with add not working')
+        '''
+        
+        
     dims = [5120,2560]
     A1 = np.float32(np.random.rand(dims[0],dims[1])) 
     B1 = gpu.array(A1,split_idx=2)    

@@ -26,7 +26,6 @@ class Neural_net(object):
         self.alloc = batch_allocator(X,y, cv_size,test_size,batch_size)        
         self.alloc.net = self.net
         for epoch in range(self.epochs):
-            print gpupy.mem.usage_stats
             t0 = time.time()
             for i in self.alloc.train():
                 if self.net.config['parallelism'] == 'data' and self.alloc.batch.shape[2] != batch_size: continue
@@ -37,11 +36,13 @@ class Neural_net(object):
             
             self.net.log('EPOCH: {0}'.format(epoch+1))
             for i in self.alloc.train(0.1):   
+                if self.net.config['parallelism'] == 'data' and self.alloc.batch.shape[2] != batch_size: continue
                 self.net.forward(self.alloc.batch,self.alloc.batch_y, False)        
                 self.net.accumulate_error()        
             self.net.print_reset_error()
             
             for i in self.alloc.cv():
+                if self.net.config['parallelism'] == 'data' and self.alloc.batch.shape[2] != batch_size: continue
                 self.net.forward(self.alloc.batch,self.alloc.batch_y, False)
                 self.net.accumulate_error()
             self.net.print_reset_error('CV')

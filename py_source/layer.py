@@ -110,7 +110,7 @@ class Layer(object):
         self.error_epochs = {}
         self.confidence_interval_epochs = {}
         #print 1./unitcount if unitcount > 0.0 else 0.003
-        self.config = {'learning_rate' : 0.003,
+        self.config = {'learning_rate' : 0.001,
                        'momentum' : 0.9,
                        'input_dropout': self.funcs.dropout,
                        'dropout' : self.funcs.dropout,
@@ -276,11 +276,11 @@ class Layer(object):
             if self.next_layer.config['compression'] == '16bit':
                 gpu.decompress_16bit(self.w_next_sync_16bit, self.w_next_sync)
             elif self.next_layer.config['compression'] == '8bit':                 
-                gpu.decompress_8bit(self.w_next_sync_8bit, self.abs_max_grad_value, self.w_next_sync)
+                gpu.decompress_sync_streams_add(self.w_grad_next, self.id, -1, self.abs_max_grad_value, np.char)
             elif self.next_layer.config['compression'] == '1bit':
                 gpu.decompress_1bit(self.w_next_sync_1bit, self.errors,self.posAvg, self.negAvg, self.w_next_sync)
-            #gpu.add(self.w_grad_next, self.w_next_sync, self.w_grad_next)
-            gpu.decompress_sync_streams_add(self.w_grad_next, self.id, -1, self.abs_max_grad_value, np.char)
+            else:            
+                gpu.decompress_sync_streams_add(self.w_grad_next, self.id, -1, self.abs_max_grad_value, np.float32)
             self.weight_update()
     
     def predict(self, data):
@@ -324,19 +324,15 @@ class Layer(object):
                 if self.abs_max_grad_value == 0.0:
                     gpu.abs(self.w_grad_next, self.max_value_buffer)
                     self.abs_max_grad_value = gpu.max(self.max_value_buffer)
-                    #print self.id, 'max value', self.abs_max_grad_value
-                
-                #gpu.abs(self.w_grad_next, self.max_value_buffer)
-                #print gpu.max(self.max_value_buffer)
-                gpu.compress_8bit(self.w_grad_next, self.abs_max_grad_value, self.w_next_grad_8bit)    
-                gpu.sync(self.w_next_grad_8bit, self.id, np.char)
+                    
+                gpu.compress_and_sync(self.w_grad_next, self.id, self.abs_max_grad_value, np.char)
             elif self.next_layer.config['compression'] == '1bit':
                 gpu.compress_1bit(self.w_grad_next, self.w_grad_with_errors, self.errors,
                                   self.posAvg, self.negAvg, self.w_next_grad_1bit, self.posMask,
                                   self.negMask, self.posCount, self.negCount)   
                 gpu.sync(self.w_next_grad_1bit, self.id, np.ushort)                      
             else:
-                gpu.compress_and_sync(self.w_grad_next, self.id, self.abs_max_grad_value, np.char)
+                gpu.compress_and_sync(self.w_grad_next, self.id, self.abs_max_grad_value, np.float32)
         if self.next_layer: self.next_layer.backward_grads()        
         
         gpu.Tdot(self.bias_ones, self.next_layer.error, self.b_grad_next)
@@ -377,9 +373,11 @@ class Layer(object):
         
     def weight_update(self):
         if self.next_layer:    
-            batch_size = ((self.out.shape[2]*gpu.gpu_count()) if self.config['parallelism'] != 'data' else self.out.shape[2])
+            #batch_size = ((self.out.shape[2]*gpu.gpu_count()) if self.config['parallelism'] != 'data' else self.out.shape[2])
+            batch_size = self.out.shape[2]
             lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(self.config['momentum']),ct.c_float(self.config['learning_rate']), batch_size)
             gpu.sub(self.w_next, self.w_grad_next, self.w_next)
+            if self.id == 1: print self.m_next.sum()
             if self.config['parallelism'] != 'data':
                 self.next_layer.weight_update()         
         
