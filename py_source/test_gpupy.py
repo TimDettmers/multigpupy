@@ -1080,45 +1080,28 @@ def test_sync():
         dims[0]+=  gpu.gpu_count() - (dims[0] % gpu.gpu_count())
         A1 = np.float32(np.random.rand(dims[0],dims[1]))
         B1 = gpu.array(A1,split_idx=2)
-        B2 = gpu.zeros((dims[0]/4,dims[1]))
-        B3 = gpu.zeros((dims[0]/4,dims[1]))
-        B4 = gpu.zeros((dims[0]/4,dims[1]))
-        C1 = gpu.zeros((dims[0]/4,dims[1]))
-        gpu.sync(B1,B2, B3, B4)
-        gpu.sync_streams()
-        gpu.add(B1,B2,C1)
-        gpu.add(B3,C1,C1)
-        gpu.add(B4,C1,C1)
-        #print i
-       
+        gpu.sync(B1)
+        C1 = gpu.sync_streams_add(B1)
+        #gpu.print_tensor(C1)
+        #gpu.add(B1,B2,C1)
+        #gpu.add(B3,C1,C1)
+        #gpu.add(B4,C1,C1)
         dim = dims[0]/4
         C =  A1[0:dim] + A1[dim:2*dim] + A1[2*dim:3*dim] + A1[3*dim:4*dim]
         t.assert_almost_equal(C,C1.tocpu(),4,'split sync with add not working')
-    
     dims = [5120,2560]
     A1 = np.float32(np.random.rand(dims[0],dims[1])) 
     B1 = gpu.array(A1,split_idx=2)    
-    B2 = gpu.zeros((dims[0]/4,dims[1]))
-    B3 = gpu.zeros((dims[0]/4,dims[1]))
-    B4 = gpu.zeros((dims[0]/4,dims[1]))
-    C1 = gpu.zeros((dims[0]/4,dims[1]))
     t0 = time.time()
     for i in range(10):
-        gpu.sync(B1,B2, B3, B4)
-        gpu.sync_streams()
+        gpu.sync(B1)
+        gpu.sync_streams_add(B1)
     GB = 10*4*dims[0]*dims[1]*1024**-3
     secs = time.time()-t0
     print GB/secs  
     t.assert_(GB/secs > 2.5, "transfer rate below 2.5 GB/s!")
     
-    del B1
-    del B2
-    del B3
-    del B4
-    del C1
     
-    
-
 
 
 def split_add_test():
@@ -1128,9 +1111,7 @@ def split_add_test():
         A1 = np.float32(np.random.rand(dims[0],dims[1]))
         A2 = np.float32(np.random.rand(dims[0],dims[1]))
         C1 = gpu.empty((dims[1],dims[1]))    
-        C2 = gpu.empty((dims[1],dims[1]))      
-        C3 = gpu.empty((dims[1],dims[1]))      
-        C4 = gpu.empty((dims[1],dims[1]))      
+         
         C5 = gpu.empty((dims[1],dims[1]))
          
         B1 = gpu.array(A1,split_idx=2)        
@@ -1138,13 +1119,10 @@ def split_add_test():
            
         print B1.shape
         gpu.Tdot(B2,B1,C1)    
-        gpu.sync(C1,C2,C3,C4)          
+        gpu.sync(C1)          
         #the dot product is just inherently unstable
-        gpu.sync_streams()     
+        C5 = gpu.sync_streams_add(C1,split_idx=-1)     
         C = np.dot(A2.T,A1)
-        gpu.add(C1,C2,C5)
-        gpu.add(C3,C5,C5)
-        gpu.add(C4,C5,C5)
         #errors = np.sqrt(((C-C3.tocpu())**2))
         #print C[0,0:5]
         #print C3.tocpu()[0,0:5]
@@ -1154,7 +1132,8 @@ def split_add_test():
         t.assert_array_almost_equal(C5.tocpu(), C, 4,'split add dot product chain yields wrong result!')    
         #print [C2.tocpu().sum()/10000,C.sum()/10000]
     
-    
+   
+
     
 def test_slice_or_stack_axis():
     for i in range(50):
@@ -1185,21 +1164,14 @@ def test_batch_allocator_parallelism():
         if A.shape[2] < gpu.gpu_count() or A.shape[2] % 2 != 0: continue   
         C1 = gpu.empty(alloc.current.shape)        
         B2 = gpu.empty((A.shape[3], A.shape[3]))
-        B3 = gpu.zeros((A.shape[3], A.shape[3]))
-        B4 = gpu.zeros((A.shape[3], A.shape[3]))
-        B5 = gpu.zeros((A.shape[3], A.shape[3]))
-        B6 = gpu.zeros((A.shape[3], A.shape[3]))
         
         gpu.stack_axis(alloc.batch, C1)    
         t.assert_array_equal(C1.tocpu(), A.tocpu(), "stack allocator data parallelism not working!")
         
         B1 = A.tocpu()                
         gpu.Tdot(alloc.batch,alloc.batch,B2)        
-        gpu.sync(B2,B3,B4,B5)
-        gpu.sync_streams()
-        gpu.add(B2,B3,B6)
-        gpu.add(B4,B6,B6)
-        gpu.add(B5,B6,B6)
+        gpu.sync(B2)
+        B6 = gpu.sync_streams_add(B2,split_idx=-1)
         C2 = np.dot(B1.T,B1)  
         print i
         print A.shape
@@ -1207,8 +1179,7 @@ def test_batch_allocator_parallelism():
         print errors
         t.assert_array_almost_equal(C2, B6.tocpu(),2, "synch add data parallelism not working!")
        
-        
-        
+           
     
 def test_arregates():
     A = np.float32(np.random.randn(4,13,8,4))

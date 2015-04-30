@@ -21,9 +21,9 @@ def Hbeta(D = np.array([]), beta = 1.0):
     # Compute P-row and corresponding perplexity
     P = np.exp(-D.copy() * beta);
     sumP = sum(P)+1e-8;
-    H = np.log(sumP) + beta * np.sum(D * P) / sumP;
+    mem = np.log(sumP) + beta * np.sum(D * P) / sumP;
     P = P / sumP;
-    return H, P;
+    return mem, P;
     
     
 def x2p(X = np.array([]), tol = 1e-5, perplexity = 30.0):
@@ -49,10 +49,10 @@ def x2p(X = np.array([]), tol = 1e-5, perplexity = 30.0):
         betamin = -np.inf; 
         betamax =  np.inf;
         Di = D[i, np.concatenate((np.r_[0:i], np.r_[i+1:n]))];
-        (H, thisP) = Hbeta(Di, beta[i]);
+        (mem, thisP) = Hbeta(Di, beta[i]);
             
         # Evaluate whether the perplexity is within tolerance
-        Hdiff = H - logU;
+        Hdiff = mem - logU;
         tries = 0;
         while np.abs(Hdiff) > tol and tries < 50:
                 
@@ -71,8 +71,8 @@ def x2p(X = np.array([]), tol = 1e-5, perplexity = 30.0):
                     beta[i] = (beta[i] + betamin) / 2;
             
             # Recompute the values
-            (H, thisP) = Hbeta(Di, beta[i]);
-            Hdiff = H - logU;
+            (mem, thisP) = Hbeta(Di, beta[i]);
+            Hdiff = mem - logU;
             tries = tries + 1;
             
         # Set the final row of P

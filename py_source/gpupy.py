@@ -8,6 +8,10 @@ import numpy as np
 import ctypes as ct
 import util as u
 from library_interface import lib
+import memory_handler as h
+import uuid
+
+mem = h.MemoryHandler()
 
 ptr = lib.funcs.fempty_split(1,1,1,128,-1)
 p_gpupy = lib.funcs.fGPUpy(lib.floats_8bit.ctypes.data_as(ct.POINTER(ct.c_float)))
@@ -37,10 +41,12 @@ class Slice():
         self.pt.contents.col_stop = self.col.stop
                      
 
-class array(object):
+class Array(object):
     def __init__(self, npArray = None, mat_pointer = None, split_idx=-1):
         self.shape = None
         self.dummy = False
+        self.id = uuid.uuid4()
+        self.split_idx=split_idx         
                      
         if type(npArray) == type(np.array(1)):
             npArray = np.float32(npArray)
@@ -57,7 +63,8 @@ class array(object):
             
                
         self.pt = mat_pointer
-        self.npArray = npArray      
+        self.npArray = npArray   
+        mem.arrays[self.id] = [self.shape_tensor, self.pt]   
         pass
     
     def __getitem__(self, selectors):
@@ -77,7 +84,10 @@ class array(object):
     
     
     def tocpu(self):
-        data = np.empty(self.shape, dtype=np.float32)
+        if self.split_idx == -1: 
+            data = np.empty(self.shape, dtype=np.float32)
+        elif self.split_idx == 2:
+            data = np.empty((self.shape_tensor[0], self.shape_tensor[1], self.shape_tensor[2]/gpu_count(), self.shape_tensor[3]), dtype=np.float32)
         lib.funcs.ftocpu(self.pt, data.ctypes.data_as(ct.POINTER(ct.c_float)))   
         if data.shape[0] == 1 and data.shape[1] == 1 and data.shape[2] == 1: data = data.reshape(data.shape[3])
         if data.shape[0] == 1 and data.shape[1] == 1: data = data.reshape(data.shape[2], data.shape[3])
@@ -95,7 +105,10 @@ class array(object):
     @property
     def T(self): return array(None, lib.funcs.fT(self.pt))   
       
-    def __del__(self): lib.funcs.ffree(self.pt)
+    def __del__(self): 
+        lib.funcs.ffree(self.pt) 
+        if mem:
+            del mem.arrays[self.id]
     def __add__(self, other): return add(self, other)
     def __sub__(self, other): return apply_func(self,other, lib.funcs.fsub, lib.funcs.fscalarSub, lib.funcs.fsubVectorToTensor)
     def __mul__(self, other): return apply_func(self,other, lib.funcs.fmul, lib.funcs.fscalarMul, lib.funcs.fmulVectorToTensor)
@@ -125,6 +138,9 @@ class array(object):
     def __idiv__(self, other): 
         apply_func(self, other, lib.funcs.inp_div, lib.funcs.inp_scalarDiv, lib.funcs.inp_divVectorToTensor, out=self)
         return self
+    
+def array(npArray = None, mat_pointer = None, split_idx=-1): 
+    return Array(npArray, mat_pointer, split_idx)
     
 def apply_func(x1, x2, func_matrix, func_scalar, func_vector = None, out=None): 
     is_scalar =  isinstance(x2, int) or isinstance(x2, float)
@@ -164,7 +180,7 @@ def ones(shape):
 
 def empty(shape,split_idx=-1):
     shape = u.handle_shape(shape)
-    out = array(None, lib.funcs.fempty_split(shape[0],shape[1],ct.c_int32(shape[2]),ct.c_int32(shape[3]),split_idx))
+    out = array(None, lib.funcs.fempty_split(shape[0],shape[1],ct.c_int32(shape[2]),ct.c_int32(shape[3]),split_idx), split_idx)
     return out
 
 def add(x1,x2,out=None):
@@ -323,10 +339,11 @@ def slice_axis(A, out):
 def stack_axis(A, out):
     lib.funcs.inp_stack_axis(A.pt, out.pt)
     
-def sync(source, target1, target2=None, target3=None, layer_idx = 0):
-    if target2 and target3: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, target3.pt, layer_idx)
-    elif target2: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, target2.pt, None,layer_idx)
-    else: lib.funcs.fsync(p_gpupy, source.pt, target1.pt, None, None,layer_idx)
+def sync(source, layer_idx = 0):
+    arrays = mem.get_arrays_for_sync(source)
+    if len(arrays) == 3: lib.funcs.fsync(p_gpupy, source.pt, arrays[0].pt, arrays[1].pt, arrays[2].pt, layer_idx)
+    elif len(arrays) == 2:  lib.funcs.fsync(p_gpupy, source.pt, arrays[0].pt, arrays[1].pt, None, layer_idx)
+    else: lib.funcs.fsync(p_gpupy, source.pt, arrays[0].pt, None, None, layer_idx)
     
 def sync_1bit(source, target1, target2=None, target3=None, layer_idx = 0):
     if target2 and target3: lib.funcs.fsync_1bit(p_gpupy, source, target1, target2, target3, layer_idx)
@@ -344,8 +361,18 @@ def sync_16bit(source, target1, target2=None, target3=None, layer_idx = 0):
     else: lib.funcs.fsync_16bit(p_gpupy, source, target1, None, None,layer_idx)
   
     
-def sync_streams(layer_idx=0):
-    lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)
+def sync_streams(layer_idx=0): lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)
+def sync_streams_add(source, out = None, layer_idx=0, split_idx=2):
+    if not out: 
+        if split_idx == -1: out = empty_like(source)
+        else: out = empty(source.shape_tensor,split_idx)
+    lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)    
+    arrays = mem.sync_arrays[source.id]    
+    add(source, arrays[0], out)
+    if len(arrays) > 1: add(arrays[1], out, out)
+    if len(arrays) > 2: add(arrays[2], out, out)
+    return out
+        
 
 def sum(x1): return lib.funcs.fsum(x1.pt)
 def min(x1): return lib.funcs.ffmin(x1.pt)
