@@ -344,12 +344,39 @@ def slice_axis(A, out):
 def stack_axis(A, out):
     lib.funcs.inp_stack_axis(A.pt, out.pt)
     
-def sync(source, layer_idx = 0, dtype=np.float32):
+def sync(source, layer_idx = 0, dtype=np.float32):    
     arrays = mem.get_arrays_for_sync(source, dtype)
-    if len(arrays) == 3: lib.sync_func[dtype](p_gpupy, source.pt, arrays[0].pt, arrays[1].pt, arrays[2].pt, layer_idx)
-    elif len(arrays) == 2:  lib.sync_func[dtype](p_gpupy, source.pt, arrays[0].pt, arrays[1].pt, None, layer_idx)
+    if len(arrays) == 4: lib.sync_func[dtype](p_gpupy, source.pt, arrays[0].pt, arrays[1].pt, arrays[2].pt, layer_idx)
+    elif len(arrays) == 3:  lib.sync_func[dtype](p_gpupy, source.pt, arrays[0].pt, arrays[1].pt, None, layer_idx)
     else: lib.sync_func[dtype](p_gpupy, source.pt, arrays[0].pt, None, None, layer_idx)  
     
+def compress_and_sync(source, layer_idx = 0, abs_max_value=1.0, dtype=np.char):
+    if dtype==np.char:
+        if source.id not in mem.compression_arrays: mem.compression_arrays[source.id] = [empty_char_like(source), empty_like(source)]
+        compress_8bit(source, abs_max_value, mem.compression_arrays[source.id][0].pt)
+        sync(mem.compression_arrays[source.id][0], layer_idx, dtype)
+    if dtype==np.float32: sync(source, layer_idx, dtype)
+        
+def decompress_sync_streams_add(source, layer_idx = 0, split_idx=2, abs_max_value=1.0, dtype=np.char):
+    if dtype==np.char: 
+        lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)
+        arrays = mem.sync_arrays[mem.compression_arrays[source.id][0].id]    
+        decompress_8bit(arrays[0].pt, abs_max_value,mem.compression_arrays[source.id][1])
+        add(source, mem.compression_arrays[source.id][1],source)
+        if len(arrays) > 1: 
+            decompress_8bit(arrays[1].pt, abs_max_value,mem.compression_arrays[source.id][1])
+            add(source, mem.compression_arrays[source.id][1],source)
+        if len(arrays) > 2: 
+            decompress_8bit(arrays[2].pt, abs_max_value,mem.compression_arrays[source.id][1])
+            add(source, mem.compression_arrays[source.id][1],source)
+        return source
+    
+    elif dtype == np.float32: sync_streams_add(source, layer_idx, split_idx)
+   
+        
+        
+    
+            
 def sync_streams(layer_idx=0): lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)
 def sync_streams_add(source, layer_idx=0, split_idx=2):
     lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)    

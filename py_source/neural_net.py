@@ -6,6 +6,7 @@ Created on Apr 11, 2015
 from batch_allocator import batch_allocator
 import time
 from layer import *
+import gpupy
 
 class Neural_net(object):
     def __init__(self, workdir=None, classes=10, learning_rate=0.003, hidden_size= [1024,1024], dropout=0.5, input_dropout=0.2, epochs=100, unit=Logistic, network_name='neural_net'):        
@@ -25,6 +26,7 @@ class Neural_net(object):
         self.alloc = batch_allocator(X,y, cv_size,test_size,batch_size)        
         self.alloc.net = self.net
         for epoch in range(self.epochs):
+            print gpupy.mem.usage_stats
             t0 = time.time()
             for i in self.alloc.train():
                 if self.net.config['parallelism'] == 'data' and self.alloc.batch.shape[2] != batch_size: continue

@@ -11,5 +11,6 @@ X = np.float32(np.load('/home/tim/data/mnist/train_X.npy'))
 y = np.float32(np.load('/home/tim/data/mnist/train_y.npy'))
 
 net = Neural_net()
-
-net.fit(X,y)
+net.net.set_config_value('parallelism','None')
+net.net.set_config_value('compression','32bit')
+net.fit(X,y,batch_size=256)

@@ -1323,8 +1323,6 @@ def test_empty_pinned():
         t.assert_array_equal(A.T.flatten(),B.flatten())
         
     gpu.tock('to col-major pinned')
-    print gpu.mem.usage_stats.values()
-    assert False
 
 if __name__ == '__main__':    
     nose.run()
