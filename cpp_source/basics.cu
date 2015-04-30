@@ -23,15 +23,14 @@ Slice *emptySlice()
 
 int *get_split_shape(int batches, int maps, int rows, int cols,int split_axis,int gpuidx)
 {
-	int *ret = new int[4];
-	ret[0] = batches; ret[1] = maps; ret[2] = rows; ret[3] = cols;
-	if(split_axis==-1){ return ret; }
+	int *shape = new int[4];
+	shape[0] = batches; shape[1] = maps; shape[2] = rows; shape[3] = cols;
+	if(split_axis==-1){ return shape; }
 
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	int size = ret[split_axis];
+	int size = shape[split_axis];
 	int split_size = 1+ (size/gpus);
-	assert(split_size >= gpus);
 	int split_offsize = size - ((gpus-1)*split_size);
 	if(size % gpus == 0)
 	{
@@ -40,10 +39,12 @@ int *get_split_shape(int batches, int maps, int rows, int cols,int split_axis,in
 	}
 
 	if(size == gpus){split_offsize = 1; split_size = 1;}
-	if(gpuidx==gpus-1){ret[split_axis] = split_offsize; }
-	else{ret[split_axis] = split_size;}
+	if(gpuidx==gpus-1){shape[split_axis] = split_offsize; }
+	else{shape[split_axis] = split_size;}
 
-	return ret;
+	assert(split_size*(gpus-1)+split_offsize >= gpus);
+
+	return shape;
 
 }
 
@@ -74,7 +75,6 @@ TensorTemplate<T>* empty_template(int batches, int maps, int rows, int cols, int
 		out->shape_gpus.push_back(shape);
 		out->size_gpus.push_back(shape[0]*shape[1]*shape[2]*shape[3]);
 		out->bytes_gpus.push_back(shape[0]*shape[1]*shape[2]*shape[3]*sizeof(T));
-
 
 		T *gpu_data;
 		CUDA_CHECK_RETURN(cudaMalloc((void**)&gpu_data, out->bytes_gpus.back()));

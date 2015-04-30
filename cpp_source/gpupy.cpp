@@ -163,6 +163,10 @@ void GPUpy::dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasO
 
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
 
+		//print_tensor_shape(A);
+		//print_tensor_shape(B);
+		//print_tensor_shape(out);
+
 		CUBLAS_CHECK_RETURN(cublasSgemm(cublashandles[i], T1, T2, A_rows, B_cols,
 				A_cols, &alpha, A->data_gpus[i], A->shape_gpus[i][2], B->data_gpus[i], B->shape_gpus[i][2], &beta,
 				out->data_gpus[i], out->shape_gpus[i][2]));
