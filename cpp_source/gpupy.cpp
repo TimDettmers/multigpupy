@@ -220,9 +220,10 @@ void GPUpy::disablePeerAccess()
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
 }
 
-void GPUpy::async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3, int layer_idx)
+template <typename T>
+void async_sync_template(GPUpy * gpupy, T *A, T *out1, T *out2, T *out3, int layer_idx)
 {
-	std::vector<Tensor*> out;
+	std::vector<T*> out;
 	out.push_back(A);
 	if(out1) out.push_back(out1);
 	if(out2) out.push_back(out2);
@@ -233,110 +234,33 @@ void GPUpy::async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3, int 
 	//this is the fastest transfer method for multi-GPU setups on non-specialized hardware
 	//this transfer is made exactly like the matrix cross product where left and right transfers are left and right arrows
 	//tick();
-	IS_SYNCHRONIZING = 1;
-	for(int transfer_round = 1; transfer_round < DEVICE_COUNT; transfer_round++)
+	gpupy->IS_SYNCHRONIZING = 1;
+	for(int transfer_round = 1; transfer_round < gpupy->DEVICE_COUNT; transfer_round++)
 	{
 		//right transfer
-		for(int right_idx = 0; right_idx < DEVICE_COUNT-transfer_round; right_idx++)
-			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[right_idx+transfer_round]->data_gpus[right_idx+transfer_round], A->data_gpus[right_idx],A->bytes_gpus[right_idx],cudaMemcpyDefault, stream_vectors[layer_idx][right_idx][right_idx+transfer_round]));
+		for(int right_idx = 0; right_idx < gpupy->DEVICE_COUNT-transfer_round; right_idx++)
+			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[right_idx+transfer_round]->data_gpus[right_idx+transfer_round], A->data_gpus[right_idx],A->bytes_gpus[right_idx],cudaMemcpyDefault, gpupy->stream_vectors[layer_idx][right_idx][right_idx+transfer_round]));
 
 		//left transfer
-		for(int left_idx = transfer_round; left_idx < DEVICE_COUNT; left_idx++)
+		for(int left_idx = transfer_round; left_idx < gpupy->DEVICE_COUNT; left_idx++)
 		{
-			idx = (DEVICE_COUNT)-transfer_round;
-			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDefault, stream_vectors[layer_idx][left_idx][left_idx-transfer_round]));
+			idx = (gpupy->DEVICE_COUNT)-transfer_round;
+			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDefault, gpupy->stream_vectors[layer_idx][left_idx][left_idx-transfer_round]));
 			}
 	}
 	//tick();
 
 }
 
-void GPUpy::async_sync_8bit(CharTensor *A, CharTensor *out1, CharTensor *out2, CharTensor *out3, int layer_idx)
-{
-	std::vector<CharTensor*> out;
-	out.push_back(A);
-	if(out1) out.push_back(out1);
-	if(out2) out.push_back(out2);
-	if(out3) out.push_back(out3);
-	int idx = 0;
-
-	//left-right transfer across PCIe switches
-	//this is the fastest transfer method for multi-GPU setups on non-specialized hardware
-	//this transfer is made exactly like the matrix cross product where left and right transfers are left and right arrows
-	IS_SYNCHRONIZING = 1;
-	for(int transfer_round = 1; transfer_round < DEVICE_COUNT; transfer_round++)
-	{
-		//right transfer
-		for(int right_idx = 0; right_idx < DEVICE_COUNT-transfer_round; right_idx++)
-			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[right_idx+transfer_round]->data_gpus[right_idx+transfer_round], A->data_gpus[right_idx],A->bytes_gpus[right_idx],cudaMemcpyDefault, stream_vectors[layer_idx][right_idx][right_idx+transfer_round]));
-
-		//left transfer
-		for(int left_idx = transfer_round; left_idx < DEVICE_COUNT; left_idx++)
-		{
-			idx = (DEVICE_COUNT)-transfer_round;
-			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDefault, stream_vectors[layer_idx][left_idx][left_idx-transfer_round]));
-		}
-	}
-}
 
 void GPUpy::async_sync_1bit(UIntTensor *A, UIntTensor *out1, UIntTensor *out2, UIntTensor *out3, int layer_idx)
-{
-	std::vector<UIntTensor*> out;
-	out.push_back(A);
-	if(out1) out.push_back(out1);
-	if(out2) out.push_back(out2);
-	if(out3) out.push_back(out3);
-	int idx = 0;
-
-	//left-right transfer across PCIe switches
-	//this is the fastest transfer method for multi-GPU setups on non-specialized hardware
-	//this transfer is made exactly like the matrix cross product where left and right transfers are left and right arrows
-	IS_SYNCHRONIZING = 1;
-	for(int transfer_round = 1; transfer_round < DEVICE_COUNT; transfer_round++)
-	{
-		//right transfer
-		for(int right_idx = 0; right_idx < DEVICE_COUNT-transfer_round; right_idx++)
-			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[right_idx+transfer_round]->data_gpus[right_idx+transfer_round], A->data_gpus[right_idx],A->bytes_gpus[right_idx],cudaMemcpyDefault, stream_vectors[layer_idx][right_idx][right_idx+transfer_round]));
-
-		//left transfer
-		for(int left_idx = transfer_round; left_idx < DEVICE_COUNT; left_idx++)
-		{
-			idx = (DEVICE_COUNT)-transfer_round;
-			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDefault, stream_vectors[layer_idx][left_idx][left_idx-transfer_round]));
-		}
-	}
-}
-
+{ async_sync_template<UIntTensor>(this, A, out1, out2, out3, layer_idx); }
+void GPUpy::async_sync_8bit(CharTensor *A, CharTensor *out1, CharTensor *out2, CharTensor *out3, int layer_idx)
+{ async_sync_template<CharTensor>(this, A, out1, out2, out3, layer_idx); }
 void GPUpy::async_sync_16bit(UShortTensor *A, UShortTensor *out1, UShortTensor *out2, UShortTensor *out3, int layer_idx)
-{
-	std::vector<UShortTensor*> out;
-	out.push_back(A);
-	if(out1) out.push_back(out1);
-	if(out2) out.push_back(out2);
-	if(out3) out.push_back(out3);
-	int idx = 0;
-
-	//left-right transfer across PCIe switches
-	//this is the fastest transfer method for multi-GPU setups on non-specialized hardware
-	//this transfer is made exactly like the matrix cross product where left and right transfers are left and right arrows
-	IS_SYNCHRONIZING = 1;
-	for(int transfer_round = 1; transfer_round < DEVICE_COUNT; transfer_round++)
-	{
-		//right transfer
-		for(int right_idx = 0; right_idx < DEVICE_COUNT-transfer_round; right_idx++)
-			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[right_idx+transfer_round]->data_gpus[right_idx+transfer_round], A->data_gpus[right_idx],A->bytes_gpus[right_idx],cudaMemcpyDefault, stream_vectors[layer_idx][right_idx][right_idx+transfer_round]));
-
-		//left transfer
-		for(int left_idx = transfer_round; left_idx < DEVICE_COUNT; left_idx++)
-		{
-			idx = (DEVICE_COUNT)-transfer_round;
-			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDefault, stream_vectors[layer_idx][left_idx][left_idx-transfer_round]));
-		}
-	}
-}
-
-
-
+{ async_sync_template<UShortTensor>(this, A, out1, out2, out3, layer_idx); }
+void GPUpy::async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3, int layer_idx)
+{ async_sync_template<Tensor>(this, A, out1, out2, out3, layer_idx); }
 
 
 void GPUpy::synchronize_streams(int layer_idx)

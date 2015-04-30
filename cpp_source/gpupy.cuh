@@ -113,11 +113,10 @@ public:
 	float tock();
 	float tock(std::string name);
 
-
+	std::vector< std::vector<std::vector<cudaStream_t> > > stream_vectors;
 private:
 	std::vector<curandGenerator_t> generators;
 	std::vector<cublasHandle_t> cublashandles;
-	std::vector< std::vector<std::vector<cudaStream_t> > > stream_vectors;
 	std::map<std::string,cudaEvent_t*> m_dictTickTock;
 	 std::map<std::string,float> m_dictTickTockCumulative;
 
