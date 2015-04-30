@@ -16,6 +16,11 @@ mem = h.MemoryHandler()
 ptr = lib.funcs.fempty_split(1,1,1,128,-1)
 p_gpupy = lib.funcs.fGPUpy(lib.floats_8bit.ctypes.data_as(ct.POINTER(ct.c_float)))
 
+def deprecated(func):
+    fname = func.func_name
+    print 'Function {0} is deprecated'.format(fname)
+    return func
+
 class Slice():
     def __init__(self, slice_pointer):
         self.pt = slice_pointer
@@ -42,7 +47,7 @@ class Slice():
                      
 
 class Array(object):
-    def __init__(self, npArray = None, mat_pointer = None, split_idx=-1):
+    def __init__(self, npArray = None, mat_pointer = None, split_idx=-1, dtype=np.float32):
         self.shape = None
         self.dummy = False
         self.id = uuid.uuid4()
@@ -64,7 +69,7 @@ class Array(object):
                
         self.pt = mat_pointer
         self.npArray = npArray   
-        mem.arrays[self.id] = [self.shape_tensor, self.pt]   
+        mem.arrays[self.id] = [self.shape_tensor, self.pt, dtype]   
         pass
     
     def __getitem__(self, selectors):
@@ -339,27 +344,11 @@ def slice_axis(A, out):
 def stack_axis(A, out):
     lib.funcs.inp_stack_axis(A.pt, out.pt)
     
-def sync(source, layer_idx = 0):
-    arrays = mem.get_arrays_for_sync(source)
-    if len(arrays) == 3: lib.funcs.fsync(p_gpupy, source.pt, arrays[0].pt, arrays[1].pt, arrays[2].pt, layer_idx)
-    elif len(arrays) == 2:  lib.funcs.fsync(p_gpupy, source.pt, arrays[0].pt, arrays[1].pt, None, layer_idx)
-    else: lib.funcs.fsync(p_gpupy, source.pt, arrays[0].pt, None, None, layer_idx)
-    
-def sync_1bit(source, target1, target2=None, target3=None, layer_idx = 0):
-    if target2 and target3: lib.funcs.fsync_1bit(p_gpupy, source, target1, target2, target3, layer_idx)
-    elif target2: lib.funcs.fsync_1bit(p_gpupy, source, target1, target2, None,layer_idx)
-    else: lib.funcs.fsync_1bit(p_gpupy, source, target1, None, None,layer_idx)
-    
-def sync_8bit(source, target1, target2=None, target3=None, layer_idx = 0):
-    if target2 and target3: lib.funcs.fsync_8bit(p_gpupy, source, target1, target2, target3, layer_idx)
-    elif target2: lib.funcs.fsync_8bit(p_gpupy, source, target1, target2, None,layer_idx)
-    else: lib.funcs.fsync_8bit(p_gpupy, source, target1, None, None,layer_idx)    
-
-def sync_16bit(source, target1, target2=None, target3=None, layer_idx = 0):
-    if target2 and target3: lib.funcs.fsync_16bit(p_gpupy, source, target1, target2, target3, layer_idx)
-    elif target2: lib.funcs.fsync_16bit(p_gpupy, source, target1, target2, None,layer_idx)
-    else: lib.funcs.fsync_16bit(p_gpupy, source, target1, None, None,layer_idx)
-  
+def sync(source, layer_idx = 0, dtype=np.float32):
+    arrays = mem.get_arrays_for_sync(source, dtype)
+    if len(arrays) == 3: lib.sync_func[dtype](p_gpupy, source.pt, arrays[0].pt, arrays[1].pt, arrays[2].pt, layer_idx)
+    elif len(arrays) == 2:  lib.sync_func[dtype](p_gpupy, source.pt, arrays[0].pt, arrays[1].pt, None, layer_idx)
+    else: lib.sync_func[dtype](p_gpupy, source.pt, arrays[0].pt, None, None, layer_idx)  
     
 def sync_streams(layer_idx=0): lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)
 def sync_streams_add(source, out = None, layer_idx=0, split_idx=2):
@@ -394,9 +383,17 @@ def zeros_like(x1):
     return arr
     
 def empty_like(x1): return array(None, lib.funcs.fempty_like(x1.pt))
-def empty_uint_like(x1): return lib.funcs.fempty_uint_like(x1.pt)
-def empty_char_like(x1): return lib.funcs.fempty_char_like(x1.pt)
-def empty_ushort_like(x1): return lib.funcs.fempty_ushort_like(x1.pt)
+@deprecated
+def empty_p_uint_like(x1): return lib.funcs.fempty_uint_like(x1.pt)
+@deprecated
+def empty_p_char_like(x1): return lib.funcs.fempty_char_like(x1.pt)
+@deprecated
+def empty_p_ushort_like(x1): return lib.funcs.fempty_ushort_like(x1.pt)
+
+
+def empty_uint_like(x1): return array(None, lib.funcs.fempty_uint_like(x1.pt))
+def empty_char_like(x1): return array(None, lib.funcs.fempty_char_like(x1.pt))
+def empty_ushort_like(x1): return array(None, lib.funcs.fempty_ushort_like(x1.pt))
 
 def compress_8bit(A, abs_max_value, char_pointer):lib.funcs.fcompress_8bit(p_gpupy, A.pt,ct.c_float(abs_max_value), char_pointer)
 def decompress_8bit(char_pointer, abs_max_value, out):lib.funcs.fdecompress_8bit(p_gpupy, char_pointer,ct.c_float(abs_max_value),out.pt)   

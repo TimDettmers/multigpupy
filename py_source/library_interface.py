@@ -243,6 +243,11 @@ funcs.ftock.restype = ct.c_float
 class lib(object): 
     funcs = funcs
     floats_8bit = floats_8bit
+    sync_func = {}
+    sync_func[np.float32] = funcs.fsync
+    sync_func[np.float16] = funcs.fsync_16bit
+    sync_func[np.char] = funcs.fsync_8bit
+    sync_func[np.uint32] = funcs.fsync_1bit
 
 
 

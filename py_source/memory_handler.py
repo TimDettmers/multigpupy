@@ -19,7 +19,7 @@ class MemoryHandler(object):
     def arrays_like(self, A, array_count, dtype=np.float32):
         arrays = []
         for i in range(array_count): 
-            if dtype == np.float32: arrays.append(gpu.zeros_like(A))
+            if dtype == np.float32: arrays.append(gpu.empty_like(A))
             elif dtype == np.float16: arrays.append(gpu.empty_ushort_like(A))
             elif dtype == np.uint32: arrays.append(gpu.empty_uint_like(A))
             elif dtype == np.char: arrays.append(gpu.empty_char_like(A))

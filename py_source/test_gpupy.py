@@ -1211,7 +1211,7 @@ def test_8bit_compression():
     A = np.float32(np.random.rand(500,50,30,4))
     B1 = gpu.array(A)
     C = gpu.zeros(B1.shape)
-    p_B2 = gpu.empty_char_like(B1)
+    p_B2 = gpu.empty_p_char_like(B1)
     max_value = np.max(np.abs(A))
     gpu.compress_8bit(B1, max_value, p_B2)
     gpu.decompress_8bit(p_B2, max_value, C)
@@ -1257,7 +1257,7 @@ def test_1bit_compression():
         avgneg = gpu.zeros((A.shape[0],))
         pos_count = gpu.zeros((A.shape[0],))
         neg_count = gpu.zeros((A.shape[0],))
-        quant = gpu.empty_uint_like(B)
+        quant = gpu.empty_p_uint_like(B)
         C = gpu.empty_like(B)
         
         for j in range(3):
@@ -1278,7 +1278,7 @@ def test_16bit_compression():
         A = np.float32(np.random.randn(dims[0],dims[1]))  
         B = gpu.array(A)
         C1 = gpu.empty_like(B)
-        C2 = gpu.empty_ushort_like(B)
+        C2 = gpu.empty_p_ushort_like(B)
         
         gpu.compress_16bit(B, C2)
         gpu.decompress_16bit(C2, C1)

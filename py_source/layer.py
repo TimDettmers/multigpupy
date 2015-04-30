@@ -191,15 +191,15 @@ class Layer(object):
             self.b_grad_next = gpu.zeros((1, self.next_layer.unitcount))   
             self.w_next_sync = gpu.zeros((self.unitcount,self.next_layer.unitcount))
             if self.next_layer.config['compression'] == '16bit':
-                self.w_next_grad_16bit = gpu.empty_ushort_like(self.w_grad_next)  
-                self.w_next_sync_16bit = gpu.empty_ushort_like(self.w_grad_next) 
+                self.w_next_grad_16bit = gpu.empty_p_ushort_like(self.w_grad_next)  
+                self.w_next_sync_16bit = gpu.empty_p_ushort_like(self.w_grad_next) 
             elif self.next_layer.config['compression'] == '8bit': 
                 self.max_value_buffer = gpu.zeros((self.unitcount,self.next_layer.unitcount))
-                self.w_next_grad_8bit = gpu.empty_char_like(self.w_grad_next)  
-                self.w_next_sync_8bit = gpu.empty_char_like(self.w_grad_next)  
+                self.w_next_grad_8bit = gpu.empty_p_char_like(self.w_grad_next)  
+                self.w_next_sync_8bit = gpu.empty_p_char_like(self.w_grad_next)  
             elif self.next_layer.config['compression'] == '1bit':
-                self.w_next_grad_1bit = gpu.empty_uint_like(self.w_grad_next) 
-                self.w_next_sync_1bit = gpu.empty_uint_like(self.w_grad_next)  
+                self.w_next_grad_1bit = gpu.empty_p_uint_like(self.w_grad_next) 
+                self.w_next_sync_1bit = gpu.empty_p_uint_like(self.w_grad_next)  
                 self.errors = gpu.zeros_like(self.w_grad_next)
                 self.posMask = gpu.zeros_like(self.w_grad_next)
                 self.negMask = gpu.zeros_like(self.w_grad_next)
