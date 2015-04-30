@@ -272,14 +272,15 @@ class Layer(object):
     
     def handle_parallelism(self):
         if self.config['parallelism'] == 'data' and self.next_layer and self.has_gradients: 
-            gpu.sync_streams(self.id)    
+            #gpu.sync_streams(self.id)    
             if self.next_layer.config['compression'] == '16bit':
                 gpu.decompress_16bit(self.w_next_sync_16bit, self.w_next_sync)
             elif self.next_layer.config['compression'] == '8bit':                 
                 gpu.decompress_8bit(self.w_next_sync_8bit, self.abs_max_grad_value, self.w_next_sync)
             elif self.next_layer.config['compression'] == '1bit':
                 gpu.decompress_1bit(self.w_next_sync_1bit, self.errors,self.posAvg, self.negAvg, self.w_next_sync)
-            gpu.add(self.w_grad_next, self.w_next_sync, self.w_grad_next)
+            #gpu.add(self.w_grad_next, self.w_next_sync, self.w_grad_next)
+            gpu.sync_streams_add(self.w_grad_next, self.id)
             self.weight_update()
     
     def predict(self, data):
@@ -335,7 +336,7 @@ class Layer(object):
                                   self.negMask, self.posCount, self.negCount)
                 gpu.sync_1bit(self.w_next_grad_1bit, self.w_next_sync_1bit, layer_idx=self.id)                            
             else:
-                gpu.sync(self.w_grad_next, self.w_next_sync, layer_idx=self.id)
+                gpu.sync(self.w_grad_next, layer_idx=self.id)
         if self.next_layer: self.next_layer.backward_grads()        
         
         gpu.Tdot(self.bias_ones, self.next_layer.error, self.b_grad_next)
@@ -465,14 +466,7 @@ class Layer(object):
     def check_work_dir(self):        
         if not self.workdir: 
             logging.error('Need working directory to perform this action!')
-            return
-        
-            
-        
-        
-def sync_gradient(p_w_next, p_w_next_sync1,p_w_next_sync2=None,p_w_next_sync3=None):   
-    if gpu.is_synchronizing() == 1: gpu.sync_streams()
-    lib.funcs.fsync(gpu.p_gpupy, p_w_next, p_w_next_sync1, p_w_next_sync2, p_w_next_sync3)          
+            return       
         
         
         

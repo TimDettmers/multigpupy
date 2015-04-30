@@ -1082,10 +1082,6 @@ def test_sync():
         B1 = gpu.array(A1,split_idx=2)
         gpu.sync(B1)
         C1 = gpu.sync_streams_add(B1)
-        #gpu.print_tensor(C1)
-        #gpu.add(B1,B2,C1)
-        #gpu.add(B3,C1,C1)
-        #gpu.add(B4,C1,C1)
         dim = dims[0]/4
         C =  A1[0:dim] + A1[dim:2*dim] + A1[2*dim:3*dim] + A1[3*dim:4*dim]
         t.assert_almost_equal(C,C1.tocpu(),4,'split sync with add not working')
@@ -1327,6 +1323,8 @@ def test_empty_pinned():
         t.assert_array_equal(A.T.flatten(),B.flatten())
         
     gpu.tock('to col-major pinned')
+    print gpu.mem.usage_stats.values()
+    assert False
 
 if __name__ == '__main__':    
     nose.run()

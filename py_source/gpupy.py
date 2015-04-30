@@ -351,16 +351,13 @@ def sync(source, layer_idx = 0, dtype=np.float32):
     else: lib.sync_func[dtype](p_gpupy, source.pt, arrays[0].pt, None, None, layer_idx)  
     
 def sync_streams(layer_idx=0): lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)
-def sync_streams_add(source, out = None, layer_idx=0, split_idx=2):
-    if not out: 
-        if split_idx == -1: out = empty_like(source)
-        else: out = empty(source.shape_tensor,split_idx)
+def sync_streams_add(source, layer_idx=0, split_idx=2):
     lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)    
     arrays = mem.sync_arrays[source.id]    
-    add(source, arrays[0], out)
-    if len(arrays) > 1: add(arrays[1], out, out)
-    if len(arrays) > 2: add(arrays[2], out, out)
-    return out
+    add(source, arrays[0], source)
+    if len(arrays) > 1: add(arrays[1], source, source)
+    if len(arrays) > 2: add(arrays[2], source, source)
+    return source
         
 
 def sum(x1): return lib.funcs.fsum(x1.pt)

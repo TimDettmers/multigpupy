@@ -15,6 +15,7 @@ class Neural_net(object):
         self.net.add(Layer(classes,Softmax()))       
         
         self.net.set_config_value('parallelism','None')
+        self.net.set_config_value('compression','32bit')
         self.net.set_config_value('dropout', dropout)
         self.net.set_config_value('input_dropout', input_dropout)
         self.net.set_config_value('learning_rate', learning_rate)
