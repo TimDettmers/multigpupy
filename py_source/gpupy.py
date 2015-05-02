@@ -126,7 +126,9 @@ class Array(object):
     def __ne__(self, other): return not_equal(self,other)
     def __pow__(self, other): return power(self,other)
     #def abs(self): return absolute(self, out=None)
-    def __str__(self): printmat(self)
+    def __str__(self): 
+        printmat(self)
+        return ''
     
     
     def __iadd__(self, other): 

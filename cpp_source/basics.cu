@@ -421,11 +421,28 @@ void printmat(Tensor *A, int start_row, int end_row, int start_col, int end_col)
 void print_cpu_matrix(Tensor *A, int start_row, int end_row, int start_col, int end_col)
 {
 
+	int skip_rows = 0;
+	int skip_cols = 0;
+	if((end_row - start_row)*(end_col - start_col) > 1000)
+	{
+		if(end_row - start_row >= 20){ skip_rows = 3; }
+		if(end_col - start_col >= 20){ skip_cols = 3; }
+	}
+
+	cout << (end_row - start_row)*(end_col - start_col) << endl;
+	cout << skip_rows << endl;
+	cout << skip_cols << endl;
+
 	for(int row = start_row; row< end_row; row++)
 	{
+		if(row == skip_rows && skip_rows > 0){ printf("...,\n"); }
+		if(skip_rows > 0 && (row >= skip_rows && row+3 < end_row)){ continue; }
 		printf("[");
 		for(int col =start_col; col < end_col; col++)
 		{
+			if(col == skip_cols && skip_cols > 0){ printf(" ..., "); }
+			if(skip_cols > 0 && (col >= skip_cols && (col+3) < end_col)){ continue; }
+
 		  if(A->data[(row*A->cols)+col] > 0.0f)
 			  printf("% f ",A->data[(row*A->cols)+col]);
 		  else

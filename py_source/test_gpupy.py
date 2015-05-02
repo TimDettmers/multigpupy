@@ -1337,11 +1337,15 @@ def test_empty_pinned():
     
 def test_printmat():
     A = np.random.rand(4,4)
-    B = gpu.array(A)
-    
+    B = gpu.array(A)    
     gpu.printmat(B)
     gpu.printrows(B,2,4)
     gpu.printfull(B,0,2,2,4)
+    print B
+    
+    
+    A = np.random.rand(50,21)
+    B = gpu.array(A)
     print B
 
 if __name__ == '__main__':    
