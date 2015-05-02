@@ -34,10 +34,12 @@ void GPUpy::init(int seed, float *floats_8bit)
 
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
 		cudaStream_t s;
-		CUDA_CHECK_RETURN(cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking));
+		//CUDA_CHECK_RETURN(cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking));
+		CUDA_CHECK_RETURN(cudaStreamCreate(&s));
 		streams.push_back(s);
 		cudaStream_t s_y;
-		CUDA_CHECK_RETURN(cudaStreamCreateWithFlags(&s_y, cudaStreamNonBlocking));
+		//CUDA_CHECK_RETURN(cudaStreamCreateWithFlags(&s_y, cudaStreamNonBlocking));
+		CUDA_CHECK_RETURN(cudaStreamCreate(&s_y));
 		streams_y.push_back(s_y);
 
 	}
@@ -239,14 +241,20 @@ void async_sync_template(GPUpy * gpupy, T *A, T *out1, T *out2, T *out3, int lay
 	{
 		//right transfer
 		for(int right_idx = 0; right_idx < gpupy->DEVICE_COUNT-transfer_round; right_idx++)
+		{
 			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[right_idx+transfer_round]->data_gpus[right_idx+transfer_round], A->data_gpus[right_idx],A->bytes_gpus[right_idx],cudaMemcpyDefault, gpupy->stream_vectors[layer_idx][right_idx][right_idx+transfer_round]));
+			//cout << "right from " << right_idx+transfer_round << " to " << right_idx << " with stream " << layer_idx << "x" << right_idx << right_idx+transfer_round << endl;
+		}
+
+
 
 		//left transfer
 		for(int left_idx = transfer_round; left_idx < gpupy->DEVICE_COUNT; left_idx++)
 		{
 			idx = (gpupy->DEVICE_COUNT)-transfer_round;
 			CUDA_CHECK_RETURN(cudaMemcpyAsync(out[idx]->data_gpus[left_idx-transfer_round], A->data_gpus[left_idx],A->bytes_gpus[left_idx],cudaMemcpyDefault, gpupy->stream_vectors[layer_idx][left_idx][left_idx-transfer_round]));
-			}
+			//cout << "left from " << idx <<  " and " << left_idx-transfer_round << " to " << left_idx << " with stream " << layer_idx << "x" << left_idx << left_idx-transfer_round << endl;
+		}
 	}
 	//tick();
 
@@ -265,14 +273,14 @@ void GPUpy::async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3, int 
 
 void GPUpy::synchronize_streams(int layer_idx)
 {
-	/*
+
 	for(int i = 0; i < DEVICE_COUNT; i++)
 		for(int j = 0; j < DEVICE_COUNT; j++)
 			CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][i][j]));
-			*/
 
-	CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][1][0]));
-	CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][0][1]));
+
+	//CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][1][0]));
+	//CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][0][1]));
 	CURRENT_SYNC_IDX +=1;
 
 }
@@ -282,18 +290,26 @@ void GPUpy::synchronize_streams(int layer_idx)
 
 void GPUpy::allocateNextAsync(Tensor *batch, float *cpu_buffer, float *pinned_X, Tensor *batch_y, float *cpu_buffer_y, float* pinned_y, int batch_start_idx, int isSplit)
 {
-	memcpy(pinned_X, cpu_buffer, batch->bytes);
-	memcpy(pinned_y, cpu_buffer_y, batch_y->bytes);
+	//memcpy(pinned_X, cpu_buffer, batch->bytes);
+	//memcpy(pinned_y, cpu_buffer_y, batch_y->bytes);
 
 	//to_col_major_pinned(&cpu_buffer[batch_start_idx*batch->cols], pinned_X,1,1,batch->rows, batch->cols);
 	//to_col_major_pinned(&cpu_buffer_y[batch_start_idx*batch_y->cols], pinned_y,1,1,batch_y->rows, batch_y->cols);
-
+	int offset = 0;
 	for(int i = 0; i < DEVICE_COUNT; i++)
 	{
-		if(isSplit == 0)
+		if(isSplit == -1)
 		{
-			CUDA_CHECK_RETURN(cudaMemcpyAsync(batch->data_gpus[i],pinned_X,batch->bytes_gpus[i],cudaMemcpyDefault, streams[i]));
-			CUDA_CHECK_RETURN(cudaMemcpyAsync(batch_y->data_gpus[i],pinned_y,batch_y->bytes_gpus[i],cudaMemcpyDefault, streams_y[i]));
+			CUDA_CHECK_RETURN(cudaMemcpyAsync(batch->data_gpus[i],&cpu_buffer[batch_start_idx*batch->cols],batch->bytes_gpus[i],cudaMemcpyDefault, streams[i]));
+			CUDA_CHECK_RETURN(cudaMemcpyAsync(batch_y->data_gpus[i],&cpu_buffer_y[batch_start_idx*batch_y->cols],batch_y->bytes_gpus[i],cudaMemcpyDefault, streams_y[i]));
+		}
+		else
+		{
+			CUDA_CHECK_RETURN(cudaMemcpyAsync(batch->data_gpus[i],&cpu_buffer[(batch_start_idx+offset)*batch->cols],batch->bytes_gpus[i],cudaMemcpyDefault, streams[i]));
+			CUDA_CHECK_RETURN(cudaMemcpyAsync(batch_y->data_gpus[i],&cpu_buffer_y[(batch_start_idx+offset)*batch_y->cols],batch_y->bytes_gpus[i],cudaMemcpyDefault, streams_y[i]));
+
+			offset += batch->shape_gpus[i][2];
+
 		}
 	}
 }
@@ -307,6 +323,24 @@ void GPUpy::replaceCurrentBatch()
 		CUDA_CHECK_RETURN(cudaStreamSynchronize(streams[i]));
 		CUDA_CHECK_RETURN(cudaStreamSynchronize(streams_y[i]));
 	}
+
+
+}
+
+void GPUpy::replaceCurrentBatch(Tensor *batch_X, Tensor *batch_y, Tensor *buffer_X, Tensor *buffer_y)
+{
+
+
+	for(int i = 0; i < DEVICE_COUNT; i++)
+	{
+		CUDA_CHECK_RETURN(cudaStreamSynchronize(streams[i]));
+		CUDA_CHECK_RETURN(cudaStreamSynchronize(streams_y[i]));
+	}
+
+
+	to_col_major(buffer_X, batch_X);
+	to_col_major(buffer_y, batch_y);
+
 }
 
 

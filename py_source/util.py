@@ -45,8 +45,8 @@ def handle_selectors(selectors, shape):
     
             
 def create_t_matrix(y, classes = None):
-    if not classes: classes = np.max(y)+1
-    t = np.zeros((y.shape[0], classes))
+    if not classes: classes = np.max(y)+1    
+    t = np.zeros((y.shape[0], classes), dtype=np.float32)
     for i in range(y.shape[0]):
         t[np.int32(i), np.int32(y[i])] = 1.0
         
@@ -72,6 +72,9 @@ def swap_pointer_and_shape(x1, x2):
     swap = x1.shape
     x1.shape = x2.shape
     x2.shape = swap   
+    swap = x1.shape_tensor
+    x1.shape_tensor = x2.shape_tensor
+    x2.shape_tensor = swap   
 
 def create_uniform_rdm_weight(input_size,output_size):
     rdm = np.random.RandomState(1234)        

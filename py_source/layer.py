@@ -13,6 +13,7 @@ import logging
 import os
 import cPickle as pickle
 import multiprocessing as mp
+from time import sleep
 
 
 '''
@@ -189,17 +190,8 @@ class Layer(object):
             self.m_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
             self.w_grad_next = gpu.zeros((self.unitcount, self.next_layer.unitcount))
             self.b_grad_next = gpu.zeros((1, self.next_layer.unitcount))   
-            self.w_next_sync = gpu.zeros((self.unitcount,self.next_layer.unitcount))
-            if self.next_layer.config['compression'] == '16bit':
-                self.w_next_grad_16bit = gpu.empty_p_ushort_like(self.w_grad_next)  
-                self.w_next_sync_16bit = gpu.empty_p_ushort_like(self.w_grad_next) 
-            elif self.next_layer.config['compression'] == '8bit': 
-                self.max_value_buffer = gpu.zeros((self.unitcount,self.next_layer.unitcount))
-                self.w_next_grad_8bit = gpu.empty_p_char_like(self.w_grad_next)  
-                self.w_next_sync_8bit = gpu.empty_p_char_like(self.w_grad_next)  
-            elif self.next_layer.config['compression'] == '1bit':
-                self.w_next_grad_1bit = gpu.empty_p_uint_like(self.w_grad_next) 
-                self.w_next_sync_1bit = gpu.empty_p_uint_like(self.w_grad_next)  
+            self.w_next_sync = gpu.zeros((self.unitcount,self.next_layer.unitcount))  
+            if self.next_layer.config['compression'] == '1bit':
                 self.errors = gpu.zeros_like(self.w_grad_next)
                 self.posMask = gpu.zeros_like(self.w_grad_next)
                 self.negMask = gpu.zeros_like(self.w_grad_next)
@@ -263,8 +255,15 @@ class Layer(object):
             self.funcs.activation(data, self.activation, self.out, inTrainingMode)
             if inTrainingMode: self.handle_parallelism()
         else:
-            if inTrainingMode: self.handle_parallelism() 
-            gpu.dot(self.prev_layer.out,self.prev_layer.w_next,self.activation)          
+            if inTrainingMode: self.handle_parallelism()
+            #cool
+            gpu.dot(self.prev_layer.out,self.prev_layer.w_next,self.activation)   
+            #not cool activation, dot problem? -> nope, memory problem (wrong buffer size)?            
+            #print self.prev_layer.out.sum()
+            #print self.prev_layer.w_next.sum()
+            #print self.activation.sum()
+            #print 'a'
+            #sleep(0.5)    
             gpu.add(self.activation, self.prev_layer.b_next, self.activation)   
             self.funcs.activation(self.activation, self.activation, self.out, inTrainingMode)  
             
@@ -311,7 +310,6 @@ class Layer(object):
     def backward_grads(self):
         if self.target: return
         gpu.Tdot(self.activation, self.next_layer.error, self.w_grad_next)
-        
         
         if self.next_layer.config['parallelism'] == 'data': 
             if not self.has_gradients:  
@@ -376,10 +374,11 @@ class Layer(object):
             #batch_size = ((self.out.shape[2]*gpu.gpu_count()) if self.config['parallelism'] != 'data' else self.out.shape[2])
             batch_size = self.out.shape[2]
             lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(self.config['momentum']),ct.c_float(self.config['learning_rate']), batch_size)
-            gpu.sub(self.w_next, self.w_grad_next, self.w_next)
-            if self.id == 1: print self.m_next.sum()
+            
+            gpu.sub(self.w_next, self.w_grad_next, self.w_next)  
+                     
             if self.config['parallelism'] != 'data':
-                self.next_layer.weight_update()         
+                self.next_layer.weight_update()
         
     def test_for_no_convergence(self):
         if not self.config['test_for_convergence']: return False

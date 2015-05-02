@@ -106,6 +106,7 @@ public:
 
 	void allocateNextAsync(Tensor *batch, float *cpu_buffer, float *pinned_X, Tensor *batch_y, float *cpu_buffer_y, float* pinned_y, int batch_start_idx, int isSplit);
 	void replaceCurrentBatch();
+	void replaceCurrentBatch(Tensor *batch_X, Tensor *batch_y, Tensor *buffer_X, Tensor *buffer_y);
 	void createStreams(int layer_count);
 
 	void tick();

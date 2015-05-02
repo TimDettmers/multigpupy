@@ -407,22 +407,14 @@ def zeros_like(x1):
     return arr
     
 def empty_like(x1): return array(None, lib.funcs.fempty_like(x1.pt))
-@deprecated
-def empty_p_uint_like(x1): return lib.funcs.fempty_uint_like(x1.pt)
-@deprecated
-def empty_p_char_like(x1): return lib.funcs.fempty_char_like(x1.pt)
-@deprecated
-def empty_p_ushort_like(x1): return lib.funcs.fempty_ushort_like(x1.pt)
-
-
 def empty_uint_like(x1): return array(None, lib.funcs.fempty_uint_like(x1.pt))
 def empty_char_like(x1): return array(None, lib.funcs.fempty_char_like(x1.pt))
 def empty_ushort_like(x1): return array(None, lib.funcs.fempty_ushort_like(x1.pt))
 
-def compress_8bit(A, abs_max_value, char_pointer):lib.funcs.fcompress_8bit(p_gpupy, A.pt,ct.c_float(abs_max_value), char_pointer)
-def decompress_8bit(char_pointer, abs_max_value, out):lib.funcs.fdecompress_8bit(p_gpupy, char_pointer,ct.c_float(abs_max_value),out.pt)   
-def compress_16bit(A, out): lib.funcs.fcompress_16bit(A.pt, out)
-def decompress_16bit(A, out): lib.funcs.fdecompress_16bit(A, out.pt) 
+def compress_8bit(A, abs_max_value, char_tensor):lib.funcs.fcompress_8bit(p_gpupy, A.pt,ct.c_float(abs_max_value), char_tensor.pt)
+def decompress_8bit(char_tensor, abs_max_value, out):lib.funcs.fdecompress_8bit(p_gpupy, char_tensor.pt,ct.c_float(abs_max_value),out.pt)   
+def compress_16bit(A, out): lib.funcs.fcompress_16bit(A.pt, out.pt)
+def decompress_16bit(A, out): lib.funcs.fdecompress_16bit(A.pt, out.pt) 
 
 def sum_row(x1, out):
     lib.funcs.fsum_row(x1.pt, out.pt)
@@ -442,10 +434,10 @@ def compress_1bit(A, val_with_errors, errors, avgPositive,  avgNegative, out, ma
     div(avgPositive, posCount, avgPositive)
     div(avgNegative, negCount, avgNegative)
     #print A.sum(), errors.sum(), avgPositive.sum(), avgNegative.sum()
-    lib.funcs.fcompress_1bit(A.pt, errors.pt, avgPositive.pt, avgNegative.pt, out)
+    lib.funcs.fcompress_1bit(A.pt, errors.pt, avgPositive.pt, avgNegative.pt, out.pt)
     
 def decompress_1bit(quant, errors, avgPos, avgNeg, out):
-    lib.funcs.fdecompress_1bit(quant, errors.pt, avgPos.pt, avgNeg.pt, out.pt)
+    lib.funcs.fdecompress_1bit(quant.pt, errors.pt, avgPos.pt, avgNeg.pt, out.pt)
     
 def fill(x1, fill_value): lib.funcs.ffill(x1.pt, ct.c_float(fill_value))
      

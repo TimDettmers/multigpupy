@@ -790,13 +790,13 @@ def test_dot():
         t.assert_array_almost_equal(C.tocpu(), np.dot(A3.T,B1), 3, "np.Tdot != gpu.dot 2 dimensions!")
     
         
-def test_allocator_init():    
-    data = np.float32(np.random.rand(5333,784))
-    labels = np.float32(np.random.randint(0,10,(5333,)))
+def test_batch_allocator_sequential():    
+    data = np.float32(np.random.rand(5000,784))
+    labels = np.float32(np.random.randint(0,10,(5000,)))
     #labels = np.float32(np.random.rand(5333,4))
     
     batch_size = 128
-    alloc = batch_allocator(data, labels, 0.3, 0.3, batch_size)
+    alloc = batch_allocator(data, labels, 0.3, 0.3, batch_size)    
     for epoch in range(10):
         print 'EPOCH: {0}'.format(epoch+1)
         for batchno, i in enumerate(alloc.train()):
@@ -806,14 +806,14 @@ def test_allocator_init():
             #batch_y = labels[i:stop_idx]
             #print data[0:3]
             #gpu.print_tensor(alloc.batch)
-            print i
+            #print i
+            #print batch_y, alloc.batch_y.tocpu()
+            #print alloc.batch.shape
             t.assert_equal(alloc.batch.tocpu(), batch)
             t.assert_equal(alloc.batch_y.tocpu(),batch_y )
-            #assert False
             
             
         t.assert_equal(batchno+1, alloc.batch_count[0])
-        
         
     for epoch in range(10): 
         for batchno, i in enumerate(alloc.cv()):                 
@@ -829,7 +829,6 @@ def test_allocator_init():
             t.assert_equal(C1, batch)
             t.assert_equal(C2,batch_y )
         t.assert_equal(batchno+1, alloc.batch_count[1])
-            
     for epoch in range(10):             
         for i in alloc.test():                 
             stop_idx = (np.int32(np.round(data.shape[0]*1.0)) if i+batch_size > np.int32(np.round(data.shape[0]*1.0)) else i+batch_size)
@@ -888,6 +887,7 @@ def test_allocator_init():
             t.assert_equal(C2,batch_y )
             
             
+        
         for i in alloc.cv():                 
             stop_idx = (np.int32(np.round(data.shape[0]*0.7)) if i+batch_size > np.int32(np.round(data.shape[0]*0.7)) else i+batch_size)
             batch = data[i:stop_idx]
@@ -939,8 +939,9 @@ def test_allocator_init():
     sec = time.time()-t0
     GB = 10*data.shape[0]*data.shape[1]*4*(1024**-3)
     print GB/sec
-    assert GB/sec > 1.75    
+    assert GB/sec > 4.5    
     #TODO: this should be closer to 8GB/s -> use pinned memory 
+    
    
 
 def test_dropout():
@@ -1072,6 +1073,7 @@ def test_layer():
     print np.sum((C2-y[0:X.shape[0]*0.8])**2)    
     assert np.sum((C2-y[0:X.shape[0]*0.8])**2) < 50
 
+    
 def test_sync():
     gpu.enable_peer_access()
     #logistic_func = lambda x: 1.0/(1.0+np.exp(-x))
@@ -1088,28 +1090,6 @@ def test_sync():
         dim = dims[0]/4
         C =  A1[0:dim] + A1[dim:2*dim] + A1[2*dim:3*dim] + A1[3*dim:4*dim]
         t.assert_almost_equal(C,C1.tocpu(),4,'split sync with add not working')
-        '''
-        B1 = gpu.array(A1,split_idx=2)
-        
-        C2 = logistic_func(np.dot(A1,w))
-        
-        
-        gpu.dot(B1,W1,B2)
-        gpu.logistic(B2,B2)
-        
-        gpu.sync(B2)
-        gpu.sync_streams_add(B2, layer_idx=0, split_idx=2)
-        print C1.tocpu()
-        print C2
-        t.assert_almost_equal(C2,C1.tocpu(),1,'split sync with add not working')
-        '''
-        '''
-        gpu.compress_and_sync(B2, abs_max_value=1.0, dtype=np.char)
-        C1 = gpu.decompress_sync_streams_add(B2, layer_idx=0, split_idx=2, abs_max_value=1.0, dtype=np.char)
-        print C1.tocpu()
-        print C2
-        t.assert_almost_equal(C2,C1.tocpu(),1,'split sync with add not working')
-        '''
         
         
     dims = [5120,2560]
@@ -1175,29 +1155,32 @@ def test_slice_or_stack_axis():
 
 def test_batch_allocator_parallelism():
     net = Layer()
+    #net.set_config_value('parallelism','data')
     data = np.float32(np.random.rand(5400,4))
     labels = np.float32(np.random.randint(0,10,(5400,)))
     
     batch_size = 128
-    alloc = batch_allocator(data, labels, 0.3, 0.3, batch_size)
+    alloc = batch_allocator(data, labels, 0.3, 0.3, batch_size, 'parallel')
     alloc.net = net
     alloc.peer_access_enabled = True
     for i in alloc.train():     
-        A = alloc.current
-        if A.shape[2] < gpu.gpu_count() or A.shape[2] % 2 != 0: continue   
+        #if A.shape[2] < gpu.gpu_count() or A.shape[2] % 2 != 0: continue        
+        stop_idx = (np.int32(np.round(data.shape[0]*0.4)) if i+batch_size > np.int32(np.round(data.shape[0]*0.4)) else i+batch_size)
+        batch = data[i:stop_idx]
+        batch_y = u.create_t_matrix(labels[i:stop_idx],10)
         C1 = gpu.empty(alloc.current.shape)        
-        B2 = gpu.empty((A.shape[3], A.shape[3]))
+        B2 = gpu.empty((batch.shape[1], batch.shape[1]))
+        print i
+        
         
         gpu.stack_axis(alloc.batch, C1)    
-        t.assert_array_equal(C1.tocpu(), A.tocpu(), "stack allocator data parallelism not working!")
-        
-        B1 = A.tocpu()                
+        t.assert_array_equal(C1.tocpu(), batch, "stack allocator data parallelism not working!")
+                       
         gpu.Tdot(alloc.batch,alloc.batch,B2)        
         gpu.sync(B2)
         B6 = gpu.sync_streams_add(B2,split_idx=-1)
-        C2 = np.dot(B1.T,B1)  
+        C2 = np.dot(batch.T,batch)  
         print i
-        print A.shape
         errors = np.sqrt((C2-B6.tocpu())**2).flatten()
         print errors
         t.assert_array_almost_equal(C2, B6.tocpu(),2, "synch add data parallelism not working!")
@@ -1216,7 +1199,7 @@ def test_arregates():
     t.assert_almost_equal(np.sum(A),B1.sum(),3,"Thrust sum")
     t.assert_almost_equal(np.sum(A),B2.sum(),3,"Thrust sum with split")
     
-    
+  
 def test_neural_net():
     net = Neural_net(epochs=15)
 
@@ -1228,16 +1211,16 @@ def test_neural_net():
     error = 1.0-((np.argmax(pred,1)==y[X.shape[0]*0.8:].T).sum()/(y.size*0.2))
     print error
     assert error < 0.20
-    
+   
 
 def test_8bit_compression():
     A = np.float32(np.random.rand(500,50,30,4))
     B1 = gpu.array(A)
     C = gpu.zeros(B1.shape)
-    p_B2 = gpu.empty_p_char_like(B1)
+    B2 = gpu.empty_char_like(B1)
     max_value = np.max(np.abs(A))
-    gpu.compress_8bit(B1, max_value, p_B2)
-    gpu.decompress_8bit(p_B2, max_value, C)
+    gpu.compress_8bit(B1, max_value, B2)
+    gpu.decompress_8bit(B2, max_value, C)
     abs_error = np.sqrt((A-C.tocpu())**2)
     rel_error = np.mean(abs_error/np.abs(A))
     
@@ -1280,7 +1263,7 @@ def test_1bit_compression():
         avgneg = gpu.zeros((A.shape[0],))
         pos_count = gpu.zeros((A.shape[0],))
         neg_count = gpu.zeros((A.shape[0],))
-        quant = gpu.empty_p_uint_like(B)
+        quant = gpu.empty_uint_like(B)
         C = gpu.empty_like(B)
         
         for j in range(3):
@@ -1301,7 +1284,7 @@ def test_16bit_compression():
         A = np.float32(np.random.randn(dims[0],dims[1]))  
         B = gpu.array(A)
         C1 = gpu.empty_like(B)
-        C2 = gpu.empty_p_ushort_like(B)
+        C2 = gpu.empty_ushort_like(B)
         
         gpu.compress_16bit(B, C2)
         gpu.decompress_16bit(C2, C1)

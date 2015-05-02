@@ -9,7 +9,7 @@ from layer import *
 import gpupy
 
 class Neural_net(object):
-    def __init__(self, workdir=None, classes=10, learning_rate=0.003, hidden_size= [1024,1024], dropout=0.5, input_dropout=0.2, epochs=100, unit=Logistic, network_name='neural_net'):        
+    def __init__(self, workdir=None, classes=10, learning_rate=0.001, hidden_size= [1024,1024], dropout=0.5, input_dropout=0.2, epochs=100, unit=Logistic, network_name='neural_net'):        
         self.net = Layer(workdir=workdir,network_name=network_name)
         for size in hidden_size:
             self.net.add(Layer(size, unit()))
@@ -22,13 +22,16 @@ class Neural_net(object):
         self.net.set_config_value('learning_rate', learning_rate)
         self.epochs = epochs
         
-    def fit(self, X, y, cv_size=1.0-0.8571429, test_size=0.0, batch_size = 128):        
-        self.alloc = batch_allocator(X,y, cv_size,test_size,batch_size)        
+    def fit(self, X, y, cv_size=1.0-0.8571429, test_size=0.0, batch_size = 128):   
+        batching_mode = ('parallel' if self.net.config['parallelism'] == 'data' else 'sequential')     
+        self.alloc = batch_allocator(X,y, cv_size,test_size,batch_size,batching_mode)        
         self.alloc.net = self.net
         for epoch in range(self.epochs):
             t0 = time.time()
             for i in self.alloc.train():
-                if self.net.config['parallelism'] == 'data' and self.alloc.batch.shape[2] != batch_size: continue
+                #print i
+                #print self.alloc.batch.shape[2]
+                #if self.net.config['parallelism'] == 'data' and self.alloc.batch.shape[2] != batch_size: continue  
                 self.net.forward(self.alloc.batch,self.alloc.batch_y)        
                 self.net.backward()
                 if self.net.config['parallelism'] != 'data':
@@ -36,13 +39,13 @@ class Neural_net(object):
             
             self.net.log('EPOCH: {0}'.format(epoch+1))
             for i in self.alloc.train(0.1):   
-                if self.net.config['parallelism'] == 'data' and self.alloc.batch.shape[2] != batch_size: continue
+                #if self.net.config['parallelism'] == 'data' and self.alloc.batch.shape[2] != batch_size: continue
                 self.net.forward(self.alloc.batch,self.alloc.batch_y, False)        
                 self.net.accumulate_error()        
             self.net.print_reset_error()
             
             for i in self.alloc.cv():
-                if self.net.config['parallelism'] == 'data' and self.alloc.batch.shape[2] != batch_size: continue
+                #if self.net.config['parallelism'] == 'data' and self.alloc.batch.shape[2] != batch_size: continue
                 self.net.forward(self.alloc.batch,self.alloc.batch_y, False)
                 self.net.accumulate_error()
             self.net.print_reset_error('CV')

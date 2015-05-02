@@ -12,17 +12,8 @@ import gpupy as gpu
 import multiprocessing as mp
 import threading
 
-
-def work(alloc):
-    batch = np.float32(np.asfortranarray(alloc.X[:,:,alloc.next_batch_idx:alloc.handle_copy_index(),:]))
-    batch_y = np.float32(np.asfortranarray(alloc.y[:,:,alloc.next_batch_idx:alloc.handle_copy_index(),:]))
-    if str(alloc.next_X.shape) +'X' not in alloc.pinned_buffers: alloc.pinned_buffers[str(alloc.next_X.shape) +'X'] = gpu.empty_pinned_pointer(alloc.next_X.shape)
-    if str(alloc.next_y.shape) +'y' not in alloc.pinned_buffers: alloc.pinned_buffers[str(alloc.next_y.shape) +'y'] = gpu.empty_pinned_pointer(alloc.next_y.shape)
-    alloc.allocate_next_async(batch, batch_y)
-    
-
 class batch_allocator(object):
-    def __init__(self, data, labels, cv_percent, test_percent, batch_size):
+    def __init__(self, data, labels, cv_percent, test_percent, batch_size, mode='sequential'):
         if len(labels.shape) ==1: labels = u.create_t_matrix(labels)
         elif labels.shape[0]==1 or labels.shape[1]==1: labels = np.float32(u.create_t_matrix(labels))    
         self.size = labels.shape[0]
@@ -31,10 +22,14 @@ class batch_allocator(object):
         shape = u.handle_shape(data.shape)  
         shape_label = u.handle_shape(labels.shape)
         
-        data = np.float32(np.asanyarray(data,order='F'))
-        data = np.float32(data.reshape(shape))
-        labels = np.float32(np.asanyarray(labels,order='F'))
-        labels = np.float32(labels.reshape(shape_label))
+        self.arrays = {}
+        self.mode = mode
+        
+        #data = np.float32(np.asanyarray(data,order='F'))
+        #data = np.float32(data.reshape(shape))
+        #labels = np.float32(np.asanyarray(labels,order='F'))
+        #labels = np.float32(labels.reshape(shape_label))
+        
         
         
         self.pinned_buffers = {}
@@ -57,8 +52,12 @@ class batch_allocator(object):
         #self.X = array(None, lib.funcs.fto_pinned(shape[0],shape[1],shape[2],shape[3],data.ctypes.data_as(ct.POINTER(ct.c_float))))
         #self.y = array(None, lib.funcs.fto_pinned(shape_label[0],shape_label[1],shape_label[2],shape_label[3],
         #                                          labels.ctypes.data_as(ct.POINTER(ct.c_float))))
-        self.X = data
-        self.y = labels
+        
+        self.X = lib.funcs.fto_pinned(shape[0], shape[1], shape[2], shape[3], data.ctypes.data_as(ct.POINTER(ct.c_float)))
+        self.y = lib.funcs.fto_pinned(shape_label[0], shape_label[1], shape_label[2], shape_label[3], labels.ctypes.data_as(ct.POINTER(ct.c_float)))
+        
+        #del data
+        #del labels
         
         self.set_batch_sizes()
         self.init_buffers()
@@ -70,8 +69,6 @@ class batch_allocator(object):
         self.peer_access_enabled = False
         
         self.batch_buffers = {}
-        
-        self.async_pinn_thread = threading.Thread(target=work, args=(self), kwargs={})
     
     def set_batch_sizes(self):
         n = np.zeros((3,))
@@ -79,7 +76,7 @@ class batch_allocator(object):
         n[1] = np.round(self.size*self.cv_percent)
         n[2] = self.size-n[0]-n[1]
         
-        if self.test_percent == 0.0: n[1] = self.size-n[0]; n[2] = 1
+        if self.test_percent == 0.0: n[1] = self.size-n[0]; n[2] = gpu.gpu_count()
         
         self.offbatch_rows = np.int32(n % self.batch_size)
         self.end_idx = np.ceil(np.array([n[0], n[0]+n[1], n[0]+ n[1] + n[2]]))     
@@ -99,15 +96,16 @@ class batch_allocator(object):
         
     def init_buffers(self):
         if self.current != None: self.deallocate_buffers()
-        
-        self.current = gpu.empty((self.batch_size, self.shapes[0]))
-        self.next_X = gpu.empty((self.batch_size, self.shapes[0]))
-        self.current_y = gpu.empty((self.batch_size, self.shapes[1]))
-        self.next_y = gpu.empty((self.batch_size, self.shapes[1]))
+        split = (2 if self.mode == 'parallel' else -1)        
+        self.current = gpu.empty((self.batch_size, self.shapes[0]), split)
+        self.next_X = gpu.empty((self.batch_size, self.shapes[0]),split)
+        self.current_y = gpu.empty((self.batch_size, self.shapes[1]),split)
+        self.next_y = gpu.empty((self.batch_size, self.shapes[1]),split)
         for value in self.offbatch_rows:
             if value > 0: 
-                self.offsize_X.append(gpu.empty((value,self.shapes[0])))
-                self.offsize_y.append(gpu.empty((value,self.shapes[1])))
+                print value
+                self.offsize_X.append(gpu.empty((value,self.shapes[0]),split))
+                self.offsize_y.append(gpu.empty((value,self.shapes[1]),split))
             else: 
                 self.offsize_X.append(gpu.empty((1,1,1,1)))        
                 self.offsize_y.append(gpu.empty((1,1,1,1)))
@@ -232,37 +230,34 @@ class batch_allocator(object):
         return self.current_y
     
     
+    def get_buffers(self, flag=''):
+        name = str(self.next_X.shape_tensor) + str(self.next_y.shape_tensor) + flag
+        if name not in self.arrays: self.arrays[name] = [gpu.empty_like(self.next_X), gpu.empty_like(self.next_y)]
+        return self.arrays[name]
+    
     def allocate_next_batch(self):
         self.handle_next_batch_id()    
         self.handle_copy_index()
-        self.async_pinn_thread = threading.Thread(target=work, args=(self,), kwargs={})
-        self.async_pinn_thread.start() 
+        #self.async_pinn_thread = threading.Thread(target=work, args=(self,), kwargs={})
+        #self.async_pinn_thread.start() 
+        self.allocate_next_async()
     
-    def allocate_next_async(self, batch, batch_y):   
+    def allocate_next_async(self):   
+        buffers = self.get_buffers()
+        split = (2 if self.mode == 'parallel' else -1)        
         lib.funcs.fallocateNextAsync(gpu.p_gpupy, 
-                                     self.next_X.pt,batch.ctypes.data_as(ct.POINTER(ct.c_float)), self.pinned_buffers[str(self.next_X.shape) +'X'],
-                                     self.next_y.pt,batch_y.ctypes.data_as(ct.POINTER(ct.c_float)), self.pinned_buffers[str(self.next_y.shape) +'y'],
-                                     int(self.next_batch_idx), 0)
+                                     buffers[0].pt,self.X, None,
+                                     buffers[1].pt,self.y, None,
+                                     int(self.next_batch_idx), split)
         
     def replace_current_batch(self):         
-        self.async_pinn_thread.join()
-        lib.funcs.freplaceCurrentBatch(gpu.p_gpupy)
+        #self.async_pinn_thread.join()
+        buffers = self.get_buffers()     
+        lib.funcs.freplaceCurrentBatch(gpu.p_gpupy, self.next_X.pt, self.next_y.pt, buffers[0].pt, buffers[1].pt)
+        
         u.swap_pointer_and_shape(self.current,self.next_X )
         u.swap_pointer_and_shape(self.current_y,self.next_y)
         self.next_batch_idx +=self.batch_size
-        
-        if self.net:
-            if self.net.config['parallelism'] == 'data':
-                if not self.peer_access_enabled: 
-                    gpu.enable_peer_access()              
-                    self.peer_access_enabled = True  
-                if str(self.current.shape) not in self.batch_buffers:
-                    shape = self.current.shape
-                    self.batch_buffers[str(self.current.shape) + 'X'] = gpu.empty(shape, 2)
-                    shape = self.current_y.shape                    
-                    self.batch_buffers[str(self.current_y.shape) + 'y'] = gpu.empty(shape, 2)
-                gpu.slice_axis(self.current, self.batch_buffers[str(self.current.shape) + 'X'])
-                gpu.slice_axis(self.current_y, self.batch_buffers[str(self.current_y.shape) + 'y'])
                 
                 #gpu.print_free_memory()
                 
