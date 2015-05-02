@@ -36,6 +36,8 @@ class Neural_net(object):
                 self.net.backward()
                 if self.net.config['parallelism'] != 'data':
                     self.net.weight_update()
+                else:
+                    self.net.handle_parallelism()
             
             self.net.log('EPOCH: {0}'.format(epoch+1))
             for i in self.alloc.train(0.1):   

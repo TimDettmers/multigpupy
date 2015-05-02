@@ -126,6 +126,7 @@ class Array(object):
     def __ne__(self, other): return not_equal(self,other)
     def __pow__(self, other): return power(self,other)
     #def abs(self): return absolute(self, out=None)
+    def __str__(self): printmat(self)
     
     
     def __iadd__(self, other): 
@@ -353,7 +354,7 @@ def sync(source, layer_idx = 0, dtype=np.float32):
 def compress_and_sync(source, layer_idx = 0, abs_max_value=1.0, dtype=np.char):
     if dtype==np.char:
         if source.id not in mem.compression_arrays: mem.compression_arrays[source.id] = [empty_char_like(source), empty_like(source)]
-        compress_8bit(source, abs_max_value, mem.compression_arrays[source.id][0].pt)
+        compress_8bit(source, abs_max_value, mem.compression_arrays[source.id][0])
         sync(mem.compression_arrays[source.id][0], layer_idx, dtype)
     if dtype==np.float32: sync(source, layer_idx, dtype)
         
@@ -361,13 +362,13 @@ def decompress_sync_streams_add(source, layer_idx = 0, split_idx=2, abs_max_valu
     if dtype==np.char: 
         lib.funcs.fsynchronize_streams(p_gpupy,layer_idx)
         arrays = mem.sync_arrays[mem.compression_arrays[source.id][0].id]    
-        decompress_8bit(arrays[0].pt, abs_max_value,mem.compression_arrays[source.id][1])
+        decompress_8bit(arrays[0], abs_max_value,mem.compression_arrays[source.id][1])
         add(source, mem.compression_arrays[source.id][1],source)
         if len(arrays) > 1: 
-            decompress_8bit(arrays[1].pt, abs_max_value,mem.compression_arrays[source.id][1])
+            decompress_8bit(arrays[1], abs_max_value,mem.compression_arrays[source.id][1])
             add(source, mem.compression_arrays[source.id][1],source)
         if len(arrays) > 2: 
-            decompress_8bit(arrays[2].pt, abs_max_value,mem.compression_arrays[source.id][1])
+            decompress_8bit(arrays[2], abs_max_value,mem.compression_arrays[source.id][1])
             add(source, mem.compression_arrays[source.id][1],source)
         return source
     
@@ -467,6 +468,13 @@ def to_col_major_pinned_pointer(x1, pt_out=None):
     if not pt_out: pt_out = empty_pinned_pointer(shape) 
     lib.funcs.inp_to_col_major_pinned(x1.ctypes.data_as(ct.POINTER(ct.c_float)),pt_out, shape[0],shape[1],shape[2],shape[3])
     return pt_out
+
+def printmat(x1): printfull(x1, 0, x1.shape_tensor[2], 0, x1.shape_tensor[3])
+def printrows(x1, start_rows, end_rows): printfull(x1, start_rows, end_rows, 0, x1.shape_tensor[3])
+def printfull(x1, start_rows, end_rows, start_cols, end_cols):
+    lib.funcs.fprintmat(x1.pt, start_rows, end_rows, start_cols, end_cols)
+    pass
+    
 
 
     

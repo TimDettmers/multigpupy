@@ -1169,9 +1169,7 @@ def test_batch_allocator_parallelism():
         batch = data[i:stop_idx]
         batch_y = u.create_t_matrix(labels[i:stop_idx],10)
         C1 = gpu.empty(alloc.current.shape)        
-        B2 = gpu.empty((batch.shape[1], batch.shape[1]))
-        print i
-        
+        B2 = gpu.empty((batch.shape[1], batch.shape[1]))        
         
         gpu.stack_axis(alloc.batch, C1)    
         t.assert_array_equal(C1.tocpu(), batch, "stack allocator data parallelism not working!")
@@ -1333,6 +1331,18 @@ def test_empty_pinned():
         t.assert_array_equal(A.T.flatten(),B.flatten())
         
     gpu.tock('to col-major pinned')
+    
+    
+    
+    
+def test_printmat():
+    A = np.random.rand(4,4)
+    B = gpu.array(A)
+    
+    gpu.printmat(B)
+    gpu.printrows(B,2,4)
+    gpu.printfull(B,0,2,2,4)
+    print B
 
 if __name__ == '__main__':    
     nose.run()

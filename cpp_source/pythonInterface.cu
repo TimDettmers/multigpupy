@@ -193,5 +193,7 @@ extern "C"
 	void ftick(GPUpy *gpupy, char *eventname){ std::string str(eventname); gpupy->tick(str); }
 	float ftock(GPUpy *gpupy, char *eventname){ std::string str(eventname); return gpupy->tock(str); }
 
+	void fprintmat(Tensor *A, int start_row, int end_row, int start_col, int end_col){ printmat(A, start_row, end_row, start_col, end_col); }
+
 
 }

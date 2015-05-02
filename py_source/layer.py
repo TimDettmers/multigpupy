@@ -200,6 +200,8 @@ class Layer(object):
                 self.negCount = gpu.zeros((self.w_grad_next.shape_tensor[2],))
                 self.posAvg = gpu.zeros((self.w_grad_next.shape_tensor[2],))
                 self.negAvg = gpu.zeros((self.w_grad_next.shape_tensor[2],))
+            if self.next_layer.config['compression'] == '8bit':    
+                self.max_value_buffer = gpu.empty_like(self.w_grad_next)
                    
             if self.next_layer: self.next_layer.create_weights()
         
@@ -253,9 +255,9 @@ class Layer(object):
             self.handle_input_size(shape[2])           
             self.root.target = target
             self.funcs.activation(data, self.activation, self.out, inTrainingMode)
-            if inTrainingMode: self.handle_parallelism()
+            #if inTrainingMode: self.handle_parallelism()
         else:
-            if inTrainingMode: self.handle_parallelism()
+            #if inTrainingMode: self.handle_parallelism()
             #cool
             gpu.dot(self.prev_layer.out,self.prev_layer.w_next,self.activation)   
             #not cool activation, dot problem? -> nope, memory problem (wrong buffer size)?            
@@ -270,7 +272,7 @@ class Layer(object):
         if self.next_layer: self.next_layer.forward(None, None, inTrainingMode)
     
     def handle_parallelism(self):
-        if self.config['parallelism'] == 'data' and self.next_layer and self.has_gradients: 
+        if self.config['parallelism'] == 'data' and self.next_layer: 
             #gpu.sync_streams(self.id)    
             if self.next_layer.config['compression'] == '16bit':
                 gpu.decompress_16bit(self.w_next_sync_16bit, self.w_next_sync)
@@ -281,6 +283,8 @@ class Layer(object):
             else:            
                 gpu.decompress_sync_streams_add(self.w_grad_next, self.id, -1, self.abs_max_grad_value, np.float32)
             self.weight_update()
+            
+        if self.next_layer: self.next_layer.handle_parallelism()
     
     def predict(self, data):
         self.forward(data, None,False)   
@@ -313,7 +317,6 @@ class Layer(object):
         
         if self.next_layer.config['parallelism'] == 'data': 
             if not self.has_gradients:  
-                self.has_gradients = True
                 gpu.create_additional_streams(1)
             if self.next_layer.config['compression'] == '16bit':
                 gpu.compress_16bit(self.w_grad_next, self.w_next_grad_16bit)
@@ -322,6 +325,8 @@ class Layer(object):
                 if self.abs_max_grad_value == 0.0:
                     gpu.abs(self.w_grad_next, self.max_value_buffer)
                     self.abs_max_grad_value = gpu.max(self.max_value_buffer)
+                gpu.abs(self.w_grad_next, self.max_value_buffer)
+                self.abs_max_grad_value = gpu.max(self.max_value_buffer)
                     
                 gpu.compress_and_sync(self.w_grad_next, self.id, self.abs_max_grad_value, np.char)
             elif self.next_layer.config['compression'] == '1bit':
@@ -340,6 +345,8 @@ class Layer(object):
             predicted_labels = gpu.argmax(self.root.out) 
             target_labels = gpu.argmax(self.root.target)
             gpu.equal(predicted_labels, target_labels, target_labels)
+            #print target_labels.sum(), target_labels.shape_tensor
+            
             error = 1.0-(target_labels.sum()/self.out.shape[2])
           
         elif self.config['error_evaluation'] == 'logloss':
@@ -371,11 +378,21 @@ class Layer(object):
         
     def weight_update(self):
         if self.next_layer:    
-            #batch_size = ((self.out.shape[2]*gpu.gpu_count()) if self.config['parallelism'] != 'data' else self.out.shape[2])
+            #batch_size = ((self.out.shape[2]*gpu.gpu_count()) if self.config['parallelism'] == 'data' else self.out.shape[2])
             batch_size = self.out.shape[2]
-            lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(self.config['momentum']),ct.c_float(self.config['learning_rate']), batch_size)
             
-            gpu.sub(self.w_next, self.w_grad_next, self.w_next)  
+            if self.has_gradients:
+                lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(self.config['momentum']),ct.c_float(self.config['learning_rate']), batch_size)
+                print self.w_grad_next.sum()
+                gpu.sub(self.w_next, self.w_grad_next, self.w_next)  
+                
+                
+            #apply grad only after initializing RMSProp with the first gradient
+            if not self.has_gradients: 
+                self.has_gradients = True
+                #TODO: this should work
+                #gpu.div(self.w_grad_next, batch_size, self.m_next)
+                
                      
             if self.config['parallelism'] != 'data':
                 self.next_layer.weight_update()
@@ -402,6 +419,8 @@ class Layer(object):
     def end_epoch(self):
         self.set_config_value('learning_rate', 0.0, 'learning_rate_decay', lambda a,b: a*b)   
         self.abs_max_grad_value = 0.0
+        if self.next_layer:
+            print self.w_next.sum()
         if self.id == 0 and self.test_for_no_convergence(): self.dropout_decay()
         if self.next_layer: self.next_layer.end_epoch()
         

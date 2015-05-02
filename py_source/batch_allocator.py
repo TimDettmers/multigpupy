@@ -103,7 +103,6 @@ class batch_allocator(object):
         self.next_y = gpu.empty((self.batch_size, self.shapes[1]),split)
         for value in self.offbatch_rows:
             if value > 0: 
-                print value
                 self.offsize_X.append(gpu.empty((value,self.shapes[0]),split))
                 self.offsize_y.append(gpu.empty((value,self.shapes[1]),split))
             else: 

@@ -238,7 +238,7 @@ funcs.fsum_row.restype = ct.c_void_p
 funcs.ftick.restype = ct.c_void_p
 funcs.ftock.restype = ct.c_float
 
-
+funcs.fprintmat.restype = ct.c_void_p
 
 class lib(object): 
     funcs = funcs
