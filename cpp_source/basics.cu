@@ -717,7 +717,7 @@ void compression_16bit(Tensor *A, UShortTensor *out)
 void decompression_16bit(UShortTensor *A, Tensor *out)
 { compression(0, 0, 0, A, out, 0.0f, 0,0,0, decompress_16bit); }
 
-void reduceRow(Tensor *A, Tensor *out, Operation_t ops)
+void reduceRow(Tensor *A, Tensor *out, RowReduction_t strategy)
 {
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
@@ -725,7 +725,7 @@ void reduceRow(Tensor *A, Tensor *out, Operation_t ops)
 	{
 		int blocks = max(256,(A->shape_gpus[i][2]));
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kReduceRow<<<blocks,256>>>(A->data_gpus[i], out->data_gpus[i], A->rows, A->cols);
+		kReduceRow<<<blocks,256>>>(A->data_gpus[i], out->data_gpus[i], A->rows, A->cols, strategy);
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));

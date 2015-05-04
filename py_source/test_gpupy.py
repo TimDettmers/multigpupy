@@ -1234,18 +1234,37 @@ def test_8bit_compression():
 def test_row_sum():
     for i in range(100):
         dims = np.random.randint(2,763,(2,))
+        #dims = [128,1500]
         A = np.float32(np.random.rand(dims[0],dims[1]))        
         B1 = gpu.array(A)
         B2 = gpu.zeros((A.shape[0],))
         
+        #gpu.tick("rowsum")
         gpu.sum_row(B1, B2)
+        #gpu.tick("rowsum")
         #print B2.tocpu()
         #print np.sum(A,axis=1)
         #errors = np.sort(np.sqrt(((np.sum(A,axis=1)-B2.tocpu())**2)).flatten())[::-1][0:10]
         #print errors
         #print A.shape
         t.assert_almost_equal(np.sum(A,axis=1),B2.tocpu(),3,"row sum")
+    #gpu.tock("rowsum")
 
+  
+def test_row_max():
+    for i in range(1):
+        dims = np.random.randint(2,763,(2,))
+        A = np.float32(np.random.randn(dims[0],dims[1]))        
+        B1 = gpu.array(A)
+        B2 = gpu.zeros((A.shape[0],))
+        
+        gpu.max_row(B1, B2)
+        #print B2.tocpu()
+        #print np.sum(A,axis=1)
+        #errors = np.sort(np.sqrt(((np.sum(A,axis=1)-B2.tocpu())**2)).flatten())[::-1][0:10]
+        #print errors
+        #print A.shape
+        t.assert_almost_equal(np.max(A,axis=1),B2.tocpu(),3,"row max")
     
 def test_1bit_compression():
     for i in range(10):

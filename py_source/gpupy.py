@@ -419,8 +419,8 @@ def decompress_8bit(char_tensor, abs_max_value, out):lib.funcs.fdecompress_8bit(
 def compress_16bit(A, out): lib.funcs.fcompress_16bit(A.pt, out.pt)
 def decompress_16bit(A, out): lib.funcs.fdecompress_16bit(A.pt, out.pt) 
 
-def sum_row(x1, out):
-    lib.funcs.fsum_row(x1.pt, out.pt)
+def sum_row(x1, out): lib.funcs.frow_sum(x1.pt, out.pt)
+def max_row(x1, out): lib.funcs.frow_max(x1.pt, out.pt)
     
 def compress_1bit(A, val_with_errors, errors, avgPositive,  avgNegative, out, maskPos, maskNeg, posCount, negCount):
     add(A,errors,val_with_errors)

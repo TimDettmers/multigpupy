@@ -1,6 +1,6 @@
 #include <Tensor.cuh>
 
-const int NUM_THREADS = 32;
+//const int NUM_THREADS = 32;
 
 
 __global__ void kGetNonZeroElements(float *A, float *out, int size)
@@ -460,31 +460,31 @@ __global__ void kTransposeTensor(float *A, float *out, int batches, int width, i
 }
 
 
-__device__ void reduceToMax(float* sdata, unsigned int tid)
+__device__ void reduceToMax(float* sdata, unsigned int tid, int threads)
 {
 
   //Synchronize threads to share shared memory data
   __syncthreads();
 
-  float mySum = sdata[tid];
+  float myMax = sdata[tid];
 
   // do reduction in shared mem
-  if (NUM_THREADS >= 512) { if (tid < 256) { sdata[tid] = mySum = fmaxf(mySum, sdata[tid + 256]); } __syncthreads(); }
-  if (NUM_THREADS >= 256) { if (tid < 128) { sdata[tid] = mySum = fmaxf(mySum, sdata[tid + 128]); } __syncthreads(); }
-  if (NUM_THREADS >= 128) { if (tid <  64) { sdata[tid] = mySum = fmaxf(mySum, sdata[tid +  64]); } __syncthreads(); }
+  if (threads >= 512) { if (tid < 256) { sdata[tid] = myMax = fmaxf(myMax, sdata[tid + 256]); } __syncthreads(); }
+  if (threads >= 256) { if (tid < 128) { sdata[tid] = myMax = fmaxf(myMax, sdata[tid + 128]); } __syncthreads(); }
+  if (threads >= 128) { if (tid <  64) { sdata[tid] = myMax = fmaxf(myMax, sdata[tid +  64]); } __syncthreads(); }
 
-  if (NUM_THREADS == 32){
+  if (threads == 32){
     if (tid < 16)
     {
       // now that we are using warp-synchronous programming (below)
       // we need to declare our shared memory volatile so that the compiler
       // doesn't reorder stores to it and induce incorrect behavior.
       volatile float* smem = sdata;
-      if (NUM_THREADS >=  32) { smem[tid] = mySum = fmaxf(mySum, smem[tid + 16]); }
-      if (NUM_THREADS >=  16) { smem[tid] = mySum = fmaxf(mySum, smem[tid +  8]); }
-      if (NUM_THREADS >=   8) { smem[tid] = mySum = fmaxf(mySum, smem[tid +  4]); }
-      if (NUM_THREADS >=   4) { smem[tid] = mySum = fmaxf(mySum, smem[tid +  2]); }
-      if (NUM_THREADS >=   2) { smem[tid] = mySum = fmaxf(mySum, smem[tid +  1]); }
+      if (threads >=  32) { smem[tid] = myMax = fmaxf(myMax, smem[tid + 16]); }
+      if (threads >=  16) { smem[tid] = myMax = fmaxf(myMax, smem[tid +  8]); }
+      if (threads >=   8) { smem[tid] = myMax = fmaxf(myMax, smem[tid +  4]); }
+      if (threads >=   4) { smem[tid] = myMax = fmaxf(myMax, smem[tid +  2]); }
+      if (threads >=   2) { smem[tid] = myMax = fmaxf(myMax, smem[tid +  1]); }
     }
   }
   else
@@ -495,23 +495,19 @@ __device__ void reduceToMax(float* sdata, unsigned int tid)
       // we need to declare our shared memory volatile so that the compiler
       // doesn't reorder stores to it and induce incorrect behavior.
       volatile float* smem = sdata;
-      if (NUM_THREADS >=  64) { smem[tid] = mySum = fmaxf(mySum, smem[tid + 32]); }
-      if (NUM_THREADS >=  32) { smem[tid] = mySum = fmaxf(mySum, smem[tid + 16]); }
-      if (NUM_THREADS >=  16) { smem[tid] = mySum = fmaxf(mySum, smem[tid +  8]); }
-      if (NUM_THREADS >=   8) { smem[tid] = mySum = fmaxf(mySum, smem[tid +  4]); }
-      if (NUM_THREADS >=   4) { smem[tid] = mySum = fmaxf(mySum, smem[tid +  2]); }
-      if (NUM_THREADS >=   2) { smem[tid] = mySum = fmaxf(mySum, smem[tid +  1]); }
+      if (threads >=  64) { smem[tid] = myMax = fmaxf(myMax, smem[tid + 32]); }
+      if (threads >=  32) { smem[tid] = myMax = fmaxf(myMax, smem[tid + 16]); }
+      if (threads >=  16) { smem[tid] = myMax = fmaxf(myMax, smem[tid +  8]); }
+      if (threads >=   8) { smem[tid] = myMax = fmaxf(myMax, smem[tid +  4]); }
+      if (threads >=   4) { smem[tid] = myMax = fmaxf(myMax, smem[tid +  2]); }
+      if (threads >=   2) { smem[tid] = myMax = fmaxf(myMax, smem[tid +  1]); }
     }
   }
 }
 
 __device__ void reduceToMaxAndArgMax(float* sdataMax, float* sdataArgMax, unsigned int tid, int threads)
 {
-
-	//Synchronize threads to share shared memory data
-	__syncthreads();
-
-  	  float mySum = sdataMax[tid];
+  	float myMax = sdataMax[tid];
   	if(threads == 32)
   	{
 		if (tid < 16)
@@ -521,11 +517,11 @@ __device__ void reduceToMaxAndArgMax(float* sdataMax, float* sdataArgMax, unsign
 			// doesn't reorder stores to it and induce incorrect behavior.
 			volatile float* smemMax = sdataMax;
 			volatile float* smemArgMax = sdataArgMax;
-			if (NUM_THREADS >=  32) if(mySum < smemMax[tid + 16]){smemMax[tid] = mySum = smemMax[tid + 16];  smemArgMax[tid] = smemArgMax[tid + 16]; }
-			if (NUM_THREADS >=  16) if(mySum < smemMax[tid +  8]){smemMax[tid] = mySum = smemMax[tid +  8];  smemArgMax[tid] = smemArgMax[tid +  8]; }
-			if (NUM_THREADS >=   8) if(mySum < smemMax[tid +  4]){smemMax[tid] = mySum = smemMax[tid +  4];  smemArgMax[tid] = smemArgMax[tid +  4]; }
-			if (NUM_THREADS >=   4) if(mySum < smemMax[tid +  2]){smemMax[tid] = mySum = smemMax[tid +  2];  smemArgMax[tid] = smemArgMax[tid +  2]; }
-			if (NUM_THREADS >=   2) if(mySum < smemMax[tid +  1]){smemMax[tid] = mySum = smemMax[tid +  1];  smemArgMax[tid] = smemArgMax[tid +  1]; }
+			if (threads >=  32) if(myMax < smemMax[tid + 16]){smemMax[tid] = myMax = smemMax[tid + 16];  smemArgMax[tid] = smemArgMax[tid + 16]; }
+			if (threads >=  16) if(myMax < smemMax[tid +  8]){smemMax[tid] = myMax = smemMax[tid +  8];  smemArgMax[tid] = smemArgMax[tid +  8]; }
+			if (threads >=   8) if(myMax < smemMax[tid +  4]){smemMax[tid] = myMax = smemMax[tid +  4];  smemArgMax[tid] = smemArgMax[tid +  4]; }
+			if (threads >=   4) if(myMax < smemMax[tid +  2]){smemMax[tid] = myMax = smemMax[tid +  2];  smemArgMax[tid] = smemArgMax[tid +  2]; }
+			if (threads >=   2) if(myMax < smemMax[tid +  1]){smemMax[tid] = myMax = smemMax[tid +  1];  smemArgMax[tid] = smemArgMax[tid +  1]; }
 		}
   	}
 	else
@@ -537,54 +533,65 @@ __device__ void reduceToMaxAndArgMax(float* sdataMax, float* sdataArgMax, unsign
 			// doesn't reorder stores to it and induce incorrect behavior.
 			volatile float* smemMax = sdataMax;
 			volatile float* smemArgMax = sdataArgMax;
-			if (NUM_THREADS >=  64) if(mySum < smemMax[tid + 32]){smemMax[tid] = mySum = smemMax[tid + 32];  smemArgMax[tid] = smemArgMax[tid + 32]; }
-			if (NUM_THREADS >=  32) if(mySum < smemMax[tid + 16]){smemMax[tid] = mySum = smemMax[tid + 16];  smemArgMax[tid] = smemArgMax[tid + 16]; }
-			if (NUM_THREADS >=  16) if(mySum < smemMax[tid +  8]){smemMax[tid] = mySum = smemMax[tid +  8];  smemArgMax[tid] = smemArgMax[tid +  8]; }
-			if (NUM_THREADS >=   8) if(mySum < smemMax[tid +  4]){smemMax[tid] = mySum = smemMax[tid +  4];  smemArgMax[tid] = smemArgMax[tid +  4]; }
-			if (NUM_THREADS >=   4) if(mySum < smemMax[tid +  2]){smemMax[tid] = mySum = smemMax[tid +  2];  smemArgMax[tid] = smemArgMax[tid +  2]; }
-			if (NUM_THREADS >=   2) if(mySum < smemMax[tid +  1]){smemMax[tid] = mySum = smemMax[tid +  1];  smemArgMax[tid] = smemArgMax[tid +  1]; }
+			if (threads >=  64) if(myMax < smemMax[tid + 32]){smemMax[tid] = myMax = smemMax[tid + 32];  smemArgMax[tid] = smemArgMax[tid + 32]; }
+			if (threads >=  32) if(myMax < smemMax[tid + 16]){smemMax[tid] = myMax = smemMax[tid + 16];  smemArgMax[tid] = smemArgMax[tid + 16]; }
+			if (threads >=  16) if(myMax < smemMax[tid +  8]){smemMax[tid] = myMax = smemMax[tid +  8];  smemArgMax[tid] = smemArgMax[tid +  8]; }
+			if (threads >=   8) if(myMax < smemMax[tid +  4]){smemMax[tid] = myMax = smemMax[tid +  4];  smemArgMax[tid] = smemArgMax[tid +  4]; }
+			if (threads >=   4) if(myMax < smemMax[tid +  2]){smemMax[tid] = myMax = smemMax[tid +  2];  smemArgMax[tid] = smemArgMax[tid +  2]; }
+			if (threads >=   2) if(myMax < smemMax[tid +  1]){smemMax[tid] = myMax = smemMax[tid +  1];  smemArgMax[tid] = smemArgMax[tid +  1]; }
 		}
 
 	}
 }
 
-
-/*
-__device__ void reduceToSumLocal(float* sdata, unsigned int tid, int threads)
+template <int strategy, int isVolatile>
+__device__ float reduce_value(float aggregate, float *sdata, volatile float *smem, unsigned int tid, unsigned int offset)
 {
-  float mySum = sdata[tid];
 
-  // do reduction in shared mem
-  if (threads >= 512) { if (tid < 256) { sdata[tid] = mySum = mySum + sdata[tid + 256]; } __syncthreads(); }
-  if (threads >= 256) { if (tid < 128) { sdata[tid] = mySum = mySum + sdata[tid + 128]; } __syncthreads(); }
-  if (threads >= 128) { if (tid <  64) { sdata[tid] = mySum = mySum + sdata[tid +  64]; } __syncthreads(); }
-
-  // do warp reduction in volatile shared memory
-  volatile float* smem = sdata;
-  if (threads >=  64) if(tid < 32)  { smem[tid] = mySum = mySum + smem[tid + 32]; }
-  if(tid < 16)
-  {
-	  if (threads >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
-	  if (threads >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
-	  if (threads >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
-	  if (threads >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
-	  if (threads >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
-  }
+	if(isVolatile)
+	{
+		switch(strategy)
+		{
+			case row_sum:
+				smem[tid] = aggregate = aggregate + sdata[tid + offset];
+				return aggregate;
+			case row_max:
+				smem[tid] = aggregate = fmaxf(aggregate,sdata[tid + offset]);
+				return aggregate;
+			case row_argmax:
+				return NAN;
+			default: return NAN;
+		}
+	}
+	else
+	{
+		switch(strategy)
+		{
+			case row_sum:
+				smem[tid] = aggregate = aggregate + smem[tid + offset];
+				return aggregate;
+			case row_max:
+				smem[tid] = aggregate = fmaxf(aggregate,smem[tid + offset]);
+				return aggregate;
+			case row_argmax:
+				return NAN;
+			default: return NAN;
+		}
+	}
 
 }
 
-
-*/
-
-__device__ void reduceToSumLocal(float* sdata, unsigned int tid, int threads)
+template <int strategy>
+__device__ void reduce(float* sdata, unsigned int tid, int threads)
 {
 
-  float mySum = sdata[tid];
+  float myAggregate = sdata[tid];
+  volatile float* smem = sdata;
 
   // do reduction in shared mem
-  if (threads >= 512) { if (tid < 256) { sdata[tid] = mySum = mySum + sdata[tid + 256]; } __syncthreads(); }
-  if (threads >= 256) { if (tid < 128) { sdata[tid] = mySum = mySum + sdata[tid + 128]; } __syncthreads(); }
-  if (threads >= 128) { if (tid <  64) { sdata[tid] = mySum = mySum + sdata[tid +  64]; } __syncthreads(); }
+  if (threads >= 512) { if (tid < 256) { myAggregate = reduce_value<strategy,0>(myAggregate, sdata, smem, tid, 256); } __syncthreads(); }
+  if (threads >= 256) { if (tid < 128) { myAggregate = reduce_value<strategy,0>(myAggregate, sdata, smem, tid, 128); } __syncthreads(); }
+  if (threads >= 128) { if (tid <  64) { myAggregate = reduce_value<strategy,0>(myAggregate, sdata, smem, tid,  64); } __syncthreads(); }
 
   if (threads == 32){
     if (tid < 16)
@@ -592,12 +599,11 @@ __device__ void reduceToSumLocal(float* sdata, unsigned int tid, int threads)
       // now that we are using warp-synchronous programming (below)
       // we need to declare our shared memory volatile so that the compiler
       // doesn't reorder stores to it and induce incorrect behavior.
-      volatile float* smem = sdata;
-      if (threads >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
-      if (threads >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
-      if (threads >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
-      if (threads >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
-      if (threads >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
+      if (threads >=  32) { myAggregate = reduce_value<strategy,1>(myAggregate, sdata, smem, tid,  16); }
+      if (threads >=  16) { myAggregate = reduce_value<strategy,1>(myAggregate, sdata, smem, tid,   8); }
+      if (threads >=   8) { myAggregate = reduce_value<strategy,1>(myAggregate, sdata, smem, tid,   4); }
+      if (threads >=   4) { myAggregate = reduce_value<strategy,1>(myAggregate, sdata, smem, tid,   2); }
+      if (threads >=   2) { myAggregate = reduce_value<strategy,1>(myAggregate, sdata, smem, tid,   1); }
     }
   }
   else
@@ -608,18 +614,21 @@ __device__ void reduceToSumLocal(float* sdata, unsigned int tid, int threads)
       // we need to declare our shared memory volatile so that the compiler
       // doesn't reorder stores to it and induce incorrect behavior.
       volatile float* smem = sdata;
-      if (threads >=  64) { smem[tid] = mySum = mySum + smem[tid + 32]; }
-      if (threads >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
-      if (threads >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
-      if (threads >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
-      if (threads >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
-      if (threads >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
+      if (threads >=  64) { myAggregate = reduce_value<strategy,1>(myAggregate, sdata, smem, tid,  32); }
+      if (threads >=  32) { myAggregate = reduce_value<strategy,1>(myAggregate, sdata, smem, tid,  16); }
+      if (threads >=  16) { myAggregate = reduce_value<strategy,1>(myAggregate, sdata, smem, tid,   8); }
+      if (threads >=   8) { myAggregate = reduce_value<strategy,1>(myAggregate, sdata, smem, tid,   4); }
+      if (threads >=   4) { myAggregate = reduce_value<strategy,1>(myAggregate, sdata, smem, tid,   2); }
+      if (threads >=   2) { myAggregate = reduce_value<strategy,1>(myAggregate, sdata, smem, tid,   1); }
     }
   }
 }
 
 
-__global__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int cols)
+
+
+template <int strategy>
+__device__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int cols)
 {
 	__shared__ float row_values[256];
 	unsigned int idx = 0;
@@ -629,15 +638,27 @@ __global__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int
 	row_values[threadIdx.x] = 0.0f;
 	__syncthreads();
 
+
 	for (unsigned int row = blockIdx.x; row < rows; row += gridDim.x)
 	{
-		row_value = 0.0f;
+		if(strategy == row_max) row_value = -FLT_MAX;
+		else if(strategy == row_sum) row_value = 0.0f;
 		for(unsigned int col = threadIdx.x; col < cols; col +=blockDim.x,next_thread_block_range+=blockDim.x)
 		{
 			idx = (col * rows) + row;
 			row_values[threadIdx.x] = A[idx];
-			__syncthreads(); reduceToSumLocal(row_values, threadIdx.x, blockDim.x); __syncthreads();
-			if(threadIdx.x == 0) row_value += row_values[0];
+			__syncthreads();
+			switch(strategy)//the compiler will optimize out this switch statement
+			{
+				case row_sum:
+					reduce<row_sum>(row_values, threadIdx.x, blockDim.x);
+					if(threadIdx.x == 0) row_value += row_values[0]; break;
+				case row_max:
+					reduce<row_max>(row_values, threadIdx.x, blockDim.x);
+					if(threadIdx.x == 0) row_value = fmaxf(row_value, row_values[0]); break;
+
+			}
+			__syncthreads();
 
 			if(cols< next_thread_block_range )
 			{
@@ -655,7 +676,15 @@ __global__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int
 	}
 }
 
+__global__ void kReduceRow(float *A, float *out, unsigned int rows, unsigned int cols, RowReduction_t strategy)
+{
+	switch(strategy)//this is slow but more readable and maintainable
+	{
+		case row_sum: kReduceRow<row_sum>(A, out, rows, cols); break;
+		case row_max: kReduceRow<row_max>(A, out, rows, cols); break;
 
+	}
+}
 
 
 __global__ void kMaxout(float *A, float *out, float *outargmax, int maxout_level, unsigned int cols, unsigned int rows)
@@ -1424,11 +1453,12 @@ __global__ void kMaxColumnwise(float* mat, float* target, unsigned int width, un
       if (val > cur_max) cur_max = val;
     }
     max_vals[threadIdx.x] = cur_max;
-    reduceToMax(max_vals, threadIdx.x);
+    reduceToMax(max_vals, threadIdx.x, blockDim.x);
     __syncthreads();
     if (threadIdx.x == 0) target[column] = max_vals[0];
   }
 }
+
 
 
 __global__ void kExpandToMaxoutGrad(float* error, float* indexes, float *out, int error_size, int error_rows, int maxout_level)

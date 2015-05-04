@@ -229,7 +229,8 @@ funcs.fdecompress_8bit.restype = ct.c_void_p
 funcs.fcompress_16bit.restype = ct.c_void_p
 funcs.fdecompress_16bit.restype = ct.c_void_p
 
-funcs.fsum_row.restype = ct.c_void_p
+funcs.frow_sum.restype = ct.c_void_p
+funcs.frow_max.restype = ct.c_void_p
 
 funcs.ftick.restype = ct.c_void_p
 funcs.ftock.restype = ct.c_float
