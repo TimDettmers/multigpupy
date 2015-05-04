@@ -160,12 +160,12 @@ void GPUpy::dot(Tensor *A, Tensor *B, Tensor *out, cublasOperation_t T1, cublasO
 		assert(out->shape_gpus[i][2] == A_rows && out->shape_gpus[i][3] == B_cols);
 
 
-		CUDA_CHECK_RETURN(cudaSetDevice(i));
 
 		//print_tensor_shape(A);
 		//print_tensor_shape(B);
 		//print_tensor_shape(out);
 
+		CUDA_CHECK_RETURN(cudaSetDevice(i));
 		CUBLAS_CHECK_RETURN(cublasSgemm(cublashandles[i], T1, T2, A_rows, B_cols,
 				A_cols, &alpha, A->data_gpus[i], A->shape_gpus[i][2], B->data_gpus[i], B->shape_gpus[i][2], &beta,
 				out->data_gpus[i], out->shape_gpus[i][2]));
@@ -232,7 +232,6 @@ void sync_template(GPUpy * gpupy, T *A, T *out1, T *out2, T *out3, int layer_idx
 	//left-right transfer across PCIe switches
 	//this is the fastest transfer method for multi-GPU setups on non-specialized hardware
 	//this transfer is made exactly like the matrix cross product where left and right transfers are left and right arrows
-	//tick();
 	for(int transfer_round = 1; transfer_round < gpupy->DEVICE_COUNT; transfer_round++)
 	{
 		//right transfer
@@ -252,7 +251,6 @@ void sync_template(GPUpy * gpupy, T *A, T *out1, T *out2, T *out3, int layer_idx
 			//cout << "left from " << idx <<  " and " << left_idx-transfer_round << " to " << left_idx << " with stream " << layer_idx << "x" << left_idx << left_idx-transfer_round << endl;
 		}
 	}
-	//tick();
 
 }
 

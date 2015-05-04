@@ -116,7 +116,7 @@ private:
 	std::vector<curandGenerator_t> generators;
 	std::vector<cublasHandle_t> cublashandles;
 	std::map<std::string,cudaEvent_t*> m_dictTickTock;
-	 std::map<std::string,float> m_dictTickTockCumulative;
+	std::map<std::string,float> m_dictTickTockCumulative;
 
 };
 

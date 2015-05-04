@@ -68,6 +68,16 @@ enum Operation_t
 	cast_float_to_halffloat
 };
 
+enum Compression_t
+{
+	compress_1bit = 0,
+	compress_8bit = 1,
+	compress_16bit = 2,
+	decompress_1bit = 4,
+	decompress_8bit = 8,
+	decompress_16bit = 16
+};
+
 __global__ void kRdmNumbers(float *seed, int size, float *out);
 __global__ void kCompression_8bit_test(float *tbl, float *A, float precision, int size, float *out);
 __global__ void kCompression_8bit(float *flt_tbl, float *A, float precision, int size, unsigned char *out);

@@ -678,101 +678,44 @@ float thrust_reduce(Tensor *A, Operation_t strategy)
 	return value;
 }
 
+
+void compression(Tensor *tbl_flt, CharTensor *charT, UIntTensor *uintT, UShortTensor *ushortT, Tensor *uncompressed, float precision, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, Compression_t strategy)
+{
+	int gpus = 0;
+		CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
+		for(int i = 0; i < gpus; i++)
+		{
+			int blocks = (uncompressed->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
+			CUDA_CHECK_RETURN(cudaSetDevice(i));
+			switch(strategy)
+			{
+				case compress_1bit: kCompression_1bit<<<blocks,THREADS_PER_BLOCKS>>>(uncompressed->data_gpus[i], errors->data_gpus[i],avgPos->data_gpus[i], avgNeg->data_gpus[i], uintT->data_gpus[i],uncompressed->shape_gpus[i][2],uncompressed->shape_gpus[i][3]); break;
+				case compress_8bit: kCompression_8bit<<<blocks,THREADS_PER_BLOCKS>>>(tbl_flt->data_gpus[i], uncompressed->data_gpus[i], precision, uncompressed->size_gpus[i], charT->data_gpus[i]); break;
+				case compress_16bit: kCompression_16bit<<<blocks,THREADS_PER_BLOCKS>>>(uncompressed->data_gpus[i], ushortT->data_gpus[i], uncompressed->size_gpus[i]); break;
+				case decompress_1bit: kDecompression_1bit<<<blocks,THREADS_PER_BLOCKS>>>(uintT->data_gpus[i], errors->data_gpus[i],avgPos->data_gpus[i], avgNeg->data_gpus[i], uncompressed->data_gpus[i],uncompressed->shape_gpus[i][2],uncompressed->shape_gpus[i][3]); break;
+				case decompress_8bit: kDecompression_8bit<<<blocks,THREADS_PER_BLOCKS>>>(tbl_flt->data_gpus[i],  charT->data_gpus[i], precision, charT->size_gpus[i], uncompressed->data_gpus[i]); break;
+				case decompress_16bit: kDecompression_16bit<<<blocks,THREADS_PER_BLOCKS>>>(ushortT->data_gpus[i], uncompressed->data_gpus[i], ushortT->size_gpus[i]); break;
+				default:
+					throw "Not supported!";
+			}
+
+			CUDA_CHECK_RETURN(cudaPeekAtLastError());
+		}
+		CUDA_CHECK_RETURN(cudaSetDevice(0));
+}
+
 void compression_8bit(Tensor *tbl_flt, Tensor *A, float precision,  CharTensor *out)
-{
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	for(int i = 0; i < gpus; i++)
-	{
-		int blocks = (A->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
-		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kCompression_8bit<<<blocks,THREADS_PER_BLOCKS>>>(tbl_flt->data_gpus[i], A->data_gpus[i], precision, A->size_gpus[i], out->data_gpus[i]);
-		CUDA_CHECK_RETURN(cudaPeekAtLastError());
-	}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
-
-}
-
-
-
+{ compression(tbl_flt, out, 0, 0, A, precision, 0,0,0, compress_8bit); }
 void decompression_8bit(Tensor *tbl_flt, CharTensor *A, float precision,  Tensor *out)
-{
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	for(int i = 0; i < gpus; i++)
-	{
-		int blocks = (A->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
-		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kDecompression_8bit<<<blocks,THREADS_PER_BLOCKS>>>(tbl_flt->data_gpus[i],  A->data_gpus[i], precision, A->size_gpus[i], out->data_gpus[i]);
-		CUDA_CHECK_RETURN(cudaPeekAtLastError());
-	}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
-}
-
-
+{ compression(tbl_flt, A, 0, 0, out, precision, 0,0,0, decompress_8bit); }
 void compression_1bit(Tensor *A_with_errors, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, UIntTensor *out)
-{
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	for(int i = 0; i < gpus; i++)
-	{
-		int blocks = (A_with_errors->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
-		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kCompression_1bit<<<blocks,THREADS_PER_BLOCKS>>>(A_with_errors->data_gpus[i], errors->data_gpus[i],avgPos->data_gpus[i], avgNeg->data_gpus[i], out->data_gpus[i],A_with_errors->shape_gpus[i][2],A_with_errors->shape_gpus[i][3]);
-		CUDA_CHECK_RETURN(cudaPeekAtLastError());
-	}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
-
-}
-
-
-
+{ compression(0, 0, out, 0, A_with_errors, 0.0f, errors,avgPos,avgNeg, compress_1bit); }
 void decompression_1bit(UIntTensor *quant, Tensor *errors, Tensor *avgPos, Tensor *avgNeg, Tensor *out)
-{
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	for(int i = 0; i < gpus; i++)
-	{
-		int blocks = (out->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
-		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kDecompression_1bit<<<blocks,THREADS_PER_BLOCKS>>>(quant->data_gpus[i], errors->data_gpus[i],avgPos->data_gpus[i], avgNeg->data_gpus[i], out->data_gpus[i],out->shape_gpus[i][2],out->shape_gpus[i][3]);
-		CUDA_CHECK_RETURN(cudaPeekAtLastError());
-	}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
-}
-
-
+{ compression(0, 0, quant, 0, out, 0.0f, errors,avgPos,avgNeg, decompress_1bit); }
 void compression_16bit(Tensor *A, UShortTensor *out)
-{
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	for(int i = 0; i < gpus; i++)
-	{
-		int blocks = (A->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
-		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kCompression_16bit<<<blocks,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size_gpus[i]);
-		CUDA_CHECK_RETURN(cudaPeekAtLastError());
-	}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
-
-}
-
-
+{ compression(0, 0, 0, out, A, 0.0f, 0,0,0, compress_16bit); }
 void decompression_16bit(UShortTensor *A, Tensor *out)
-{
-	int gpus = 0;
-	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
-	for(int i = 0; i < gpus; i++)
-	{
-		int blocks = (A->size_gpus[i]/THREADS_PER_BLOCKS) + 1;
-		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kDecompression_16bit<<<blocks,THREADS_PER_BLOCKS>>>(A->data_gpus[i], out->data_gpus[i], A->size_gpus[i]);
-		CUDA_CHECK_RETURN(cudaPeekAtLastError());
-	}
-	CUDA_CHECK_RETURN(cudaSetDevice(0));
-}
-
-
+{ compression(0, 0, 0, A, out, 0.0f, 0,0,0, decompress_16bit); }
 
 void reduceRow(Tensor *A, Tensor *out, Operation_t ops)
 {
