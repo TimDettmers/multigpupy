@@ -90,7 +90,7 @@ void decompression_1bit(UIntTensor *quant, Tensor *errors, Tensor *avgPos, Tenso
 void compression_16bit(Tensor *A, UShortTensor *out);
 void decompression_16bit(UShortTensor *A, Tensor *out);
 
-void reduceRow(Tensor *A, Tensor *out, RowReduction_t strategy);
+void reduceRow(Tensor *A, Tensor *out_values, Tensor *out_idxes, RowReduction_t strategy);
 
 cudaEvent_t* tick();
 float tock(cudaEvent_t* startstop);

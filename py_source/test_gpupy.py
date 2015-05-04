@@ -1252,9 +1252,9 @@ def test_row_sum():
 
   
 def test_row_max():
-    for i in range(1):
+    for i in range(100):
         dims = np.random.randint(2,763,(2,))
-        A = np.float32(np.random.randn(dims[0],dims[1]))        
+        A = np.float32(np.random.randint(0,100000, (dims[0],dims[1])))        
         B1 = gpu.array(A)
         B2 = gpu.zeros((A.shape[0],))
         
@@ -1265,6 +1265,44 @@ def test_row_max():
         #print errors
         #print A.shape
         t.assert_almost_equal(np.max(A,axis=1),B2.tocpu(),3,"row max")
+        
+def test_row_argmax():
+    for i in range(100):
+        dims = np.random.randint(2,763,(2,))
+        #A = np.float32(np.random.randint(0,100000, (dims[0],dims[1])))     
+        A = np.float32(np.random.randn(dims[0],dims[1]))
+        B1 = gpu.array(A)
+        B2 = gpu.zeros((A.shape[0],))
+        
+        gpu.row_argmax(B1, B2)
+        #print B2.tocpu()
+        #print np.sum(A,axis=1)
+        #errors = np.sort(np.sqrt(((np.sum(A,axis=1)-B2.tocpu())**2)).flatten())[::-1][0:10]
+        #print errors
+        #print A.shape
+        #print np.argmax(A,axis=1).sum(), B2.sum()
+        #print A[np.argmax(A,axis=1) != B2.tocpu()]
+        t.assert_almost_equal(np.argmax(A,axis=1),B2.tocpu(),3,"row argmax")
+        
+def test_row_max_and_argmax():
+    for i in range(100):
+        dims = np.random.randint(2,763,(2,))
+        #A = np.float32(np.random.randint(0,100000, (dims[0],dims[1])))     
+        A = np.float32(np.random.randn(dims[0],dims[1]))
+        B1 = gpu.array(A)
+        B2 = gpu.zeros((A.shape[0],))
+        B3 = gpu.zeros((A.shape[0],))
+        
+        gpu.row_max_and_argmax(B1, B2, B3)
+        #print B2.tocpu()
+        #print np.sum(A,axis=1)
+        #errors = np.sort(np.sqrt(((np.sum(A,axis=1)-B2.tocpu())**2)).flatten())[::-1][0:10]
+        #print errors
+        #print A.shape
+        #print np.argmax(A,axis=1).sum(), B2.sum()
+        #print A[np.argmax(A,axis=1) != B2.tocpu()]
+        t.assert_almost_equal(np.argmax(A,axis=1),B3.tocpu(),3,"row argmax")
+        t.assert_almost_equal(np.max(A,axis=1),B2.tocpu(),3,"row argmax")
     
 def test_1bit_compression():
     for i in range(10):

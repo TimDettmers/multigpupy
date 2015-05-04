@@ -183,8 +183,10 @@ extern "C"
 	void fcompress_16bit(Tensor *A, UShortTensor *out){ compression_16bit(A, out); }
 	void fdecompress_16bit(UShortTensor *A, Tensor *out){ decompression_16bit(A, out); }
 
-	void frow_sum(Tensor *A, Tensor *out){ reduceRow(A, out, row_sum); }
-	void frow_max(Tensor *A, Tensor *out){ reduceRow(A, out, row_max); }
+	void frow_sum(Tensor *A, Tensor *out){ reduceRow(A, out, NULL,  row_sum); }
+	void frow_max(Tensor *A, Tensor *out){ reduceRow(A, out, NULL, row_max); }
+	void frow_argmax(Tensor *A, Tensor *out){ reduceRow(A, out, NULL, row_argmax); }
+	void frow_max_argmax(Tensor *A, Tensor *out_values, Tensor *out_idxes){ reduceRow(A, out_values, out_idxes, row_max_and_argmax); }
 
 	void ftick(GPUpy *gpupy, char *eventname){ std::string str(eventname); gpupy->tick(str); }
 	float ftock(GPUpy *gpupy, char *eventname){ std::string str(eventname); return gpupy->tock(str); }

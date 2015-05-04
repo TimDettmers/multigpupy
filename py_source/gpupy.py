@@ -339,7 +339,7 @@ def softmax(x1,out=None):
 
 def argmax(x1,out=None):
     if out: lib.funcs.inp_argmax(x1.pt, out.pt)
-    return array(None, lib.funcs.fargmax(x1.pt))  
+    return array(None, lib.funcs.fargmax(x1.pt))
 
 def slice_axis(A, out):
     lib.funcs.inp_slice_axis(A.pt, out.pt)
@@ -397,10 +397,6 @@ def max(x1): return lib.funcs.ffmax(x1.pt)
 def print_free_memory():
     return lib.funcs.fprint_free_memory()
 
-def is_synchronizing(): return lib.funcs.fis_synchronizing()
-def current_sync_idx(): return lib.funcs.fcurrent_sync_idx()
-def reset_sync_idx(): lib.funcs.freset_sync_idx()
-
 def create_additional_streams(layer_count):    
     lib.funcs.fcreate_streams(p_gpupy, layer_count)
     
@@ -421,6 +417,8 @@ def decompress_16bit(A, out): lib.funcs.fdecompress_16bit(A.pt, out.pt)
 
 def sum_row(x1, out): lib.funcs.frow_sum(x1.pt, out.pt)
 def max_row(x1, out): lib.funcs.frow_max(x1.pt, out.pt)
+def row_argmax(x1, out): lib.funcs.frow_argmax(x1.pt, out.pt)
+def row_max_and_argmax(x1, out_values, out_indxes): lib.funcs.frow_max_argmax(x1.pt, out_values.pt, out_indxes.pt)
     
 def compress_1bit(A, val_with_errors, errors, avgPositive,  avgNegative, out, maskPos, maskNeg, posCount, negCount):
     add(A,errors,val_with_errors)
