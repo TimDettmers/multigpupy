@@ -222,10 +222,6 @@ funcs.fcreate_streams.restype = ct.c_void_p
 
 funcs.fprint_free_memory.restype = ct.c_float
 
-funcs.fis_synchronizing.restype = ct.c_int
-funcs.fcurrent_sync_idx.restype = ct.c_int
-funcs.freset_sync_idx.restype = ct.c_void_p
-
 funcs.fcompress_1bit.restype = ct.c_void_p
 funcs.fdecompress_1bit.restype = ct.c_void_p
 funcs.fcompress_8bit.restype = ct.c_void_p

@@ -48,9 +48,6 @@ void GPUpy::init(int seed, float *floats_8bit)
 
 	createStreams(1);
 
-	CURRENT_SYNC_IDX = 0;
-	IS_SYNCHRONIZING = 0;
-
 }
 
 void GPUpy::createStreams(int layer_count)
@@ -223,7 +220,7 @@ void GPUpy::disablePeerAccess()
 }
 
 template <typename T>
-void async_sync_template(GPUpy * gpupy, T *A, T *out1, T *out2, T *out3, int layer_idx)
+void sync_template(GPUpy * gpupy, T *A, T *out1, T *out2, T *out3, int layer_idx)
 {
 	std::vector<T*> out;
 	out.push_back(A);
@@ -236,7 +233,6 @@ void async_sync_template(GPUpy * gpupy, T *A, T *out1, T *out2, T *out3, int lay
 	//this is the fastest transfer method for multi-GPU setups on non-specialized hardware
 	//this transfer is made exactly like the matrix cross product where left and right transfers are left and right arrows
 	//tick();
-	gpupy->IS_SYNCHRONIZING = 1;
 	for(int transfer_round = 1; transfer_round < gpupy->DEVICE_COUNT; transfer_round++)
 	{
 		//right transfer
@@ -261,14 +257,14 @@ void async_sync_template(GPUpy * gpupy, T *A, T *out1, T *out2, T *out3, int lay
 }
 
 
-void GPUpy::async_sync_1bit(UIntTensor *A, UIntTensor *out1, UIntTensor *out2, UIntTensor *out3, int layer_idx)
-{ async_sync_template<UIntTensor>(this, A, out1, out2, out3, layer_idx); }
-void GPUpy::async_sync_8bit(CharTensor *A, CharTensor *out1, CharTensor *out2, CharTensor *out3, int layer_idx)
-{ async_sync_template<CharTensor>(this, A, out1, out2, out3, layer_idx); }
-void GPUpy::async_sync_16bit(UShortTensor *A, UShortTensor *out1, UShortTensor *out2, UShortTensor *out3, int layer_idx)
-{ async_sync_template<UShortTensor>(this, A, out1, out2, out3, layer_idx); }
-void GPUpy::async_sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3, int layer_idx)
-{ async_sync_template<Tensor>(this, A, out1, out2, out3, layer_idx); }
+void GPUpy::sync_1bit(UIntTensor *A, UIntTensor *out1, UIntTensor *out2, UIntTensor *out3, int layer_idx)
+{ sync_template<UIntTensor>(this, A, out1, out2, out3, layer_idx); }
+void GPUpy::sync_8bit(CharTensor *A, CharTensor *out1, CharTensor *out2, CharTensor *out3, int layer_idx)
+{ sync_template<CharTensor>(this, A, out1, out2, out3, layer_idx); }
+void GPUpy::sync_16bit(UShortTensor *A, UShortTensor *out1, UShortTensor *out2, UShortTensor *out3, int layer_idx)
+{ sync_template<UShortTensor>(this, A, out1, out2, out3, layer_idx); }
+void GPUpy::sync(Tensor *A, Tensor *out1, Tensor *out2, Tensor *out3, int layer_idx)
+{ sync_template<Tensor>(this, A, out1, out2, out3, layer_idx); }
 
 
 void GPUpy::synchronize_streams(int layer_idx)
@@ -278,11 +274,6 @@ void GPUpy::synchronize_streams(int layer_idx)
 		for(int j = 0; j < DEVICE_COUNT; j++)
 			CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][i][j]));
 
-
-	//CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][1][0]));
-	//CUDA_CHECK_RETURN(cudaStreamSynchronize(stream_vectors[layer_idx][0][1]));
-	CURRENT_SYNC_IDX +=1;
-
 }
 
 
@@ -290,11 +281,6 @@ void GPUpy::synchronize_streams(int layer_idx)
 
 void GPUpy::allocateNextAsync(Tensor *batch, float *cpu_buffer, float *pinned_X, Tensor *batch_y, float *cpu_buffer_y, float* pinned_y, int batch_start_idx, int isSplit)
 {
-	//memcpy(pinned_X, cpu_buffer, batch->bytes);
-	//memcpy(pinned_y, cpu_buffer_y, batch_y->bytes);
-
-	//to_col_major_pinned(&cpu_buffer[batch_start_idx*batch->cols], pinned_X,1,1,batch->rows, batch->cols);
-	//to_col_major_pinned(&cpu_buffer_y[batch_start_idx*batch_y->cols], pinned_y,1,1,batch_y->rows, batch_y->cols);
 	int offset = 0;
 	for(int i = 0; i < DEVICE_COUNT; i++)
 	{
@@ -312,19 +298,6 @@ void GPUpy::allocateNextAsync(Tensor *batch, float *cpu_buffer, float *pinned_X,
 
 		}
 	}
-}
-
-void GPUpy::replaceCurrentBatch()
-{
-
-
-	for(int i = 0; i < DEVICE_COUNT; i++)
-	{
-		CUDA_CHECK_RETURN(cudaStreamSynchronize(streams[i]));
-		CUDA_CHECK_RETURN(cudaStreamSynchronize(streams_y[i]));
-	}
-
-
 }
 
 void GPUpy::replaceCurrentBatch(Tensor *batch_X, Tensor *batch_y, Tensor *buffer_X, Tensor *buffer_y)

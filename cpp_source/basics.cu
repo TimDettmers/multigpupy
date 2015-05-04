@@ -429,10 +429,6 @@ void print_cpu_matrix(Tensor *A, int start_row, int end_row, int start_col, int 
 		if(end_col - start_col >= 20){ skip_cols = 3; }
 	}
 
-	cout << (end_row - start_row)*(end_col - start_col) << endl;
-	cout << skip_rows << endl;
-	cout << skip_cols << endl;
-
 	for(int row = start_row; row< end_row; row++)
 	{
 		if(row == skip_rows && skip_rows > 0){ printf("...,\n"); }
