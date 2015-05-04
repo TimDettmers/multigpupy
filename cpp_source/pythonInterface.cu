@@ -183,6 +183,7 @@ extern "C"
 	void fcompress_16bit(Tensor *A, UShortTensor *out){ compression_16bit(A, out); }
 	void fdecompress_16bit(UShortTensor *A, Tensor *out){ decompression_16bit(A, out); }
 
+	void frow_mean(Tensor *A, Tensor *out){ reduceRow(A, out, NULL,  row_mean); }
 	void frow_sum(Tensor *A, Tensor *out){ reduceRow(A, out, NULL,  row_sum); }
 	void frow_max(Tensor *A, Tensor *out){ reduceRow(A, out, NULL, row_max); }
 	void frow_argmax(Tensor *A, Tensor *out){ reduceRow(A, out, NULL, row_argmax); }

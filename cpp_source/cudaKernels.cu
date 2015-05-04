@@ -648,14 +648,14 @@ __device__ void kReduceRow(float *A, float *out_values, float *out_idxes, unsign
 	float row_idx = 0.0f;
 	unsigned int next_thread_block_range = blockDim.x*2;
 
-	if(strategy == row_sum) row_values[threadIdx.x] = 0.0f;
+	if(strategy == row_sum || strategy == row_mean) row_values[threadIdx.x] = 0.0f;
 	else row_values[threadIdx.x] = -FLT_MAX;
 	__syncthreads();
 
 
 	for (unsigned int row = blockIdx.x; row < rows; row += gridDim.x)
 	{
-		if(strategy == row_sum) row_value = 0.0f;
+		if(strategy == row_sum || strategy == row_mean) row_value = 0.0f;
 		else row_value = -FLT_MAX;
 		for(unsigned int col = threadIdx.x; col < cols; col +=blockDim.x,next_thread_block_range+=blockDim.x)
 		{
@@ -664,6 +664,7 @@ __device__ void kReduceRow(float *A, float *out_values, float *out_idxes, unsign
 			__syncthreads();
 			switch(strategy)//the compiler will optimize out this switch statement
 			{
+				case row_mean:
 				case row_sum:
 					reduce<row_sum>(row_values, row_idxes, threadIdx.x, blockDim.x);
 					__syncthreads();
@@ -696,7 +697,7 @@ __device__ void kReduceRow(float *A, float *out_values, float *out_idxes, unsign
 				//the next block will be partially out of range
 				//so that the values do not longer overlap (matrix and shared mem)
 				//so we have to set the non-overlapping values to the default value
-				if(strategy == row_sum) row_values[threadIdx.x] = 0.0f;
+				if(strategy == row_sum || strategy == row_mean) row_values[threadIdx.x] = 0.0f;
 				else row_values[threadIdx.x] = -FLT_MAX;
 				__syncthreads();
 
@@ -707,6 +708,7 @@ __device__ void kReduceRow(float *A, float *out_values, float *out_idxes, unsign
 		{
 			switch(strategy)
 			{
+				case row_mean: out_values[row] = row_value/((float)cols); break;
 				case row_sum: out_values[row] = row_value; break;
 				case row_max:out_values[row] = row_value; break;
 				case row_argmax: out_values[row] = row_idx; break;
@@ -722,6 +724,7 @@ __global__ void kReduceRow(float *A, float *out_values, float *out_idxes, unsign
 {
 	switch(strategy)//this is slow but more readable and maintainable
 	{
+		case row_mean: kReduceRow<row_mean>(A, out_values, out_idxes, rows, cols); break;
 		case row_sum: kReduceRow<row_sum>(A, out_values, out_idxes, rows, cols); break;
 		case row_max: kReduceRow<row_max>(A, out_values, out_idxes, rows, cols); break;
 		case row_argmax: kReduceRow<row_argmax>(A, out_values, out_idxes, rows, cols); break;

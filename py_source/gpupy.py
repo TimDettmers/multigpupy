@@ -416,6 +416,7 @@ def compress_16bit(A, out): lib.funcs.fcompress_16bit(A.pt, out.pt)
 def decompress_16bit(A, out): lib.funcs.fdecompress_16bit(A.pt, out.pt) 
 
 def sum_row(x1, out): lib.funcs.frow_sum(x1.pt, out.pt)
+def mean_row(x1, out): lib.funcs.frow_mean(x1.pt, out.pt)
 def max_row(x1, out): lib.funcs.frow_max(x1.pt, out.pt)
 def row_argmax(x1, out): lib.funcs.frow_argmax(x1.pt, out.pt)
 def row_max_and_argmax(x1, out_values, out_indxes): lib.funcs.frow_max_argmax(x1.pt, out_values.pt, out_indxes.pt)

@@ -1250,6 +1250,25 @@ def test_row_sum():
         t.assert_almost_equal(np.sum(A,axis=1),B2.tocpu(),3,"row sum")
     #gpu.tock("rowsum")
 
+def test_row_mean():
+    for i in range(100):
+        dims = np.random.randint(2,763,(2,))
+        #dims = [128,1500]
+        A = np.float32(np.random.rand(dims[0],dims[1]))        
+        B1 = gpu.array(A)
+        B2 = gpu.zeros((A.shape[0],))
+        
+        #gpu.tick("rowsum")
+        gpu.mean_row(B1, B2)
+        #gpu.tick("rowsum")
+        #print B2.tocpu()
+        #print np.sum(A,axis=1)
+        #errors = np.sort(np.sqrt(((np.sum(A,axis=1)-B2.tocpu())**2)).flatten())[::-1][0:10]
+        #print errors
+        #print A.shape
+        t.assert_almost_equal(np.mean(A,axis=1),B2.tocpu(),3,"row sum")
+
+
   
 def test_row_max():
     for i in range(100):

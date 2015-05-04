@@ -230,6 +230,7 @@ funcs.fcompress_16bit.restype = ct.c_void_p
 funcs.fdecompress_16bit.restype = ct.c_void_p
 
 funcs.frow_sum.restype = ct.c_void_p
+funcs.frow_mean.restype = ct.c_void_p
 funcs.frow_max.restype = ct.c_void_p
 funcs.frow_argmax.restype = ct.c_void_p
 funcs.frow_max_argmax.restype = ct.c_void_p
