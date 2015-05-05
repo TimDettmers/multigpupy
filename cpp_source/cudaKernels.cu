@@ -459,7 +459,6 @@ __global__ void kTransposeTensor(float *A, float *out, int batches, int width, i
 
 }
 
-
 __device__ void reduceToMax(float* sdata, unsigned int tid, int threads)
 {
 
@@ -469,6 +468,7 @@ __device__ void reduceToMax(float* sdata, unsigned int tid, int threads)
   float myMax = sdata[tid];
 
   // do reduction in shared mem
+  if (threads >= 1024) { if (tid < 512) { sdata[tid] = myMax = fmaxf(myMax, sdata[tid + 512]); } __syncthreads(); }
   if (threads >= 512) { if (tid < 256) { sdata[tid] = myMax = fmaxf(myMax, sdata[tid + 256]); } __syncthreads(); }
   if (threads >= 256) { if (tid < 128) { sdata[tid] = myMax = fmaxf(myMax, sdata[tid + 128]); } __syncthreads(); }
   if (threads >= 128) { if (tid <  64) { sdata[tid] = myMax = fmaxf(myMax, sdata[tid +  64]); } __syncthreads(); }
@@ -503,6 +503,56 @@ __device__ void reduceToMax(float* sdata, unsigned int tid, int threads)
       if (threads >=   2) { smem[tid] = myMax = fmaxf(myMax, smem[tid +  1]); }
     }
   }
+
+  __syncthreads();
+}
+
+__device__ void reduceToSum(float* sdata, unsigned int tid, int threads)
+{
+
+  //Synchronize threads to share shared memory data
+  __syncthreads();
+
+  float mySum = sdata[tid];
+
+  // do reduction in shared mem
+  if (threads >= 1024) { if (tid < 512) { sdata[tid] = mySum = mySum + sdata[tid + 512]; } __syncthreads(); }
+  if (threads >= 512) { if (tid < 256) { sdata[tid] = mySum = mySum + sdata[tid + 256]; } __syncthreads(); }
+  if (threads >= 256) { if (tid < 128) { sdata[tid] = mySum = mySum + sdata[tid + 128]; } __syncthreads(); }
+  if (threads >= 128) { if (tid <  64) { sdata[tid] = mySum = mySum + sdata[tid +  64]; } __syncthreads(); }
+
+  if (threads == 32){
+    if (tid < 16)
+    {
+      // now that we are using warp-synchronous programming (below)
+      // we need to declare our shared memory volatile so that the compiler
+      // doesn't reorder stores to it and induce incorrect behavior.
+      volatile float* smem = sdata;
+      if (threads >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
+      if (threads >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
+      if (threads >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
+      if (threads >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
+      if (threads >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
+    }
+  }
+  else
+  {
+    if (tid < 32)
+    {
+      // now that we are using warp-synchronous programming (below)
+      // we need to declare our shared memory volatile so that the compiler
+      // doesn't reorder stores to it and induce incorrect behavior.
+      volatile float* smem = sdata;
+      if (threads >=  64) { smem[tid] = mySum = mySum + smem[tid + 32]; }
+      if (threads >=  32) { smem[tid] = mySum = mySum + smem[tid + 16]; }
+      if (threads >=  16) { smem[tid] = mySum = mySum + smem[tid +  8]; }
+      if (threads >=   8) { smem[tid] = mySum = mySum + smem[tid +  4]; }
+      if (threads >=   4) { smem[tid] = mySum = mySum + smem[tid +  2]; }
+      if (threads >=   2) { smem[tid] = mySum = mySum + smem[tid +  1]; }
+    }
+  }
+
+  __syncthreads();
 }
 
 __device__ void reduceToMaxAndArgMax(float* sdataMax, float* sdataArgMax, unsigned int tid, int threads)
@@ -639,10 +689,8 @@ __device__ void reduce(float* sdata, float *sdata_idx, unsigned int tid, int thr
 
 
 template <int strategy>
-__device__ void kReduceRow(float *A, float *out_values, float *out_idxes, unsigned int rows, unsigned int cols)
+__device__ void kReduceRow(float *A, float *row_values, float *row_idxes, float *out_values, float *out_idxes, unsigned int rows, unsigned int cols)
 {
-	__shared__ float row_values[256];
-	__shared__ float row_idxes[256];
 	unsigned int idx = 0;
 	float row_value = 0.0f;
 	float row_idx = 0.0f;
@@ -722,13 +770,17 @@ __device__ void kReduceRow(float *A, float *out_values, float *out_idxes, unsign
 
 __global__ void kReduceRow(float *A, float *out_values, float *out_idxes, unsigned int rows, unsigned int cols, RowReduction_t strategy)
 {
+
+	__shared__ float row_values[128];
+	__shared__ float row_idxes[128];
+
 	switch(strategy)//this is slow but more readable and maintainable
 	{
-		case row_mean: kReduceRow<row_mean>(A, out_values, out_idxes, rows, cols); break;
-		case row_sum: kReduceRow<row_sum>(A, out_values, out_idxes, rows, cols); break;
-		case row_max: kReduceRow<row_max>(A, out_values, out_idxes, rows, cols); break;
-		case row_argmax: kReduceRow<row_argmax>(A, out_values, out_idxes, rows, cols); break;
-		case row_max_and_argmax: kReduceRow<row_max_and_argmax>(A, out_values, out_idxes, rows, cols); break;
+		case row_mean: kReduceRow<row_mean>(A, row_values, row_idxes, out_values, out_idxes, rows, cols); break;
+		case row_sum: kReduceRow<row_sum>(A, row_values, row_idxes, out_values, out_idxes, rows, cols); break;
+		case row_max: kReduceRow<row_max>(A, row_values, row_idxes, out_values, out_idxes, rows, cols); break;
+		case row_argmax: kReduceRow<row_argmax>(A, row_values, row_idxes, out_values, out_idxes, rows, cols); break;
+		case row_max_and_argmax: kReduceRow<row_max_and_argmax>(A, row_values, row_idxes, out_values, out_idxes, rows, cols); break;
 
 	}
 }
@@ -764,44 +816,61 @@ __global__ void kMaxout(float *A, float *out, float *outargmax, int maxout_level
 
 __global__ void kSoftMax(float* A, float* out, unsigned int rows, unsigned int cols)
 {
-	const unsigned int numThreads = blockDim.x * gridDim.x;
-	const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-	unsigned int mapOffset = rows*cols*blockIdx.y;
-	unsigned int batchOffset = rows*cols*gridDim.y*blockIdx.x;
-	float col_value = 0.0f;
 
-	__shared__ float max_values[THREADS_PER_BLOCKS];
-	__shared__ float row_sums[THREADS_PER_BLOCKS];
+	int idx = 0;
+	//unsigned int mapOffset = rows*cols*blockIdx.y;
+	//unsigned int batchOffset = rows*cols*gridDim.y*blockIdx.x;
+	float sum_value = 0.0f;
+	float max_value = 0.0f;
 
-	for (unsigned int row = idx; row < rows; row += numThreads)
+
+	extern __shared__ float dynamic_mem[];
+
+	float *row_values = dynamic_mem;
+	float *row_aggregate = &dynamic_mem[blockDim.x];
+
+
+	for (unsigned int row = blockIdx.x; row < rows; row += gridDim.x)
 	{
-		//fill with min values
-		max_values[idx] = -FLT_MAX;
-		row_sums[idx] = 0.0f;
+		idx = (threadIdx.x*rows) + row;
+		//we look for a max value in up to 1024 columns, thats enough and saves a sync for more columns
 
-		 //calc max value of the row
-		for (unsigned int i = 0; i < cols; i++)
+		row_values[threadIdx.x] = (threadIdx.x < cols ? A[idx] : 0.0f);
+		row_aggregate[threadIdx.x] = (threadIdx.x < cols ? row_values[threadIdx.x] : -FLT_MAX);
+
+		reduceToMax(row_aggregate, threadIdx.x,blockDim.x);
+		max_value = row_aggregate[0];
+
+		row_values[threadIdx.x] = (threadIdx.x < cols ? __expf(row_values[threadIdx.x] - max_value) : 0.0f);
+		row_aggregate[threadIdx.x] = row_values[threadIdx.x];
+
+		reduceToSum(row_aggregate, threadIdx.x,blockDim.x);
+		sum_value = row_aggregate[0];
+
+		if(cols > 1024)
 		{
-			col_value = A[(i*rows) + row+mapOffset + batchOffset];
-			if(col_value > max_values[idx])
+			row_aggregate[threadIdx.x] = 0.0f;
+			__syncthreads();
+			for(unsigned int col = threadIdx.x+1024; col < cols; col+=1024)
 			{
-				max_values[idx] = col_value;
+				row_aggregate[threadIdx.x] = (threadIdx.x < cols ? __expf(A[(col*rows) + row] - max_value) : 0.0f);
+				reduceToSum(row_aggregate, threadIdx.x,blockDim.x);
+				sum_value += row_aggregate[0];
+				row_aggregate[threadIdx.x] = 0.0f;
+				__syncthreads();
 			}
-		}
 
-		//calc the row sum
-		for (unsigned int i = 0; i < cols; i++)
-		{
-			row_sums[idx] += __expf(A[(i*rows) + row] - max_values[idx]);
+			out[idx] = row_values[threadIdx.x]/sum_value;
+			for(unsigned int col = threadIdx.x+1024; col < cols; col+=1024)
+				out[(col*rows) + row] = __expf(A[(col*rows) + row] - max_value)/sum_value;
 		}
-
-		//calc the value of each element in the row
-		for (unsigned int i = 0; i < cols; i++)
+		else
 		{
-			out[(i*rows) + row+mapOffset + batchOffset] = __expf(A[(i*rows) + row] - max_values[idx])/row_sums[idx];
+			//out[idx] = row_values[threadIdx.x];
+			out[idx] = row_values[threadIdx.x]/sum_value;
+			//out[idx] = sum_value;
 		}
 	}
-
 }
 
 __global__ void kArgmax(float* A, float* out, unsigned int rows, unsigned int cols)
@@ -1500,7 +1569,7 @@ __global__ void kMaxColumnwise(float* mat, float* target, unsigned int width, un
       if (val > cur_max) cur_max = val;
     }
     max_vals[threadIdx.x] = cur_max;
-    reduceToMax(max_vals, threadIdx.x, blockDim.x);
+    //reduceToMax(max_vals, threadIdx.x, blockDim.x);
     __syncthreads();
     if (threadIdx.x == 0) target[column] = max_vals[0];
   }

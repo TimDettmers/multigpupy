@@ -382,8 +382,7 @@ class Layer(object):
             batch_size = self.out.shape[2]
             
             if self.has_gradients:
-                lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(self.config['momentum']),ct.c_float(self.config['learning_rate']), batch_size)
-                print self.w_grad_next.sum()
+                lib.funcs.inp_RMSProp(self.m_next.pt, self.w_grad_next.pt, ct.c_float(self.config['momentum']),ct.c_float(self.config['learning_rate']), batch_size)                
                 gpu.sub(self.w_next, self.w_grad_next, self.w_next)  
                 
                 
@@ -419,8 +418,6 @@ class Layer(object):
     def end_epoch(self):
         self.set_config_value('learning_rate', 0.0, 'learning_rate_decay', lambda a,b: a*b)   
         self.abs_max_grad_value = 0.0
-        if self.next_layer:
-            print self.w_next.sum()
         if self.id == 0 and self.test_for_no_convergence(): self.dropout_decay()
         if self.next_layer: self.next_layer.end_epoch()
         

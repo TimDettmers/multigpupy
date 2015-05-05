@@ -991,7 +991,7 @@ def test_rectified_linear():
     t.assert_equal(C.tocpu(), A>0, "Bad rectified linear grad values")
     
 def test_softmax():
-    A = np.float32(np.random.rand(17,83))
+    A = np.float32(np.random.rand(257,533))
     B = gpu.array(A)
     C = gpu.softmax(B)
     
@@ -999,7 +999,7 @@ def test_softmax():
     C*=0
     gpu.softmax(B,C)
     t.assert_array_almost_equal(C.tocpu(), u.softmax(A), 4, "Softmax problem!")
-    
+ 
 def test_argmax():
     A = np.float32(np.random.rand(17,83))
     B = gpu.array(A)
@@ -1251,7 +1251,7 @@ def test_row_sum():
     #gpu.tock("rowsum")
 
 def test_row_mean():
-    for i in range(100):
+    for i in range(50):
         dims = np.random.randint(2,763,(2,))
         #dims = [128,1500]
         A = np.float32(np.random.rand(dims[0],dims[1]))        
@@ -1271,7 +1271,7 @@ def test_row_mean():
 
   
 def test_row_max():
-    for i in range(100):
+    for i in range(50):
         dims = np.random.randint(2,763,(2,))
         A = np.float32(np.random.randint(0,100000, (dims[0],dims[1])))        
         B1 = gpu.array(A)
@@ -1286,7 +1286,7 @@ def test_row_max():
         t.assert_almost_equal(np.max(A,axis=1),B2.tocpu(),3,"row max")
         
 def test_row_argmax():
-    for i in range(100):
+    for i in range(50):
         dims = np.random.randint(2,763,(2,))
         #A = np.float32(np.random.randint(0,100000, (dims[0],dims[1])))     
         A = np.float32(np.random.randn(dims[0],dims[1]))
@@ -1304,7 +1304,7 @@ def test_row_argmax():
         t.assert_almost_equal(np.argmax(A,axis=1),B2.tocpu(),3,"row argmax")
         
 def test_row_max_and_argmax():
-    for i in range(100):
+    for i in range(50):
         dims = np.random.randint(2,763,(2,))
         #A = np.float32(np.random.randint(0,100000, (dims[0],dims[1])))     
         A = np.float32(np.random.randn(dims[0],dims[1]))

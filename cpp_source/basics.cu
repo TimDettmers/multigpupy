@@ -594,14 +594,20 @@ void vectorWise(Tensor *A, Tensor *B, Tensor *out, float flt, Operation_t ops)
 Tensor *softmax(Tensor *A){ Tensor *out = empty_like(A); softmax(A,out); return out; }
 void softmax(Tensor *A, Tensor *out)
 {
-	dim3 grids(A->batches, A->maps);
-	dim3 threads(A->rows > THREADS_PER_BLOCKS ? THREADS_PER_BLOCKS : A->rows, 1);
+	//dim3 grids(A->batches, A->maps);
 	int gpus = 0;
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
 	for(int i = 0; i < gpus; i++)
 	{
+		int blocks = A->shape_gpus[i][2];
+		int threads = 1024;
+		if(512 > A->shape_gpus[i][3]) threads = 512;
+		if(256 > A->shape_gpus[i][3]) threads = 256;
+		if(128 > A->shape_gpus[i][3]) threads = 128;
+		if(64 > A->shape_gpus[i][3]) threads = 64;
+		if(32 > A->shape_gpus[i][3]) threads = 32;
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
-		kSoftMax<<<grids,threads >>>(A->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][2], A->shape_gpus[i][3]);
+		kSoftMax<<<blocks,threads,threads*2*sizeof(float)>>>(A->data_gpus[i], out->data_gpus[i], A->shape_gpus[i][2], A->shape_gpus[i][3]);
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
@@ -723,12 +729,12 @@ void reduceRow(Tensor *A, Tensor *out_values, Tensor *out_idxes, RowReduction_t 
 	CUDA_CHECK_RETURN(cudaGetDeviceCount(&gpus));
 	for(int i = 0; i < gpus; i++)
 	{
-		int blocks = max(256,(A->shape_gpus[i][2]));
+		int blocks = min(256,(A->shape_gpus[i][2]));
 		CUDA_CHECK_RETURN(cudaSetDevice(i));
 		if(out_idxes)
-			kReduceRow<<<blocks,256>>>(A->data_gpus[i], out_values->data_gpus[i], out_idxes->data_gpus[i], A->rows, A->cols, strategy);
+			kReduceRow<<<blocks,32>>>(A->data_gpus[i], out_values->data_gpus[i], out_idxes->data_gpus[i], A->rows, A->cols, strategy);
 		else
-			kReduceRow<<<blocks,256>>>(A->data_gpus[i], out_values->data_gpus[i], NULL, A->rows, A->cols, strategy);
+			kReduceRow<<<blocks,32>>>(A->data_gpus[i], out_values->data_gpus[i], NULL, A->rows, A->cols, strategy);
 		CUDA_CHECK_RETURN(cudaPeekAtLastError());
 	}
 	CUDA_CHECK_RETURN(cudaSetDevice(0));
